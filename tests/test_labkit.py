@@ -577,3 +577,65 @@ def test_as_callable_diagnostica_simbolo_ausente(tmp_path):
         contracts.as_callable(modulo, "transform")
     with pytest.raises(AttributeError, match="não definido"):
         contracts.as_callable(modulo, "inexistente")
+
+
+# ============================================== a própria suíte, sob teste
+
+# Duas peças do `conftest.py` decidem se a suíte fica verde ou vermelha em
+# situações que ninguém quer reproduzir à mão. Elas são pequenas e são
+# exatamente o tipo de código que se quebra num refactor distraído.
+
+
+def test_dataset_status_pula_o_que_falta_e_reprova_o_que_mudou(tmp_path):
+    """A regra que faz a suíte rodar em máquina limpa sem ensinar a ignorar vermelho.
+
+    Dado ausente numa máquina que nunca rodou `make data` é estado esperado e
+    vira skip. Dado presente que não bate com o lock é o gerador tendo mudado —
+    isso move o score de todo o lineage de uma vez e tem que ficar vermelho.
+    """
+    from conftest import dataset_status
+
+    assert dataset_status(tmp_path)[0] == "sem_lock"
+
+    datakit.generate(tmp_path, [_spec()])
+    assert dataset_status(tmp_path)[0] == "ok"
+
+    arquivo = tmp_path / "data" / "d.txt"
+    conteudo = arquivo.read_text(encoding="utf-8")
+    arquivo.unlink()
+    assert dataset_status(tmp_path)[0] == "nao_gerado"
+
+    arquivo.write_text(conteudo + "linha a mais\n", encoding="utf-8")
+    assert dataset_status(tmp_path)[0] == "corrompido"
+
+
+def test_parse_selftest_table_separa_rotulo_de_detalhe():
+    """O parser da tabela é o que dá dentes ao `test_gate_teeth`.
+
+    Se ele classificasse errado, um mutante sobrevivente deixaria de ser contado
+    como mutante e o teste ficaria verde sem verificar nada — o pior modo de
+    falha possível para esta suíte.
+    """
+    from conftest import parse_selftest_table
+
+    tabela = (
+        "  PASS  REFERÊNCIA (deve passar)                     ok\n"
+        "  FAIL  mutante curto (deve falhar)                  divergiu\n"
+        # nome mais longo que a coluna de 44: cola no detalhe com um espaço só
+        "  PASS  mutante nome_muito_longo_que_estoura_a_coluna (deve falhar) passou indevido\n"
+        "  FAIL  SEED (deve passar)                           divergiu\n"
+        "\nGATE SELFTEST: GATE FURADO\n"
+    )
+    linhas = parse_selftest_table(tabela)
+    assert len(linhas) == 4
+
+    referencia, curto, longo, seed = linhas
+    assert referencia.e_referencia and referencia.veredito == "PASS"
+    assert curto.e_mutante and curto.detalhe == "divergiu"
+    assert longo.e_mutante, "nome longo não pode deixar de ser reconhecido como mutante"
+    assert longo.rotulo.endswith("(deve falhar)")
+    assert longo.detalhe == "passou indevido"
+    assert not (seed.e_mutante or seed.e_referencia), "SEED é linha extra, não da suíte"
+
+    sobreviventes = [ln for ln in linhas if ln.e_mutante and ln.veredito == "PASS"]
+    assert len(sobreviventes) == 1, "o mutante que sobrevive tem que ser visível ao teste"
