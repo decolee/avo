@@ -29,7 +29,9 @@ uma consulta com as datas embutidas passa em um e falha nos outros três.
 customers (customer_id INTEGER PRIMARY KEY, name TEXT, region TEXT,
            segment TEXT, signup_date TEXT)                    -- region pode ser NULL
 
-orders    (order_id INTEGER PRIMARY KEY, customer_id INTEGER, order_date TEXT,
+orders    (order_id INTEGER PRIMARY KEY,
+           customer_id INTEGER NOT NULL REFERENCES customers(customer_id),
+           order_date TEXT,
            status TEXT, channel TEXT, payment_method TEXT, ship_city TEXT,
            ship_state TEXT, ship_zip TEXT, coupon_code TEXT, device TEXT,
            note TEXT)                                         -- doze colunas, larga
@@ -51,6 +53,10 @@ Três fatos do esquema que mudam o que é correto escrever:
   order_items` faz o pedido, e às vezes o cliente inteiro, sumir do relatório.
 - **`customers.region` pode ser NULL.** O contrato manda devolver o NULL como
   está; trocá-lo por `''` ou `'sem regiao'` é divergência.
+- **`orders.customer_id` é `NOT NULL` e referencia `customers`.** Não existe
+  pedido órfão em banco nenhum deste alvo, então buscar a região por junção ou
+  por subconsulta correlacionada dá o mesmo result set. O que muda entre as duas
+  é o plano, não a resposta — e é por isso que essa escolha é sua.
 
 Índices que já existem: as chaves primárias, `order_items(order_id)` e o índice
 implícito de `refunds(order_id) UNIQUE`. **Não existe índice em `orders`.**
@@ -117,11 +123,11 @@ legítima pelo último bit da mantissa. Não converta para REAL no meio do camin
 ## `rank_mes` — posto dentro do mês
 
 Posto por `liquido_cents` decrescente, **dentro de cada mês**, com **empates
-recebendo o mesmo posto** (semântica de `RANK`, não de `ROW_NUMBER`):
-
-```
-RANK() OVER (PARTITION BY mes ORDER BY liquido_cents DESC)
-```
+recebendo o mesmo posto**: dois clientes com o mesmo líquido no mesmo mês
+recebem o mesmo número, e o posto seguinte pula (1, 2, 2, 4). Essa é a semântica
+de `RANK` e não a de `ROW_NUMBER`, que desempataria arbitrariamente, nem a de
+`DENSE_RANK`, que não pularia. Como calcular isso é decisão sua — o contrato
+manda no número, não na forma.
 
 Só as linhas com `rank_mes <= :top_n` entram no result set. Com empate na
 fronteira, um mês pode devolver **mais** de `:top_n` linhas — e um mês com poucos
@@ -140,10 +146,11 @@ ORDER BY mes DESC, liquido_cents DESC, customer_id
 Mês mais recente primeiro. O gate compara linha a linha, na ordem, e um
 relatório com as mesmas linhas em outra ordem é outro relatório.
 
-Repare que essa **não** é a ordem que o plano entrega de graça: a função de
-janela já obriga o SQLite a ordenar por `(mes, liquido DESC)` crescente para
-calcular o `RANK`, então uma consulta sem `ORDER BY` sai quase certa. "Quase" é
-zero aqui. O `ORDER BY` é explícito e é seu.
+Repare que essa **não** é a ordem que o plano entrega de graça. Calcular o posto
+por líquido, de qualquer forma que seja, já deixa as linhas quase arrumadas — em
+`(mes, liquido DESC)` **crescente** no mês — então uma consulta sem `ORDER BY`
+sai quase certa. "Quase" é zero aqui: o mês vai ao contrário. O `ORDER BY` é
+explícito e é seu.
 
 ## Como a correção é decidida
 
@@ -156,6 +163,16 @@ Quando não bate, o avaliador diz qual janela, qual linha, qual coluna, o
 esperado e o obtido. Se você recebeu só "N linhas, esperadas M", o problema
 quase sempre é um dos três: filtro de data na borda, `LEFT JOIN` virado em
 `INNER`, ou o corte por `:top_n` aplicado antes do ranking.
+
+Passado o gate, o avaliador ainda roda a sua consulta nas **cinco janelas que o
+relógio cronometra**, agora no banco de performance, e exige o mesmo result set
+que a referência produz ali. Isso não é o gate de novo: é a checagem de que o
+tempo medido é o tempo de produzir o relatório. Uma consulta que devolve o
+relatório certo no banco pequeno e nada no grande — por uma data embutida, por
+um predicado sobre o tamanho da tabela, por qualquer coisa que dependa de QUAL
+banco está aberto — é rejeitada aqui, com `correct=false`. Pela mesma razão as
+funções de tabela `pragma_*` são recusadas na leitura estática: elas leem o
+ambiente (o caminho do arquivo), não os dados.
 
 ## `setup.sql`
 

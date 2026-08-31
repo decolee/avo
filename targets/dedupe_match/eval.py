@@ -26,11 +26,38 @@ mora em `data/labels_*.json`. Um candidato que abrisse esse arquivo marcaria F1
 = 1,0 sem ter resolvido nada, e nenhuma checagem de forma pegaria isso — a saida
 estaria perfeita. Deixar a regra so na prosa da KB seria confiar na boa vontade
 do otimizador, que e exatamente o que o paper diz para nao fazer. Entao a regra
-e executavel: durante toda chamada de `match` as tres portas de arquivo do
-CPython (`builtins.open`, `io.open`, `os.open`) sao interceptadas, e qualquer
-leitura dentro do diretorio do alvo ou qualquer escrita em disco e registrada e
-reprovada. A violacao fica anotada mesmo que o candidato engula a excecao —
-`try/except` em volta do `open` nao apaga o registro.
+e executavel: um gancho de auditoria (`sys.addaudithook`) fica ligado durante
+todo o tempo em que codigo do candidato tem o controle — o IMPORT do modulo
+inclusive — e qualquer leitura dentro do diretorio do alvo, qualquer escrita em
+disco e qualquer evento que saia do processo sao registrados e reprovados. A
+violacao fica anotada mesmo que o candidato engula a excecao.
+
+A versao anterior desta defesa embrulhava `builtins.open`, `io.open` e
+`os.open`, e uma auditoria adversarial derrubou-a com quatro candidatos de
+poucas linhas, todos com `correct: true` e F1 = 1,0: ler o gabarito no corpo do
+modulo (fora da janela guardada), `io.FileIO`, `os.popen` (quem importa
+`subprocess` e o `os`, entao a negacao estatica de import nao ve) e cache em
+`sqlite3`. O gancho de auditoria nao tem essa fraqueza porque quem o dispara e o
+interpretador, no ponto em que o arquivo e de fato aberto.
+
+Uma segunda defesa, estrutural, sustenta a primeira: a avaliacao acontece em
+duas fases. Na fase 1 o candidato roda nos tres bancos e so a saida dele e
+guardada; o gabarito nao esta em lugar nenhum do processo. Na fase 2, com o
+candidato ja fora do ar, o gabarito e lido e o F1 calculado. Isso importa porque
+candidato e avaliador dividem o interpretador: com o gabarito residente em
+memoria, `match` marcava F1 = 1,0 chamando `gabarito("pessoas")` do proprio
+modulo do avaliador, sem tocar em disco nenhum. Nao se tira o alcance do
+candidato; tira-se o objeto de dentro do alcance.
+
+RESIDUAL CONHECIDO, escrito aqui porque escondê-lo seria pior. Nada disso e uma
+barreira de seguranca: o candidato roda no mesmo interpretador e, se procurar as
+celulas de fecho da guarda e zera-las, le o gabarito do disco e marca 1,0. Um
+ataque desses foi escrito e funciona. O que as defesas acima garantem e que
+todo atalho com FORMA DE OTIMIZACAO falha alto e com mensagem clara, e que
+passar disso exige sabotar o arbitro de forma explicita e visivel em qualquer
+leitura do diff. Fechar o residual de verdade exige rodar o candidato em outro
+processo, que nao tenha o gabarito ao alcance — mudanca de arquitetura do
+labkit, nao deste arquivo.
 
 A escrita e proibida pelo mesmo motivo, uma camada acima: um candidato que
 gravasse o resultado num cache em disco pagaria o custo uma vez e depois
@@ -48,7 +75,6 @@ de melhorar o F1. Nao da para comprar qualidade sem antes comprar tempo.
 
 from __future__ import annotations
 
-import builtins
 import contextlib
 import io
 import json
@@ -126,12 +152,15 @@ GRACA_DESPERTADOR_S = 1.0
 #: checagem tem que dar o mesmo veredito em toda avaliacao.
 SEMENTE_PERMUTACAO = 20260831
 
-#: Modulos da stdlib negados estaticamente ao candidato. Nao e paranoia
-#: generica: cada um destes e uma porta de arquivo que NAO passa por
-#: `builtins.open` / `io.open` / `os.open`, e portanto contorna a interceptacao
-#: de IO. `subprocess.run(["cat", gabarito])` le a resposta sem tocar em nenhuma
-#: das tres. Nenhum deles tem uso legitimo numa funcao pura sobre uma lista de
-#: dicionarios em memoria, entao negar e barato e nao restringe ninguem honesto.
+#: Modulos da stdlib negados estaticamente ao candidato. Depois que a guarda
+#: passou a ser um gancho de auditoria, esta lista deixou de ser a defesa e
+#: virou cortesia: ela reprova ANTES de rodar, com uma mensagem que nomeia o
+#: modulo, em vez de deixar o candidato descobrir no meio da execucao. A defesa
+#: que morde e o gancho — inclusive contra o que esta lista nao alcanca, como
+#: `os.popen`, que importa `subprocess` por dentro do `os` e nunca aparece no
+#: AST do candidato. Nenhum destes tem uso legitimo numa funcao pura sobre uma
+#: lista de dicionarios em memoria, entao negar e barato e nao restringe
+#: ninguem honesto.
 IMPORTS_NEGADOS = ("subprocess", "multiprocessing", "ctypes", "mmap", "socket")
 
 
@@ -187,6 +216,22 @@ def gabarito(banco: str) -> set[tuple[str, str]]:
 
 def registros_gate() -> list[dict]:
     return _ler(GATE_FILE)
+
+
+def _aquecer_cache() -> None:
+    """Le os REGISTROS antes de ligar a guarda de pureza.
+
+    A guarda proibe leitura dentro do diretorio do alvo enquanto estiver ligada,
+    e ela vale para o processo inteiro — o avaliador incluido. Ou ele carrega
+    antes, ou tropeca na propria regra. Deixar os registros no cache do modulo e
+    inofensivo: sao exatamente o que o candidato ja recebe como argumento.
+
+    O gabarito NAO e aquecido, e essa ausencia e a defesa: ele so e lido na fase
+    2, depois que o candidato ja devolveu tudo. Ver `coletar`.
+    """
+    registros_gate()
+    for banco, _ in BANCOS:
+        registros(banco)
 
 
 # ------------------------------------------------------------ orcamento
@@ -256,73 +301,145 @@ def _despertador(segundos: float):
         signal.signal(signal.SIGALRM, anterior)
 
 
-@contextlib.contextmanager
-def _sem_disco(violacoes: list[str]):
-    """Intercepta as portas de arquivo do CPython durante a chamada do candidato.
+#: Eventos de auditoria que sao porta de saida do processo ou porta de arquivo
+#: em C, e que por isso nunca apareceriam num `open` do lado Python. Bloquear
+#: pelo evento, e nao pelo nome do modulo, e o que fecha a familia inteira:
+#: `os.popen` importa `subprocess` por dentro, `sqlite3.connect` abre o arquivo
+#: no C, e nenhum dos dois passa por `builtins.open`.
+EVENTOS_NEGADOS = (
+    "os.system",
+    "os.exec",
+    "os.spawn",
+    "os.posix_spawn",
+    "os.fork",
+    "os.forkpty",
+    "os.startfile",
+    "sqlite3.connect",
+    "ctypes.dlopen",
+    "ctypes.dlsym",
+    "ctypes.call_function",
+    "socket.__new__",
+    "socket.connect",
+    "mmap.__new__",
+    "shutil.copyfile",
+)
 
-    Duas regras, com motivos diferentes:
+#: Violacoes anotadas durante a sessao guardada. Cada chamada marca a posicao
+#: antes de comecar e olha so o que apareceu depois; o que sobra no fim sao as
+#: violacoes que aconteceram FORA de uma chamada — import do modulo, ou thread
+#: que o candidato deixou rodando para ler o gabarito depois de devolver.
+_VIOLACOES: list[str] = []
 
-      leitura dentro do diretorio do alvo -> o gabarito mora ali. Ler `data/`
-          e ler a resposta, e nenhuma checagem de forma pegaria isso porque a
-          saida ficaria perfeita.
-      escrita em qualquer lugar -> um cache em disco atravessa avaliacoes e
-          devolve trabalho ja pago de graca, comprando orcamento sem ter ficado
-          melhor.
 
-    Leitura FORA do diretorio do alvo continua livre de proposito: um `import`
-    tardio dentro de `match` abre arquivos da stdlib, e reprovar por isso seria
-    reprovar candidato honesto. `.pyc` e `__pycache__` sao a excecao simetrica
-    do lado da escrita, pelo mesmo motivo.
+def _montar_guarda():
+    """Constroi a guarda de pureza e devolve so o gerenciador de contexto.
 
-    A violacao e ANOTADA antes de a excecao subir. Um candidato que embrulhe o
-    `open` em `try/except` nao apaga o registro — so deixa de saber que falhou.
+    A chave que liga e desliga a guarda vive numa CELULA DE FECHO, e nao numa
+    global do modulo. Nao e obscuridade por esporte: o candidato roda no mesmo
+    interpretador que o avaliador e alcanca `sys.modules["__main__"]`, entao uma
+    global chamada `_PROFUNDIDADE` seria um interruptor com etiqueta — uma linha
+    (`ev._PROFUNDIDADE = 0`) e a guarda inteira vira no-op, e foi assim que um
+    ataque escrito nesta auditoria passou. Numa celula o mesmo ataque continua
+    possivel por `_sem_disco.__wrapped__.__closure__`, e isso esta escrito aqui
+    porque fingir o contrario seria pior: dentro de um processo so, nao existe
+    barreira, existe custo. O que muda e que ler o gabarito deixa de ser um
+    atalho de uma linha e vira sabotagem explicita do arbitro, do tipo que salta
+    aos olhos em qualquer leitura do diff. Isolamento de verdade exigiria rodar
+    o candidato em outro processo, sem o gabarito ao alcance.
     """
-    alvo = os.path.realpath(HERE) + os.sep
-    orig_builtins, orig_io, orig_os = builtins.open, io.open, os.open
+    chave = [0]
+    instalado = [False]
 
-    def _checar(arquivo, escrita: bool) -> None:
-        try:
-            caminho = os.path.realpath(os.fspath(arquivo))
-        except TypeError:  # descritor numerico: nao ha caminho a julgar
+    def auditor(evento: str, args) -> None:
+        """Gancho de auditoria: a unica forma de ver TODA porta de arquivo.
+
+        A versao anterior desta defesa embrulhava `builtins.open`, `io.open` e
+        `os.open`. Tres candidatos triviais davam a volta nela e marcavam
+        F1 = 1,0 com `correct: true`:
+
+          `io.FileIO(caminho).readall()`  abre o arquivo sem passar por `open`
+          `os.popen("cat " + caminho)`    quem importa `subprocess` e o `os`, em
+                                          tempo de execucao: o AST nao ve
+          `sqlite3.connect(...)`          escreve em disco pelo C
+
+        O gancho e imune a classe inteira porque quem o dispara e o
+        interpretador, no ponto em que o arquivo e de fato aberto, qualquer que
+        seja o caminho de codigo que levou ate la. E ele nao pode ser
+        desinstalado depois de instalado.
+        """
+        if chave[0] <= 0:
             return
-        if escrita:
-            if caminho.endswith(".pyc") or f"{os.sep}__pycache__{os.sep}" in caminho:
+        if evento == "open":
+            arquivo, modo, flags = args
+            try:
+                caminho = os.path.realpath(os.fspath(arquivo))
+            except TypeError:  # descritor numerico: nao ha caminho a julgar
                 return
-            violacoes.append(f"escreveu em {caminho}")
-            raise PermissionError(
-                "match() nao pode escrever em disco: cache em disco compra orcamento "
-                "sem melhorar a resposta"
+            escrita = bool(modo and any(c in str(modo) for c in "wxa+")) or bool(
+                isinstance(flags, int)
+                and flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND)
             )
-        if caminho.startswith(alvo):
-            violacoes.append(f"leu {caminho}")
+            if escrita:
+                if caminho.endswith(".pyc") or f"{os.sep}__pycache__{os.sep}" in caminho:
+                    return
+                _VIOLACOES.append(f"escreveu em {caminho}")
+                raise PermissionError(
+                    "match() nao pode escrever em disco: cache em disco compra orcamento "
+                    "sem melhorar a resposta"
+                )
+            if caminho.startswith(os.path.realpath(HERE) + os.sep):
+                _VIOLACOES.append(f"leu {caminho}")
+                raise PermissionError(
+                    "match() nao pode ler arquivos do alvo: o gabarito mora ali e a "
+                    "resposta tem que sair dos registros recebidos"
+                )
+            return
+        if evento in EVENTOS_NEGADOS or evento.startswith("subprocess."):
+            _VIOLACOES.append(f"usou {evento}, que sai do processo ou abre arquivo fora do Python")
             raise PermissionError(
-                "match() nao pode ler arquivos do alvo: o gabarito mora ali e a resposta "
-                "tem que sair dos registros recebidos"
+                f"match() e uma funcao pura sobre os registros recebidos; {evento} nao e permitido"
             )
 
-    def _envolver(original):
-        def porta(arquivo, modo="r", *args, **kwargs):
-            _checar(arquivo, any(c in str(modo) for c in "wxa+"))
-            return original(arquivo, modo, *args, **kwargs)
+    @contextlib.contextmanager
+    def sem_disco():
+        """Liga a guarda de pureza enquanto codigo do candidato estiver rodando.
 
-        return porta
+        Duas regras, com motivos diferentes:
 
-    def _envolver_os(original):
-        escrita_flags = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND
+          leitura dentro do diretorio do alvo -> o gabarito mora ali. Ler `data/`
+              e ler a resposta, e nenhuma checagem de forma pegaria isso porque
+              a saida ficaria perfeita.
+          escrita em qualquer lugar -> um cache em disco atravessa avaliacoes e
+              devolve trabalho ja pago de graca, comprando orcamento sem ter
+              ficado melhor.
 
-        def porta(caminho, flags, *args, **kwargs):
-            _checar(caminho, bool(flags & escrita_flags))
-            return original(caminho, flags, *args, **kwargs)
+        Leitura FORA do diretorio do alvo continua livre de proposito: um
+        `import` tardio dentro de `match` abre arquivos da stdlib, e reprovar
+        por isso seria reprovar candidato honesto. `.pyc` e `__pycache__` sao a
+        excecao simetrica do lado da escrita, pelo mesmo motivo.
 
-        return porta
+        A guarda cobre o IMPORT do modulo do candidato, e nao so a chamada de
+        `match`. Cobrir so a chamada deixava passar o ataque mais barato de
+        todos: ler o gabarito no corpo do modulo, guardar num global e devolver
+        a resposta pronta de dentro de uma `match` que nunca toca no disco.
 
-    builtins.open = _envolver(orig_builtins)
-    io.open = _envolver(orig_io)
-    os.open = _envolver_os(orig_os)
-    try:
-        yield
-    finally:
-        builtins.open, io.open, os.open = orig_builtins, orig_io, orig_os
+        A violacao e ANOTADA antes de a excecao subir. Um candidato que embrulhe
+        a leitura em `try/except` nao apaga o registro — so deixa de saber que
+        falhou.
+        """
+        if not instalado[0]:
+            sys.addaudithook(auditor)
+            instalado[0] = True
+        chave[0] += 1
+        try:
+            yield
+        finally:
+            chave[0] -= 1
+
+    return sem_disco
+
+
+_sem_disco = _montar_guarda()
 
 
 # ------------------------------------------------------- execucao e forma
@@ -366,28 +483,28 @@ def _executar(fn, entrada: list[dict], orcamento: Orcamento) -> set[tuple[str, s
     """Uma chamada de match: copia a entrada, cobra o tempo, valida a forma."""
     copia = [dict(reg) for reg in entrada]
     ids = {reg["id"] for reg in copia}
-    violacoes: list[str] = []
+    marca = len(_VIOLACOES)
 
     restante = orcamento.total - orcamento.usado + GRACA_DESPERTADOR_S
     inicio = time.perf_counter()
     try:
-        # Despertador por fora: quando ele dispara, a interceptacao de IO ja foi
-        # desfeita antes de o timer ser desarmado.
-        with _despertador(restante), _sem_disco(violacoes):
+        # Despertador por fora: quando ele dispara, a guarda de pureza ja foi
+        # desligada antes de o timer ser desarmado.
+        with _despertador(restante), _sem_disco():
             bruto = fn(copia)
             # Materializar DENTRO da janela cronometrada. Devolver um gerador
             # preguicoso empurraria todo o trabalho para depois da medicao e o
             # orcamento nao cobraria nada.
             saida = list(bruto)
     except BaseException as exc:
-        if violacoes:
-            raise ContratoViolado(f"match() tocou o disco: {violacoes[0]}") from exc
+        if len(_VIOLACOES) > marca:
+            raise ContratoViolado(f"match() tocou o disco: {_VIOLACOES[marca]}") from exc
         raise
     finally:
         orcamento.cobrar(time.perf_counter() - inicio)
 
-    if violacoes:
-        raise ContratoViolado(f"match() tocou o disco: {violacoes[0]}")
+    if len(_VIOLACOES) > marca:
+        raise ContratoViolado(f"match() tocou o disco: {_VIOLACOES[marca]}")
     return _normalizar_pares(saida, ids)
 
 
@@ -466,8 +583,23 @@ def _f1(previstos: set, verdade: set) -> tuple[float, float, float]:
     return 2 * precisao * recall / (precisao + recall), precisao, recall
 
 
-def pontuar(fn, orcamento: Orcamento) -> tuple[dict[str, float], list[str], str]:
-    """Roda os tres bancos e devolve (metricas, detalhes por banco, impressao digital).
+def coletar(fn, orcamento: Orcamento) -> dict[str, set[tuple[str, str]]]:
+    """FASE 1: roda o candidato nos tres bancos e guarda so o que ele devolveu.
+
+    Separada de `pontuar` de proposito, e a separacao e uma defesa e nao uma
+    arrumacao: enquanto o codigo do candidato tem o controle, o gabarito nao
+    esta em lugar nenhum do processo — nem no cache do modulo, nem numa variavel
+    local de quem chamou. O candidato roda no mesmo interpretador que o
+    avaliador e alcanca `sys.modules`, os frames e o coletor de lixo; a unica
+    forma de nao entregar a resposta a esse alcance e a resposta ainda nao ter
+    sido lida. O disco, que e por onde ela teria que vir, e o que a guarda de
+    pureza cobre.
+    """
+    return {banco: _executar(fn, registros(banco), orcamento) for banco, _ in BANCOS}
+
+
+def medir(previstos_por_banco, gabaritos) -> tuple[dict[str, float], list[str], str]:
+    """FASE 2: compara com o gabarito, ja com o candidato fora do ar.
 
     Precisao e recall vao para `notes` de proposito: o F1 diz o quanto o
     candidato errou, mas so a separacao entre os dois diz ONDE. Recall baixo com
@@ -479,14 +611,21 @@ def pontuar(fn, orcamento: Orcamento) -> tuple[dict[str, float], list[str], str]
     detalhes: list[str] = []
     assinatura: list[tuple[str, str]] = []
     for banco, _ in BANCOS:
-        previstos = _executar(fn, registros(banco), orcamento)
-        f1, precisao, recall = _f1(previstos, gabarito(banco))
+        previstos = previstos_por_banco[banco]
+        f1, precisao, recall = _f1(previstos, gabaritos[banco])
         metricas[f"f1_{banco}"] = round(f1, 6)
         detalhes.append(
             f"{banco}: F1={f1:.3f} P={precisao:.3f} R={recall:.3f} ({len(previstos)} pares)"
         )
         assinatura.extend(sorted(previstos))
     return metricas, detalhes, contracts.canon_hash_rows(assinatura)[:16]
+
+
+def pontuar(fn, orcamento: Orcamento) -> tuple[dict[str, float], list[str], str]:
+    """As duas fases em sequencia. Para `--budget` e `--baselines`, que rodam
+    codigo do proprio laboratorio e nao precisam da separacao."""
+    previstos = coletar(fn, orcamento)
+    return medir(previstos, {banco: gabarito(banco) for banco, _ in BANCOS})
 
 
 # ------------------------------------------------------- referencia e mutantes
@@ -604,6 +743,52 @@ def _mut_cache_em_disco(records):
     return pares
 
 
+def _mut_le_o_gabarito_por_fileio(records):
+    """Le o gabarito por `io.FileIO`, que abre o arquivo sem passar por `open`.
+
+    Este mutante existe porque a versao anterior da guarda embrulhava
+    `builtins.open`, `io.open` e `os.open` — e `io.FileIO` nao e nenhum dos
+    tres. Um candidato de sete linhas marcava F1 = 1,0 com `correct: true`.
+    """
+    ids = {reg["id"] for reg in records}
+    fh = io.FileIO(str(HERE / "data" / "labels_pessoas.json"), "r")
+    try:
+        gab = json.loads(fh.readall().decode("utf-8"))
+    finally:
+        fh.close()
+    return [tuple(par) for par in gab if par[0] in ids and par[1] in ids]
+
+
+def _mut_le_o_gabarito_por_subprocesso(records):
+    """`os.popen` le o gabarito de fora do processo.
+
+    A negacao estatica de `subprocess` nao ve isto: quem importa `subprocess` e
+    o proprio `os`, em tempo de execucao, e o AST do candidato so tem `os`.
+    """
+    ids = {reg["id"] for reg in records}
+    with os.popen("cat " + str(HERE / "data" / "labels_pessoas.json")) as fh:
+        gab = json.loads(fh.read())
+    return [tuple(par) for par in gab if par[0] in ids and par[1] in ids]
+
+
+def _mut_cache_em_sqlite(records):
+    """Cache em disco por `sqlite3`, que escreve o arquivo pelo C.
+
+    Mesma ameaca do `cache_em_disco` — comprar orcamento entre avaliacoes —
+    por uma porta que nenhum embrulho de `open` alcanca.
+    """
+    import sqlite3
+
+    caminho = Path(os.environ.get("TMPDIR", "/tmp")) / "dedupe_cache.db"
+    con = sqlite3.connect(caminho)
+    try:
+        con.execute("CREATE TABLE IF NOT EXISTS c (k TEXT PRIMARY KEY, v TEXT)")
+        con.commit()
+    finally:
+        con.close()
+    return referencia(records)
+
+
 MUTANTS = evalkit.MutantSuite(
     reference=referencia,
     mutants=[
@@ -615,7 +800,10 @@ MUTANTS = evalkit.MutantSuite(
         ("depende_da_ordem", _mut_depende_da_ordem),
         ("estoura_orcamento", _mut_estoura_orcamento),
         ("le_o_gabarito", _mut_le_o_gabarito),
+        ("le_o_gabarito_por_fileio", _mut_le_o_gabarito_por_fileio),
+        ("le_o_gabarito_por_subprocesso", _mut_le_o_gabarito_por_subprocesso),
         ("cache_em_disco", _mut_cache_em_disco),
+        ("cache_em_sqlite", _mut_cache_em_sqlite),
     ],
 )
 
@@ -732,29 +920,56 @@ def main() -> int:
             evalkit.emit_failure(detail)
             return 0
 
-    try:
-        fn = contracts.as_callable(evalkit.load_module(candidato), SYMBOL)
-    except Exception as exc:  # noqa: BLE001
-        evalkit.emit_failure(f"{type(exc).__name__}: {exc}")
+    # Todo o resto acontece com a guarda de pureza LIGADA — inclusive o import
+    # do modulo. Ligar so em volta da chamada de `match` deixava passar o ataque
+    # mais barato de todos: ler `data/labels_*.json` no corpo do modulo, guardar
+    # num global e devolver a resposta pronta de dentro de uma `match` que nunca
+    # toca no disco. Por isso os dados do avaliador sao carregados ANTES: com a
+    # guarda ligada, o proprio avaliador nao pode mais abrir `data/`.
+    _aquecer_cache()
+    with _sem_disco():
+        try:
+            fn = contracts.as_callable(evalkit.load_module(candidato), SYMBOL)
+        except Exception as exc:  # noqa: BLE001
+            if _VIOLACOES:
+                evalkit.emit_failure(
+                    f"o modulo do candidato tocou o disco durante o import: {_VIOLACOES[0]}"
+                )
+            else:
+                evalkit.emit_failure(f"{type(exc).__name__}: {exc}")
+            return 0
+        if _VIOLACOES:
+            evalkit.emit_failure(
+                f"o modulo do candidato tocou o disco durante o import: {_VIOLACOES[0]}"
+            )
+            return 0
+
+        def recarregar():
+            return contracts.as_callable(evalkit.load_module(candidato, "cand_recarregado"), SYMBOL)
+
+        ok_gate, detalhe = _julgar(fn, recarregar=recarregar)
+        if not ok_gate:
+            evalkit.emit_failure(f"gate: {detalhe}")
+            return 0
+
+        orcamento = Orcamento(ORCAMENTO_S)
+        try:
+            previstos = coletar(fn, orcamento)
+        except (Estouro, ContratoViolado) as exc:
+            evalkit.emit_failure(str(exc))
+            return 0
+        except Exception as exc:  # noqa: BLE001
+            evalkit.emit_failure(f"falhou durante a pontuacao: {type(exc).__name__}: {exc}")
+            return 0
+
+    # Violacao que sobrou fora de uma chamada: import do modulo ou thread que o
+    # candidato deixou rodando para ler o gabarito depois que a chamada devolveu.
+    if _VIOLACOES:
+        evalkit.emit_failure(f"match() tocou o disco: {_VIOLACOES[0]}")
         return 0
 
-    def recarregar():
-        return contracts.as_callable(evalkit.load_module(candidato, "cand_recarregado"), SYMBOL)
-
-    ok_gate, detalhe = _julgar(fn, recarregar=recarregar)
-    if not ok_gate:
-        evalkit.emit_failure(f"gate: {detalhe}")
-        return 0
-
-    orcamento = Orcamento(ORCAMENTO_S)
-    try:
-        metricas, detalhes, digital = pontuar(fn, orcamento)
-    except (Estouro, ContratoViolado) as exc:
-        evalkit.emit_failure(str(exc))
-        return 0
-    except Exception as exc:  # noqa: BLE001
-        evalkit.emit_failure(f"falhou durante a pontuacao: {type(exc).__name__}: {exc}")
-        return 0
+    # Fase 2: so agora o gabarito entra no processo, com o candidato fora do ar.
+    metricas, detalhes, digital = medir(previstos, {b: gabarito(b) for b, _ in BANCOS})
 
     evalkit.emit_success(
         metricas,

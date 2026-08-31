@@ -48,6 +48,26 @@ em vez do último bit da mantissa. Ver `kb/00-contrato.md`.
 O hash sozinho não ensina nada a quem foi reprovado, então antes dele vêm as
 checagens que produzem mensagem útil: número de colunas, número de linhas, e a
 primeira linha (e coluna) divergente com o esperado e o obtido lado a lado.
+
+## Por que o banco de performance TAMBÉM é conferido
+
+Separar o gate do benchmark abre um buraco que não existe quando os dois são o
+mesmo dado: a consulta pode reconhecer em qual banco está e devolver o relatório
+certo só no pequeno. `... AND (SELECT COUNT(*) FROM orders) < 1000` passa nas
+quatro janelas do gate (35 pedidos) e devolve ZERO linha em cada regime medido
+(60.000 pedidos) — tempo de sobra, relatório nenhum. Medido antes desta defesa:
+16,2 contra 1,6 do seed, dez vezes o seed e duas vezes e meia o melhor candidato
+honesto que este laboratório conseguiu escrever. Uma data embutida fora do
+alcance do banco de gate (que só tem dezembro/2023 a abril/2024) faz o mesmo de
+forma mais discreta, esvaziando três dos quatro trimestres do lote.
+
+Por isso `checar_consistencia_perf` roda o candidato nas CINCO janelas que o
+relógio cronometra, no banco grande, e exige o mesmo result set da referência.
+Isso não move o gate para o banco de performance — quem decide *correção* segue
+sendo o banco adversarial, que é o único com pedido sem item, empate exato e
+data na borda. O que esta checagem decide é outra coisa: que o relatório
+cronometrado é o relatório. É o análogo, para um alvo de SQL, do
+`implausible_speed` dos alvos de Python.
 """
 
 from __future__ import annotations
@@ -97,6 +117,19 @@ PARAMS_GATE = (
     {"d0": "2024-06-01", "d1": "2024-07-01", "top_n": 5},
 )
 
+#: Toda cópia que o candidato chega a enxergar — a do gate, a da conferência no
+#: banco medido e as duas do relógio — é criada com ESTE prefixo de diretório e
+#: ESTE nome de arquivo. Não é cosmético e não deve ser "arrumado": é o que
+#: impede que a consulta descubra pelo caminho se está sendo julgada, conferida
+#: ou cronometrada, e devolva o relatório certo só onde é julgada. As funções
+#: `pragma_*` que exporiam o caminho já são recusadas na checagem estática;
+#: isto é a segunda linha, a que continua valendo se alguém achar outra porta.
+#: Com nomes iguais, o único sinal que distingue os bancos é o CONTEÚDO — e usar
+#: o conteúdo para mudar a resposta é exatamente o que `checar_consistencia_perf`
+#: reprova.
+PREFIXO_COPIA = "sql_agg_copia_"
+NOME_COPIA = "copia.sqlite"
+
 #: Teto de tempo de parede para UMA execução de SQL, em segundos. Não é
 #: orçamento de score: é o freio que impede um candidato com produto cartesiano
 #: de segurar o harness por dez minutos. Generoso o bastante para que nenhuma
@@ -105,17 +138,25 @@ LIMITE_SQL_S = 45.0
 
 
 #: Este alvo nao usa as camadas anti-memoizacao do labkit (caminho novo e modulo
-#: novo a cada execucao), e a ausencia e deliberada: o candidato aqui e SQL, nao
-#: um modulo Python. Nao ha estado de processo para sobreviver entre execucoes,
-#: porque cada execucao abre uma conexao nova sobre uma COPIA nova do banco
-#: congelado. O caminho equivalente de trapaca — guardar a resposta numa tabela
-#: e so le-la — e fechado no gate: `setup.sql` recusa CREATE TABLE, e `query.sql`
-#: so aceita um comando SELECT/WITH. Ver os mutantes `setup_materializa_resposta`
-#: e `ddl_dentro_da_consulta`.
+#: novo a cada execucao): o candidato aqui e SQL, nao um modulo Python, e nao ha
+#: estado de processo para sobreviver entre execucoes — cada execucao abre uma
+#: conexao nova sobre uma COPIA nova do banco congelado. Guardar a resposta numa
+#: tabela e so le-la e fechado no gate: `setup.sql` recusa CREATE TABLE, e
+#: `query.sql` so aceita um comando SELECT/WITH.
+#:
+#: O que NAO e fechado por nada disso, e por isso existe `checar_consistencia_perf`:
+#: a consulta pode reconhecer em qual banco esta. Correta no banco de gate,
+#: vazia no banco que a cronometra. Nao e memoizacao — e nao fazer o trabalho —
+#: e nenhum gate de correcao pega, porque o gate roda no outro banco. Ver os
+#: mutantes `trapaca_*`.
 #:
 #: O nome desta constante e verificado por tests/test_anticheat.py, que exige das
 #: alternativas: ou o alvo usa as camadas, ou declara aqui por que nao precisa.
-SEM_DEFESA_DE_MEDICAO = "candidato e SQL: nao ha modulo Python para memoizar"
+SEM_DEFESA_DE_MEDICAO = (
+    "candidato e SQL: nao ha modulo Python para memoizar; a trapaca equivalente "
+    "(reconhecer o banco e devolver relatorio vazio no medido) e fechada por "
+    "checar_consistencia_perf"
+)
 
 
 def data(name: str) -> Path:
@@ -205,6 +246,32 @@ PROIBIDO_NA_CONSULTA = (
 )
 
 
+#: `PRAGMA` é um comando e cai na lista acima, mas as funções de tabela
+#: `pragma_*` (`SELECT file FROM pragma_database_list`) são um SELECT comum e
+#: passariam batido — a checagem de palavra vê o token inteiro
+#: `pragma_database_list`, que não é igual a `pragma`. Elas não leem dado
+#: nenhum: leem o AMBIENTE. `pragma_database_list` devolve o caminho do arquivo
+#: aberto, e com ele a consulta descobre se está sendo julgada (`gate_shop`),
+#: conferida ou cronometrada, e pode devolver o relatório certo só quando é
+#: julgada. Foi medido: 10,5x o seed com `correct=true`, devolvendo zero linha
+#: em todo regime cronometrado. Ver o mutante `trapaca_le_o_caminho_do_arquivo`.
+PREFIXO_PRAGMA = "pragma"
+
+
+def _funcoes_de_ambiente(texto: str) -> set[str]:
+    return {palavra for palavra in _palavras(texto) if palavra.startswith(PREFIXO_PRAGMA)}
+
+
+def _recusa_ambiente(arquivo: str, achadas: set[str]) -> str:
+    return (
+        f"{arquivo} usa {', '.join(sorted(achadas)).upper()}: as funções de tabela `pragma_*` "
+        "não leem os dados, leem o ambiente — `pragma_database_list` devolve o caminho do "
+        "arquivo aberto. Uma consulta que enxerga em QUAL banco está pode acertar o relatório "
+        "só onde é julgada e devolver nada onde é cronometrada. O alvo mede a consulta, não o "
+        "reconhecimento do arquivo."
+    )
+
+
 def checar_consulta(sql: str) -> tuple[bool, str]:
     """`query.sql` tem que ser UM `SELECT`/`WITH` e nada além disso."""
     cmds = statements(sql)
@@ -221,6 +288,9 @@ def checar_consulta(sql: str) -> tuple[bool, str]:
             f"{ENTRYPOINT} começa com {primeira.upper()!r}; a consulta avaliada tem que ser "
             "um SELECT (podendo abrir com WITH)."
         )
+    ambiente = _funcoes_de_ambiente(cmds[0]) - {PREFIXO_PRAGMA}
+    if ambiente:
+        return False, _recusa_ambiente(ENTRYPOINT, ambiente)
     achadas = _palavras(cmds[0]) & set(PROIBIDO_NA_CONSULTA)
     if achadas:
         return False, (
@@ -240,6 +310,12 @@ def checar_setup(sql: str) -> tuple[bool, str]:
     permitidos = ("analyze", "create index ", "create unique index ", "create view ")
     for cmd in statements(sql):
         low = " ".join(cmd.lower().split())
+        # Antes do allowlist: uma `CREATE VIEW v AS SELECT file FROM
+        # pragma_database_list` é um CREATE VIEW legítimo pelo prefixo e
+        # entrega à consulta exatamente o que a consulta não pode ver.
+        ambiente = _funcoes_de_ambiente(low) - {PREFIXO_PRAGMA}
+        if ambiente:
+            return False, _recusa_ambiente(SETUP_FILE, ambiente)
         if low.startswith(permitidos):
             continue
         if low.startswith("create table") or low.startswith("create virtual table"):
@@ -432,8 +508,8 @@ def judge(candidato) -> tuple[bool, str]:
     if not ok:
         return False, detalhe
 
-    with tempfile.TemporaryDirectory(prefix="sql_agg_gate_") as tmp:
-        db = Path(tmp) / GATE_DB
+    with tempfile.TemporaryDirectory(prefix=PREFIXO_COPIA) as tmp:
+        db = Path(tmp) / NOME_COPIA
         shutil.copyfile(data(GATE_DB), db)
         try:
             rodar_setup(db, setup_sql)
@@ -454,6 +530,108 @@ def judge(candidato) -> tuple[bool, str]:
 
 
 GATE = evalkit.Gate(judge=judge, description="banco adversarial, quatro janelas, ordem exata")
+
+
+# ------------------------------------- o relatório cronometrado é o relatório?
+
+#: As cinco janelas que o relógio de fato executa: as quatro do lote mais a
+#: larga. É sobre ESTAS que a consistência no banco de performance é exigida —
+#: qualquer outra janela seria conferir o que ninguém mediu.
+JANELAS_MEDIDAS = (*LOTE, JANELA_LARGA)
+
+_ESPERADO_PERF: dict[str, tuple[int, int, str]] = {}
+
+
+def _chave(params: dict) -> str:
+    return f"{params['d0']}|{params['d1']}|{params['top_n']}"
+
+
+def esperado_perf(params: dict) -> tuple[int, int, str]:
+    """`(n_colunas, n_linhas, hash)` da referência no banco de performance.
+
+    Calculado uma vez por processo, direto no arquivo congelado — a conexão é
+    somente leitura e quem roda aqui é a REFERÊNCIA, que não tem interesse em
+    descobrir onde está. Custa uma execução da referência por janela e é pago
+    fora de qualquer relógio.
+    """
+    chave = _chave(params)
+    if chave not in _ESPERADO_PERF:
+        n_cols, linhas = rodar_consulta(data(PERF_DB), REFERENCIA, params)
+        _ESPERADO_PERF[chave] = (n_cols, len(linhas), contracts.canon_hash_rows(linhas))
+    return _ESPERADO_PERF[chave]
+
+
+def checar_consistencia_perf(setup_sql: str, query_sql: str) -> tuple[bool, str]:
+    """A consulta tem que produzir o MESMO relatório no banco que a cronometra.
+
+    Esta não é a segunda metade do gate: correção continua sendo decidida no
+    banco adversarial, que é o único que tem pedido sem item, empate exato e
+    data na borda. Esta checagem responde a outra pergunta, que só existe porque
+    gate e benchmark são bancos diferentes — *o tempo medido foi gasto
+    produzindo o relatório?*
+
+    Sem ela, `... AND (SELECT COUNT(*) FROM orders) < 1000` é verdadeiro nas 35
+    linhas do gate e falso nas 60.000 do benchmark: o candidato passa correto e
+    é cronometrado devolvendo zero linha, cinco vezes acima de qualquer
+    otimização honesta. Uma data embutida fora do intervalo do banco de gate faz
+    o mesmo mais discretamente.
+
+    A cópia usa o mesmo prefixo e o mesmo nome de arquivo que as do relógio (ver
+    `PREFIXO_COPIA`), e é feita mesmo quando `setup.sql` é vazio: rodar direto no
+    arquivo congelado economizaria 60 ms e daria à consulta um caminho diferente
+    do cronometrado — que é o sinal que ela não pode ter.
+    """
+    with tempfile.TemporaryDirectory(prefix=PREFIXO_COPIA) as tmp:
+        db = Path(tmp) / NOME_COPIA
+        shutil.copyfile(data(PERF_DB), db)
+        try:
+            rodar_setup(db, setup_sql)
+        except sqlite3.Error as exc:
+            return (
+                False,
+                f"{SETUP_FILE} falhou no banco de performance: {type(exc).__name__}: {exc}",
+            )
+
+        for params in JANELAS_MEDIDAS:
+            janela = f"[{params['d0']}, {params['d1']}) top_n={params['top_n']}"
+            try:
+                n_cols, linhas = rodar_consulta(db, query_sql, params)
+            except sqlite3.Error as exc:
+                return False, (
+                    f"janela medida {janela} no banco de performance: {type(exc).__name__}: {exc}"
+                )
+            esp_cols, esp_linhas, esp_hash = esperado_perf(params)
+            obtido = (n_cols, len(linhas), contracts.canon_hash_rows(linhas))
+            if obtido == (esp_cols, esp_linhas, esp_hash):
+                continue
+            if n_cols != esp_cols:
+                divergencia = f"{n_cols} colunas, esperadas {esp_cols}"
+            elif len(linhas) != esp_linhas:
+                divergencia = f"{len(linhas)} linhas, esperadas {esp_linhas}"
+            else:
+                divergencia = f"{esp_linhas} linhas com conteúdo divergente"
+            return False, (
+                f"janela medida {janela}: no banco de performance a consulta devolveu "
+                f"{divergencia}. Ela passou no banco de gate e falha aqui, o que quer dizer "
+                "que o resultado depende de QUAL banco está sendo lido — data embutida, "
+                "predicado sobre o tamanho da tabela, ou corte que só vale na cardinalidade "
+                "do gate. O tempo medido tem que ser o tempo de produzir o relatório."
+            )
+    return True, "ok"
+
+
+def judge_medicao(candidato) -> tuple[bool, str]:
+    """O gate mais a consistência no banco medido. É o que `main` aplica."""
+    ok, detalhe = GATE.check(candidato)
+    if not ok:
+        return False, detalhe
+    setup_sql, query_sql = candidato()
+    return checar_consistencia_perf(setup_sql, query_sql)
+
+
+GATE_MEDICAO = evalkit.Gate(
+    judge=judge_medicao, description="gate + o relatório conferido no banco cronometrado"
+)
 
 
 # ------------------------------------------------------------------- mutantes
@@ -549,6 +727,26 @@ M_FAN_OUT = _troca(
     "SUM(d.bruto) - SUM(d.estorno) AS liquido_cents",
 )
 
+#: `LIMIT :top_n` no lugar do corte por posto. É a leitura mais natural de "top
+#: N" para quem não reparou que o corte é POR MÊS, e é a primeira coisa que
+#: alguém tenta ao ver uma função de janela cara no plano — o `LIMIT` é mais
+#: barato e responde outra pergunta.
+M_LIMIT_GLOBAL = _troca(
+    REFERENCIA,
+    "WHERE g.rank_mes <= :top_n\nORDER BY g.mes DESC, g.liquido_cents DESC, g.customer_id",
+    "ORDER BY g.mes DESC, g.liquido_cents DESC, g.customer_id\nLIMIT :top_n",
+)
+
+#: Comparar o prefixo `YYYY-MM` em vez da data inteira. Parece a reescrita
+#: "sargável" barata e muda a janela: com `:d1` no meio de um mês, o mês inteiro
+#: entra. O banco de gate tem uma janela assim de propósito.
+M_JANELA_POR_MES = _troca(
+    REFERENCIA,
+    "      AND o.order_date >= :d0\n      AND o.order_date < :d1",
+    "      AND substr(o.order_date, 1, 7) >= substr(:d0, 1, 7)\n"
+    "      AND substr(o.order_date, 1, 7) <= substr(:d1, 1, 7)",
+)
+
 #: Os dois abaixo não erram conta nenhuma: erram as regras. Existem porque o gate
 #: precisa provar que as recusa, e porque materializar a resposta é a trapaça
 #: que este alvo tem a obrigação de não premiar.
@@ -576,10 +774,93 @@ MUTANTS = evalkit.MutantSuite(
         ("pct_sem_guarda_de_zero", plano("", M_PCT_SEM_GUARDA)),
         ("pct_arredondado_por_pedido", plano("", M_PCT_POR_PEDIDO)),
         ("fan_out_do_estorno", plano("", M_FAN_OUT)),
+        ("top_n_por_limit_global", plano("", M_LIMIT_GLOBAL)),
+        ("janela_por_prefixo_de_mes", plano("", M_JANELA_POR_MES)),
         ("setup_materializa_resposta", plano(SETUP_MATERIALIZA, "SELECT * FROM resposta")),
         ("ddl_dentro_da_consulta", plano("", QUERY_COM_DDL)),
     ],
 )
+
+
+#: Trapaças: corretas no banco de gate, vazias (ou quase) no banco que as
+#: cronometra. Nenhuma delas erra uma conta — todas erram a pergunta. O gate
+#: sozinho aprova as três, e por isso elas são julgadas por `GATE_MEDICAO`.
+#:
+#: Não são hipotéticas: as três foram escritas, rodadas e pontuaram, com
+#: `correct=true`, 4,7x / 6,3x / 10,0x o seed contra os 4,1x do melhor candidato
+#: honesto deste laboratório. A terceira é a mais perigosa por ser a mais
+#: discreta: uma única data literal, plausível como "poda", que o banco de gate
+#: não tem como enxergar porque os dados dele acabam em 2024-04-02.
+T_CONTA_PEDIDOS = _troca(
+    REFERENCIA,
+    "      AND o.order_date < :d1",
+    "      AND o.order_date < :d1\n      AND (SELECT COUNT(*) FROM orders) < 1000",
+)
+T_MAX_ORDER_ID = _troca(
+    REFERENCIA,
+    "      AND o.order_date < :d1",
+    "      AND o.order_date < :d1\n      AND (SELECT MAX(order_id) FROM orders) < 1000",
+)
+T_DATA_EMBUTIDA = _troca(
+    REFERENCIA,
+    "      AND o.order_date < :d1",
+    "      AND o.order_date < :d1\n      AND o.order_date < '2024-05-01'",
+)
+
+#: A trapaça de segunda ordem, a que sobrevive à conferência no banco medido:
+#: em vez de olhar o conteúdo, olha o CAMINHO. `pragma_database_list` é uma
+#: função de tabela, não o comando `PRAGMA`, então a checagem de palavra não a
+#: via. Medida antes da defesa: `correct=true` e 10,5x o seed.
+T_CAMINHO = _troca(
+    REFERENCIA,
+    "      AND o.order_date < :d1",
+    "      AND o.order_date < :d1\n"
+    "      AND (SELECT file FROM pragma_database_list WHERE seq = 0) LIKE '%_shop.sqlite'",
+)
+
+#: A mesma coisa escondida atrás de uma view — o `setup.sql` precisa recusar
+#: pelo mesmo motivo, senão a consulta lê o ambiente sem nomear `pragma`.
+SETUP_VIEW_AMBIENTE = (
+    "CREATE VIEW ambiente AS SELECT file AS arquivo FROM pragma_database_list WHERE seq = 0;"
+)
+QUERY_LE_A_VIEW = _troca(
+    REFERENCIA,
+    "      AND o.order_date < :d1",
+    "      AND o.order_date < :d1\n      AND (SELECT arquivo FROM ambiente) LIKE '%_shop.sqlite'",
+)
+
+TRAPACAS = (
+    ("trapaca_conta_linhas_da_tabela", plano("", T_CONTA_PEDIDOS)),
+    ("trapaca_reconhece_o_banco_pela_pk", plano("", T_MAX_ORDER_ID)),
+    ("trapaca_data_embutida_fora_do_gate", plano("", T_DATA_EMBUTIDA)),
+    ("trapaca_le_o_caminho_do_arquivo", plano("", T_CAMINHO)),
+    ("trapaca_caminho_escondido_numa_view", plano(SETUP_VIEW_AMBIENTE, QUERY_LE_A_VIEW)),
+)
+
+
+def selftest_trapacas(stream=sys.stdout) -> bool:
+    """Segunda tabela do `--selftest`: as trapaças que só o banco medido pega.
+
+    Impressa no mesmo formato da `MutantSuite` porque é essa tabela que o CI
+    (`tests/test_gate_teeth.py`) e o revisor humano leem. A linha da referência
+    não se chama "REFERÊNCIA" de propósito: a suíte de mutantes já tem a dela, e
+    duas aprovações com esse rótulo fariam a checagem "a referência é o único
+    PASS" perder o sentido.
+    """
+    ok_ref, detalhe = GATE_MEDICAO.check(plano("", REFERENCIA))
+    rotulo = "CONSISTÊNCIA da referência no banco medido (deve passar)"
+    print(f"  {'PASS' if ok_ref else 'FAIL':4}  {rotulo:44} {detalhe[:70]}", file=stream)
+
+    sobreviventes = []
+    for nome, candidato in TRAPACAS:
+        ok, detalhe = GATE_MEDICAO.check(candidato)
+        if ok:
+            sobreviventes.append(nome)
+        print(
+            f"  {'PASS' if ok else 'FAIL':4}  {f'mutante {nome} (deve falhar)':44} {detalhe[:70]}",
+            file=stream,
+        )
+    return ok_ref and not sobreviventes
 
 
 # ------------------------------------------------------------------- medição
@@ -601,9 +882,13 @@ def medir(setup_sql: str, query_sql: str, repeats: int = 4, warmup: int = 1) -> 
     inicio = time.perf_counter()
     congelado = data(PERF_DB)
 
-    with tempfile.TemporaryDirectory(prefix="sql_agg_perf_") as tmp:
-        frio_db = Path(tmp) / "frio.sqlite"
-        quente_db = Path(tmp) / "quente.sqlite"
+    with (
+        tempfile.TemporaryDirectory(prefix=PREFIXO_COPIA) as tmp_frio,
+        tempfile.TemporaryDirectory(prefix=PREFIXO_COPIA) as tmp_quente,
+    ):
+        # Dois diretórios em vez de dois nomes de arquivo: ver `PREFIXO_COPIA`.
+        frio_db = Path(tmp_frio) / NOME_COPIA
+        quente_db = Path(tmp_quente) / NOME_COPIA
 
         # frio: banco virgem a cada execução, setup.sql cronometrado junto.
         corridas: list[float] = []
@@ -664,7 +949,17 @@ def main() -> int:
         return 0
 
     if args.selftest:
-        return 0 if MUTANTS.selftest(GATE) else 1
+        passou, linhas = MUTANTS.run(GATE)
+        for nome, ok, detalhe in linhas:
+            print(f"  {'PASS' if ok else 'FAIL':4}  {nome:44} {detalhe[:70]}")
+        # Segunda tabela: as trapaças. Elas não entram na `MutantSuite` porque
+        # cada uma custa uma execução no banco de 72 MB — misturá-las faria o
+        # `--selftest`, que roda em hook e em CI, passar de 0,3s para ~15s sem
+        # descobrir nada sobre os quatorze mutantes de semântica.
+        passou_trapacas = selftest_trapacas()
+        passou = passou and passou_trapacas
+        print(f"\nGATE SELFTEST: {'OK' if passou else 'GATE FURADO'}")
+        return 0 if passou else 1
 
     if args.budget:
         # Mede o SEED, nunca a referência: é o seed que o agente paga no primeiro
@@ -699,6 +994,13 @@ def main() -> int:
     ok_gate, detalhe = GATE.check(plano(setup_sql, query_sql))
     if not ok_gate:
         evalkit.emit_failure(f"gate: {detalhe}")
+        return 0
+
+    # O gate disse que a consulta está certa no banco pequeno. Falta a pergunta
+    # que só o banco grande responde: é o relatório que vai ser cronometrado?
+    ok_conf, detalhe = checar_consistencia_perf(setup_sql, query_sql)
+    if not ok_conf:
+        evalkit.emit_failure(f"consistência no banco medido: {detalhe}")
         return 0
 
     try:

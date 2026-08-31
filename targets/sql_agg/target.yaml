@@ -66,5 +66,11 @@ agent:
       - Materializar o resultado numa tabela, embutir as datas, ou devolver
         sempre :top_n linhas passa longe do que este alvo mede. O gate recusa
         CREATE TABLE pelo nome e roda a consulta com quatro janelas diferentes.
+      - Depois do gate, a consulta e conferida tambem no banco de performance,
+        nas cinco janelas cronometradas: o result set tem que ser o mesmo la.
+        Consulta que so acerta no banco pequeno -- data embutida, predicado
+        sobre o tamanho da tabela, funcao `pragma_*` que le o caminho do
+        arquivo -- vale ZERO. O tempo medido tem que ser o tempo de produzir
+        o relatorio.
       - `./avo-eval` de dentro do run dir mede sem tocar no lineage. Use a
         vontade: uma avaliacao do seed custa ~12s.

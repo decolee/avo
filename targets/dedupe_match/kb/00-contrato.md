@@ -60,11 +60,14 @@ primeiro. Essa segunda metade é mais rígida do que parece e rejeita
 agrupamento guloso que percorre a lista na ordem em que ela chegou.
 
 **Pureza.** `match` não lê arquivo e não escreve arquivo. Isso não é etiqueta:
-durante a execução, as três portas de arquivo do CPython são interceptadas, e
-qualquer leitura dentro do diretório do alvo ou qualquer escrita em disco
-reprova — inclusive se você engolir a exceção. `subprocess`, `multiprocessing`,
-`ctypes`, `mmap` e `socket` são negados estaticamente pelo mesmo motivo: são
-portas que não passam pela interceptação.
+enquanto o seu código tem o controle — **incluindo o corpo do módulo, no
+import** — um gancho de auditoria do interpretador está ligado, e qualquer
+leitura dentro do diretório do alvo, qualquer escrita em disco e qualquer evento
+que saia do processo reprovam, inclusive se você engolir a exceção. Não existe
+porta de trás por outra API: quem dispara o gancho é o CPython, no ponto em que
+o arquivo é de fato aberto, e não o `open` do Python. `subprocess`,
+`multiprocessing`, `ctypes`, `mmap` e `socket` também são negados
+estaticamente, para você receber a recusa antes de rodar em vez de no meio.
 
 Vale dizer por que a pureza está no gate e não numa recomendação: o gabarito
 existe em disco, em `data/labels_*.json`. Um candidato que o abrisse marcaria
