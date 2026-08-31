@@ -29,6 +29,7 @@ leva 90 s por execução custa 8 min por passo e inviabiliza qualquer busca long
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib.util
 import json
 import statistics
@@ -191,6 +192,75 @@ def measure(
 #: A margem é generosa (metade do piso físico) porque leitura tem variância e
 #: reprovar candidato honesto é tão danoso quanto aprovar trapaça.
 PLAUSIBILITY_RATIO = 0.5
+
+
+@contextlib.contextmanager
+def no_disk_writes(violations: list[str]):
+    """Proíbe escrita em disco enquanto o candidato roda. Terceira camada.
+
+    As duas primeiras defesas — caminho novo e módulo novo por execução — matam
+    qualquer memoização **em processo**. Sobrava um caminho: gravar o resultado
+    num arquivo indexado pelo conteúdo da entrada e lê-lo nas execuções
+    seguintes. Um cache em disco atravessa o `fn_factory` intacto, porque não é
+    estado de módulo, e devolve trabalho já pago de graça.
+
+    A técnica veio do gate do `dedupe_match`, que precisava dela por outro
+    motivo (impedir a leitura do gabarito), e generaliza bem. Duas sutilezas que
+    valem manter:
+
+    - A violação é **anotada antes** de a exceção subir. Um candidato que
+      embrulhe o `open` em `try/except` não apaga o registro; só deixa de saber
+      que falhou.
+    - `.pyc` e `__pycache__` são liberados. Um `import` tardio dentro da função
+      medida grava bytecode, e reprovar por isso seria reprovar candidato
+      honesto.
+
+    Leitura continua livre: nos alvos de throughput, ler o arquivo de entrada é
+    exatamente o trabalho. Um alvo que também precise restringir leitura — como
+    o `dedupe_match`, cujo gabarito mora no disco — adiciona essa regra por
+    cima, no seu próprio gate.
+
+    Limite conhecido: só as portas de arquivo do CPython são interceptadas.
+    Código que abra arquivo por dentro de C (`sqlite3.connect`, por exemplo)
+    passa. Fecha o caminho fácil, não todos.
+    """
+    import builtins
+    import io
+    import os
+
+    original_builtins, original_io, original_os = builtins.open, io.open, os.open
+
+    def _deny(path_like) -> None:
+        try:
+            resolved = os.path.realpath(os.fspath(path_like))
+        except TypeError:  # descritor numérico: não há caminho a julgar
+            return
+        if resolved.endswith(".pyc") or f"{os.sep}__pycache__{os.sep}" in resolved:
+            return
+        violations.append(f"escreveu em {resolved}")
+        raise PermissionError(
+            "o candidato não pode escrever em disco durante a medição: um cache em "
+            "disco devolve trabalho já pago de graça, sem que nada tenha ficado mais "
+            "rápido"
+        )
+
+    def _guarded_open(file, mode="r", *args, **kwargs):
+        if any(flag in mode for flag in ("w", "a", "x", "+")):
+            _deny(file)
+        return original_builtins(file, mode, *args, **kwargs)
+
+    def _guarded_os_open(path, flags, *args, **kwargs):
+        if flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_TRUNC):
+            _deny(path)
+        return original_os(path, flags, *args, **kwargs)
+
+    builtins.open = _guarded_open
+    io.open = _guarded_open
+    os.open = _guarded_os_open
+    try:
+        yield
+    finally:
+        builtins.open, io.open, os.open = original_builtins, original_io, original_os
 
 
 def unique_alias(path: str | Path, tmpdir: str | Path) -> str:

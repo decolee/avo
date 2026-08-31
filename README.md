@@ -122,9 +122,10 @@ Todas aconteceram de verdade. Todas viraram verificação automática.
    pelo caminho marcou **4.672.896** contra 4,16 do seed — um milhão de vezes
    "melhor", sem uma única otimização. Nenhum gate de correção pega isso: o
    resultado devolvido *está* certo.
-   → Caminho novo e módulo novo a cada execução medida. Depois da defesa, a
-   memoização por conteúdo pontua **abaixo** da versão honesta: trapacear passou
-   de valer um milhão a custar caro.
+   → Três camadas: caminho novo, módulo novo, e proibição de escrever em disco
+   durante a medição. Depois delas, a memoização por conteúdo pontua **abaixo**
+   da versão honesta e o cache em disco é reprovado por nome. Trapacear passou de
+   valer um milhão a custar caro.
 
 Duas são especialmente instrutivas. A quarta, porque um ganho de 57,8× parece um
 sucesso retumbante do sistema e era o sintoma de um alvo mal projetado. A quinta,

@@ -181,58 +181,71 @@ Todos os mutantes continuam sendo rejeitados. O `--selftest` fica verde. A
 correção e a medição são eixos independentes, e um gate perfeito no primeiro não
 diz nada sobre o segundo.
 
-**A defesa, em duas camadas.**
+**A defesa, em três camadas.** Cada uma fecha o que a anterior deixa passar, e
+foi preciso descobrir as três — cada correção expôs o próximo ataque.
 
 1. **Caminho novo a cada execução.** Um symlink com nome diferente apontando
    para o mesmo conteúdo custa microssegundos e faz um cache indexado por
    caminho errar sempre (`evalkit.unique_alias`).
+   *Ainda passa:* cache indexado pelo **conteúdo** — mediu 10× o ótimo honesto.
 2. **Módulo novo a cada execução.** `measure(..., fn_factory=...)` reimporta o
    candidato antes de cada execução medida, então nenhum estado de módulo
-   sobrevive. Isso derruba qualquer memoização em processo — por caminho, por
+   sobrevive. Derruba qualquer memoização em processo — por caminho, por
    conteúdo, por `lru_cache` —, não só a que você antecipou.
+   *Ainda passa:* cache em **disco**, que não é estado de módulo.
+3. **Proibição de escrever em disco durante a medição.**
+   `evalkit.no_disk_writes` intercepta `builtins.open`, `io.open` e `os.open`
+   e recusa qualquer abertura para escrita. Duas sutilezas que valem manter: a
+   violação é **anotada antes** de a exceção subir, então um candidato que
+   embrulhe o `open` em `try/except` não apaga o registro — só deixa de saber
+   que falhou; e `.pyc`/`__pycache__` são liberados, porque um `import` tardio
+   dentro da função medida grava bytecode e reprovar por isso seria reprovar
+   candidato honesto.
 
-A camada 2 sozinha resolve; as duas juntas custam quase nada e falham de formas
-diferentes. O custo real é que trabalho feito no import passa a ser cobrado em
-toda execução, o que é justo: compilar uma regex custa microssegundos, e um
-candidato que faz algo caro no import está movendo trabalho para fora da medição.
+O custo das três somadas é de microssegundos por execução. O único efeito real é
+que trabalho feito no import passa a ser cobrado em toda execução, o que é justo:
+compilar uma regex custa microssegundos, e um candidato que faz algo caro no
+import está movendo trabalho para fora da medição.
 
-Há ainda `evalkit.read_floor` / `implausible_speed`, que rejeitam uma execução
-mais rápida que ler o próprio arquivo de entrada. É um limite físico honesto e
-serve de rede para casos que as duas camadas não cubram — cache em disco, por
-exemplo. Sozinho ele **não** basta: um cache indexado por hash do conteúdo paga
-a leitura e ainda assim marcou 10× o ótimo honesto.
+A camada 3 veio do gate do `dedupe_match`, que precisava dela por outro motivo —
+impedir a leitura do gabarito — e generalizou bem. Leitura continua livre nos
+alvos de throughput, porque ali ler o arquivo de entrada é exatamente o trabalho.
+
+Há ainda uma quarta verificação, de natureza diferente: `evalkit.read_floor` /
+`implausible_speed` rejeitam uma execução mais rápida que ler o próprio arquivo
+de entrada. É um limite **físico**, não uma barreira — não impede nada, só
+constata que quem foi mais rápido que a leitura não leu. Serve de rede para o
+que as três camadas não cubram, e vale saber que é uma rede de malha larga: os
+pisos medidos ficam entre 0,3 ms e 1,5 ms contra execuções honestas de 60 ms a
+450 ms, então ela só pega o absurdo. Um cache indexado por hash do conteúdo paga
+a leitura e passou por ela marcando 10× o ótimo honesto — foi a camada 2 que o
+pegou, não esta.
 
 **O desfecho, depois da defesa:**
 
-| candidato | geomean | leitura |
+| candidato | resultado | leitura |
 |---|---|---|
-| seed | 4,36 | referência |
-| memoização por caminho | 6,92 | igual à versão honesta que ele embrulha |
-| memoização por conteúdo | 5,34 | **pior** que a honesta: paga o hash e não recebe nada |
-| passe único honesto | ~7,0 | o ganho real |
+| seed | 3,6 | referência |
+| memoização por caminho | 6,1 | igual à versão honesta que ele embrulha |
+| memoização por conteúdo | 5,2 | **pior** que a honesta: paga o hash e não recebe nada |
+| cache em disco | **reprovado** | "escreveu em /tmp/etl_cache_8ec4c15a.json" |
+| candidato otimizado honesto | 13,2 | o ganho real |
 
 Trapacear passou de valer um milhão a custar caro. É a propriedade que se quer:
 não é que a trapaça seja proibida, é que ela deixa de compensar.
 
-**O que esta defesa não cobre, e por quê.** Um cache **em disco** — gravar o
-resultado num arquivo indexado pelo hash do conteúdo e lê-lo nas execuções
-seguintes — sobrevive tanto ao módulo novo quanto ao caminho novo. Ele não é
-coberto de propósito, e vale explicar a decisão:
+**O que ainda não é coberto.** Só as portas de arquivo do CPython são
+interceptadas. Código que abra arquivo por dentro de C — `sqlite3.connect`, por
+exemplo — passa pela camada 3. Fecha-se o caminho fácil, não todos.
 
-- A única defesa completa é **dados diferentes a cada execução**, o que exige
-  gerar N variantes por regime (mesma forma, bytes diferentes). Com 5 repetições
-  e 3 regimes isso multiplica o dataset por 5 — dezenas ou centenas de MB, e
-  tempo de geração — para fechar um buraco que exige um ataque deliberado.
-- As duas camadas implementadas matam a trapaça **acidental**, que é a que
-  realmente acontece: memoizar é uma otimização que um engenheiro faz sem
-  segundas intenções, e era ela que valia um milhão.
-- Um cache em disco viola uma regra escrita na KB, aparece no diff, e paga I/O.
-  `implausible_speed` continua servindo de rede se ele for rápido o bastante.
-
-Se um alvo futuro tiver motivo para se defender disso — por exemplo se for rodar
-sem supervisão por dias — o caminho é gerar as variantes por regime e rotacioná-las
-via `Regime.args_factory`, que já aceita isso sem mudança no `labkit`. A decisão
-de não fazer agora é uma troca declarada, não um descuido.
+A defesa completa contra qualquer cache seria **dados diferentes a cada
+execução**: N variantes por regime, mesma forma, bytes diferentes. Isso
+multiplicaria o dataset por 5 (dezenas ou centenas de MB) para fechar um resíduo
+que já exige um ataque deliberado, contra uma regra escrita na KB, visível no
+diff. Se um alvo futuro precisar — um que rode sem supervisão por dias, digamos —
+o caminho é gerar as variantes e rotacioná-las por `Regime.args_factory`, que já
+aceita isso sem mudança no `labkit`. A decisão de não fazer agora é uma troca
+declarada, não um descuido.
 
 **A regra.** Toda medição repetida é uma superfície de ataque. Antes de declarar
 um alvo pronto, escreva o candidato trapaceiro e rode-o. Se ele pontuar, o alvo

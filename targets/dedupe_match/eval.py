@@ -54,7 +54,9 @@ import io
 import json
 import os
 import random
+import signal
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -89,6 +91,14 @@ ORCAMENTO_S = float(os.environ.get("AVO_DEDUPE_TIME_BUDGET", "14.0"))
 #: as duas faria o custo de julgar o contrato competir com o de resolver o
 #: problema.
 ORCAMENTO_GATE_S = 6.0
+
+#: Folga entre o fim do orcamento e a interrupcao forcada do candidato. Existe
+#: porque a cobranca so acontece quando `match` devolve: sem despertador, um
+#: candidato O(n^3) rodaria horas antes de ser reprovado por um orcamento que
+#: ele ja tinha estourado no primeiro segundo. Medido: o comparador caro dentro
+#: do laco exaustivo levava 117s ate ser cobrado; com o despertador ele para em
+#: ~15s com a mesma mensagem.
+GRACA_DESPERTADOR_S = 1.0
 
 #: Semente da permutacao usada para checar invariancia de ordem. Fixa: a
 #: checagem tem que dar o mesmo veredito em toda avaliacao.
@@ -185,13 +195,43 @@ class Orcamento:
         self.usado += segundos
         if self.usado > self.total:
             raise Estouro(
-                f"match() estourou o orcamento de tempo do {self.rotulo}: "
+                f"match() estourou o orcamento de tempo ({self.rotulo}): "
                 f"{self.usado:.1f}s usados de {self.total:.1f}s. Estourar vale zero, nao "
                 "menos — o custo da comparacao faz parte do problema."
             )
 
 
 # ----------------------------------------------------------- pureza de IO
+
+
+@contextlib.contextmanager
+def _despertador(segundos: float):
+    """Interrompe o candidato quando o tempo restante do orcamento acaba.
+
+    O orcamento so consegue cobrar quando `match` devolve, e `match` e uma
+    chamada unica por banco — sem isto, um candidato que estourasse o teto no
+    primeiro segundo continuaria rodando ate terminar, e um O(n^3) prenderia o
+    avaliador por horas antes de receber o zero que ja era dele.
+
+    Degrada para "sem interrupcao" fora da thread principal ou onde nao houver
+    `setitimer`: perder a interrupcao atrasa o veredito, nunca o muda.
+    """
+    if not hasattr(signal, "setitimer") or threading.current_thread() is not (
+        threading.main_thread()
+    ):
+        yield
+        return
+
+    def _acordar(signum, frame):  # noqa: ARG001
+        raise Estouro("match() ultrapassou o tempo restante do orcamento")
+
+    anterior = signal.signal(signal.SIGALRM, _acordar)
+    signal.setitimer(signal.ITIMER_REAL, max(0.05, segundos))
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0.0)
+        signal.signal(signal.SIGALRM, anterior)
 
 
 @contextlib.contextmanager
@@ -306,9 +346,12 @@ def _executar(fn, entrada: list[dict], orcamento: Orcamento) -> set[tuple[str, s
     ids = {reg["id"] for reg in copia}
     violacoes: list[str] = []
 
+    restante = orcamento.total - orcamento.usado + GRACA_DESPERTADOR_S
     inicio = time.perf_counter()
     try:
-        with _sem_disco(violacoes):
+        # Despertador por fora: quando ele dispara, a interceptacao de IO ja foi
+        # desfeita antes de o timer ser desarmado.
+        with _despertador(restante), _sem_disco(violacoes):
             bruto = fn(copia)
             # Materializar DENTRO da janela cronometrada. Devolver um gerador
             # preguicoso empurraria todo o trabalho para depois da medicao e o

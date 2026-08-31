@@ -112,6 +112,68 @@ def test_memoizacao_nao_sobrevive_ao_fn_factory():
     assert sem_cache == 5, "com módulo novo por execução, toda execução paga o trabalho"
 
 
+def test_no_disk_writes_libera_leitura(tmp_path):
+    """Ler nunca pode ser bloqueado: nos alvos de throughput, ler É o trabalho."""
+    entrada = tmp_path / "entrada.txt"
+    entrada.write_bytes(b"dados")
+
+    violacoes: list[str] = []
+    with evalkit.no_disk_writes(violacoes):
+        assert entrada.read_bytes() == b"dados"
+
+    assert violacoes == []
+
+
+def test_no_disk_writes_bloqueia_escrita(tmp_path):
+    """Terceira camada: um cache em disco sobrevive às duas primeiras."""
+    alvo = tmp_path / "cache.json"
+
+    violacoes: list[str] = []
+    with evalkit.no_disk_writes(violacoes), pytest.raises(PermissionError):
+        alvo.write_text("resultado memoizado", encoding="utf-8")
+
+    assert len(violacoes) == 1
+    assert "cache.json" in violacoes[0]
+    assert not alvo.exists(), "o arquivo não pode chegar a existir"
+
+
+def test_no_disk_writes_anota_mesmo_se_o_candidato_engolir_a_excecao(tmp_path):
+    """Embrulhar o `open` em try/except não apaga o registro da violação.
+
+    Sem isso, a defesa seria contornável com quatro caracteres de código.
+    """
+    violacoes: list[str] = []
+    with evalkit.no_disk_writes(violacoes):
+        # try/except literal de proposito: e a forma que um candidato usaria para
+        # esconder a tentativa. `contextlib.suppress` seria equivalente e menos
+        # ilustrativo do ataque que este teste existe para descrever.
+        try:  # noqa: SIM105
+            (tmp_path / "escondido.json").write_text("x", encoding="utf-8")
+        except PermissionError:
+            pass
+
+    assert len(violacoes) == 1, "a violação é anotada antes de a exceção subir"
+    assert "escondido.json" in violacoes[0]
+
+
+def test_no_disk_writes_restaura_as_portas(tmp_path):
+    violacoes: list[str] = []
+    with evalkit.no_disk_writes(violacoes):
+        pass
+    (tmp_path / "depois.txt").write_text("ok", encoding="utf-8")
+    assert (tmp_path / "depois.txt").read_text(encoding="utf-8") == "ok"
+
+
+def test_no_disk_writes_libera_bytecode(tmp_path):
+    """`.pyc` é liberado: um import tardio grava bytecode e é candidato honesto."""
+    pycache = tmp_path / "__pycache__"
+    pycache.mkdir()
+    violacoes: list[str] = []
+    with evalkit.no_disk_writes(violacoes):
+        (pycache / "modulo.cpython-311.pyc").write_bytes(b"\x00")
+    assert violacoes == []
+
+
 def test_implausible_speed_pega_o_que_e_rapido_demais():
     suspeito, detalhe = evalkit.implausible_speed({"r": 0.0001}, {"r": 0.010})
     assert suspeito

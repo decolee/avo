@@ -429,11 +429,20 @@ def main() -> int:
         evalkit.emit_failure(f"gate: {detail}")
         return 0
 
-    # Modulo novo a cada execucao: nenhum cache de modulo sobrevive entre
-    # chamadas, entao memoizar a saida deixa de pagar. Caminho novo a cada
-    # execucao pelo mesmo motivo, uma camada acima.
+    # Tres camadas contra memoizacao, cada uma fechando o que a anterior deixa
+    # passar: caminho novo por execucao derruba cache indexado por caminho;
+    # modulo novo por execucao derruba qualquer cache em processo; e a proibicao
+    # de escrever em disco derruba o cache que sobreviveria as duas.
+    violacoes: list[str] = []
+
     def fresh():
-        return contracts.as_callable(evalkit.load_module(candidate, "cand_timed"), SYMBOL)
+        chamada = contracts.as_callable(evalkit.load_module(candidate, "cand_timed"), SYMBOL)
+
+        def guardada(*args):
+            with evalkit.no_disk_writes(violacoes):
+                return chamada(*args)
+
+        return guardada
 
     with tempfile.TemporaryDirectory(prefix="etl_agg-alias-") as alias_dir:
         try:
@@ -443,6 +452,10 @@ def main() -> int:
         except Exception as exc:  # noqa: BLE001
             evalkit.emit_failure(f"falhou durante a medição: {type(exc).__name__}: {exc}")
             return 0
+
+    if violacoes:
+        evalkit.emit_failure(f"o candidato escreveu em disco durante a medição: {violacoes[0]}")
+        return 0
 
     suspect, detail = evalkit.implausible_speed(measurement.per_regime, regime_floors())
     if suspect:
