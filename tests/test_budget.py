@@ -51,6 +51,5 @@ def test_budget_reporta_o_custo_do_seed(target):
     require_dataset(target)
     run = run_eval(target, "--budget")
     assert "seed" in run.stdout.lower(), (
-        f"{target.name}: --budget não menciona o seed em lugar nenhum do relatório."
-        f"{run.dump()}"
+        f"{target.name}: --budget não menciona o seed em lugar nenhum do relatório.{run.dump()}"
     )

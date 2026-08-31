@@ -30,9 +30,9 @@ import pytest
 from conftest import (
     copy_seed,
     dataset_status,
+    parametrize_targets,
     parse_avo_result,
     parse_selftest_table,
-    parametrize_targets,
     require_dataset,
     run_eval,
 )
@@ -226,8 +226,7 @@ def test_seed_passa_no_proprio_gate(target, tmp_path):
 
     resultado = parse_avo_result(run.stdout)
     assert resultado.get("correct") is True, (
-        f"{target.name}: o seed não passa no próprio gate — "
-        f"{resultado.get('error')!r}.{run.dump()}"
+        f"{target.name}: o seed não passa no próprio gate — {resultado.get('error')!r}.{run.dump()}"
     )
     assert resultado.get("metrics"), (
         f"{target.name}: correct=true sem métricas. `primary` seria a média geométrica de "

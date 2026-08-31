@@ -16,8 +16,8 @@ chega como `""`, nunca como `None`.
 | `cidade` | município | com e sem acento; às vezes vazio |
 | `uf` | sigla do estado | às vezes vazia |
 | `telefone` | um telefone | seis formatações diferentes para os mesmos dígitos |
-| `email` | um e-mail | mesmo local, domínio trocado; frequentemente vazio |
-| `documento` | CPF ou CNPJ | pontuado ou só dígitos; **presente em menos de um terço** |
+| `email` | um e-mail | mesmo local, domínio trocado; some em parte das variações |
+| `documento` | CPF ou CNPJ | pontuado ou só dígitos; **presente em menos de 40% dos registros** |
 | `nascimento` | data de nascimento ou de fundação | `aaaa-mm-dd`, `dd/mm/aaaa`, `dd.mm.aaaa` |
 | `endereco` | logradouro, número, complemento | `Rua`/`R.`, `Avenida`/`Av.`, complemento some |
 

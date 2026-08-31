@@ -194,6 +194,7 @@ class LinhaSelftest:
 
     veredito: str  # "PASS" ou "FAIL"
     rotulo: str
+    detalhe: str = ""
 
     @property
     def e_mutante(self) -> bool:
@@ -201,10 +202,18 @@ class LinhaSelftest:
 
     @property
     def e_referencia(self) -> bool:
+        # `MutantSuite` rotula a referência como "REFERÊNCIA (deve passar)";
+        # comparar sem o acento evita depender da normalização do terminal.
         return self.rotulo.upper().startswith("REFER")
 
 
 _LINHA_RE = re.compile(r"^\s*(PASS|FAIL)\s{2,}(.+?)\s*$")
+
+#: O rótulo termina no `(deve passar)` / `(deve falhar)` que a própria
+#: `MutantSuite` escreve. Separar rótulo de detalhe pela coluna não funciona: o
+#: nome é preenchido até 44 caracteres, e um mutante de nome longo estoura a
+#: coluna e cola no detalhe com um espaço só.
+_ROTULO_RE = re.compile(r"^(.*?\(deve [^)]*\))\s*(.*)$")
 
 
 def parse_selftest_table(stdout: str) -> list[LinhaSelftest]:
@@ -219,11 +228,19 @@ def parse_selftest_table(stdout: str) -> list[LinhaSelftest]:
     acrescenta uma linha `SEED`, julgando o próprio `x_0` pelo mesmo gate); elas
     são devolvidas junto e classificadas por `e_mutante` / `e_referencia`.
     """
-    return [
-        LinhaSelftest(m.group(1), m.group(2))
-        for m in (_LINHA_RE.match(linha) for linha in stdout.splitlines())
-        if m
-    ]
+    linhas: list[LinhaSelftest] = []
+    for bruto in stdout.splitlines():
+        m = _LINHA_RE.match(bruto)
+        if not m:
+            continue
+        veredito, resto = m.group(1), m.group(2)
+        rotulo_m = _ROTULO_RE.match(resto)
+        if rotulo_m:
+            linhas.append(LinhaSelftest(veredito, rotulo_m.group(1), rotulo_m.group(2)))
+        else:
+            rotulo, _, detalhe = resto.partition("  ")
+            linhas.append(LinhaSelftest(veredito, rotulo.strip(), detalhe.strip()))
+    return linhas
 
 
 # ------------------------------------------------------------------- dados

@@ -5,8 +5,8 @@ de grandeza, não de promessa — meça você mesmo.
 
 ## O formato do problema
 
-`n` registros geram `n(n-1)/2` pares. Em 2.300 registros isso é **2,6 milhões**
-de pares por banco, 7,9 milhões nos três. Qualquer comparação que custe mais que
+`n` registros geram `n(n-1)/2` pares. Nos bancos deste alvo isso é **2,5 a 2,7
+milhões** de pares por banco, 7,8 milhões nos três. Qualquer comparação que custe mais que
 alguns microssegundos por par não cabe no orçamento se você olhar todos eles.
 
 Daí sai a tensão inteira do alvo: **você não compra qualidade sem antes comprar
@@ -85,7 +85,7 @@ o F1 — não é um bug seu, é a forma do problema.
 Um campo isolado quase nunca decide. Nome forte com data conflitante é um
 homônimo; telefone igual com nome completamente diferente é um domicílio
 compartilhado, não a mesma pessoa; documento igual é praticamente conclusivo,
-mas o documento está presente em menos de um terço dos registros.
+mas o documento está presente em menos de 40% dos registros.
 
 As duas formas de combinar:
 
