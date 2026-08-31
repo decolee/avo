@@ -92,6 +92,28 @@ ORCAMENTO_S = float(os.environ.get("AVO_DEDUPE_TIME_BUDGET", "14.0"))
 #: problema.
 ORCAMENTO_GATE_S = 6.0
 
+#: Declaracao exigida por tests/test_anticheat.py. As defesas contra memoizacao
+#: do labkit (`args_factory`, `fn_factory`, `implausible_speed`) protegem uma
+#: metrica de TEMPO: elas existem porque o avaliador cronometra a mesma funcao
+#: sobre os mesmos dados varias vezes, e a segunda chamada pode devolver cache.
+#: Aqui a metrica e F1, e a estrutura da avaliacao e outra — cada banco e
+#: pontuado com UMA chamada, entao nao ha segunda chamada para memoizar. Medido:
+#: um candidato que indexa a resposta por (tamanho, primeiro id, ultimo id)
+#: marca exatamente o mesmo score do honesto que ele embrulha.
+#:
+#: O que substitui cada camada, porque a ameaca nao some, ela muda de forma:
+#:   modulo novo por execucao -> a quarta passada do gate reimporta o candidato,
+#:       fechando o caso em que um cache de modulo esconde nao-determinismo
+#:   caminho novo por execucao -> nao se aplica: o candidato recebe registros em
+#:       memoria e nunca ve um caminho
+#:   velocidade implausivel  -> nao se aplica: nao ha piso de leitura a comparar.
+#:       O lugar da defesa e a proibicao de escrita em disco, que mata o cache
+#:       entre avaliacoes — que era o unico jeito de comprar orcamento de graca
+SEM_DEFESA_DE_MEDICAO = (
+    "metrica de qualidade (F1), nao de tempo: cada banco e pontuado com uma unica "
+    "chamada, entao nao ha medicao repetida para memoizar"
+)
+
 #: Folga entre o fim do orcamento e a interrupcao forcada do candidato. Existe
 #: porque a cobranca so acontece quando `match` devolve: sem despertador, um
 #: candidato O(n^3) rodaria horas antes de ser reprovado por um orcamento que
