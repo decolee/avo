@@ -1,0 +1,20 @@
+# Commit auditado do harness upstream. Este arquivo e a unica fonte da verdade
+# sobre QUAL avo o laboratorio roda.
+#
+# Por que existe: um `git clone` sem commit fixo produz um ambiente que muda
+# sozinho. O scoring, a politica de commit e o formato do AVO_RESULT vivem no
+# harness; se ele se move debaixo dos alvos, dois runs deixam de ser
+# comparaveis e a ablacao — o entregavel da bancada — perde o chao. Fixar o
+# commit e o que torna "mesmo experimento" uma afirmacao verificavel.
+#
+# Como mexer: mude `commit` aqui, rode `./bootstrap.sh`, rode `make verify`, e
+# diga no commit da mudanca o que no upstream justificou subir. O bootstrap
+# avisa alto quando o checkout local diverge desta linha; ele nunca sobe
+# sozinho.
+#
+# Este arquivo e commitado apesar de viver sob `vendor/` (veja a excecao
+# explicita no .gitignore): o resto de vendor/ e codigo de terceiro que nao
+# redistribuimos, mas o ponteiro para ele e nosso e precisa versionar.
+
+repo = https://github.com/gatordevin/avo.git
+commit = f6dad9e639d3c9e5d5ac9ccacbe076d82cfa39d2

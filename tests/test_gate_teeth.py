@@ -87,17 +87,28 @@ def test_a_referencia_e_o_unico_pass_da_suite_de_mutantes(target):
     )
 
 
-def test_selftest_reprova_com_exit_diferente_de_zero_quando_o_gate_fura(target):
-    """A marca textual e o código de saída têm que concordar.
+def test_gate_furado_nunca_sai_verde(target):
+    """Saída zero e "GATE FURADO" não podem coexistir.
 
-    O CI olha o exit code; o humano olha a linha `GATE SELFTEST:`. Se os dois
-    puderem discordar, um alvo furado passa no CI enquanto imprime que está
-    furado — e ninguém lê a saída de um passo verde.
+    O CI olha o código de saída; o humano olha a linha `GATE SELFTEST:`. A
+    implicação só precisa valer num sentido, e é o sentido perigoso: um alvo com
+    o gate furado não pode sair zero, porque ninguém lê a saída de um passo
+    verde. O contrário é legítimo — o `csv_normalize` sai 1 com o gate OK quando
+    é o SEED que reprova, e essa distinção é informação, não inconsistência.
     """
     require_dataset(target)
     run = run_eval(target, "--selftest")
-    marca_ok = "GATE SELFTEST: OK" in run.stdout
-    assert marca_ok == (run.exit_code == 0), (
-        f"{target.name}: exit={run.exit_code} mas a saída diz "
-        f"{'OK' if marca_ok else 'GATE FURADO'}{run.dump()}"
-    )
+
+    if run.exit_code == 0:
+        assert "GATE FURADO" not in run.stdout, (
+            f"{target.name}: saiu zero imprimindo GATE FURADO. O CI ficaria verde com o "
+            f"gate aberto.{run.dump()}"
+        )
+        assert "GATE SELFTEST: OK" in run.stdout, (
+            f"{target.name}: saiu zero sem afirmar que o gate está OK{run.dump()}"
+        )
+    else:
+        assert "GATE SELFTEST:" in run.stdout, (
+            f"{target.name}: --selftest reprovou sem dizer em que pé o gate ficou — "
+            f"quem lê o log não sabe se o problema é o gate ou outra checagem{run.dump()}"
+        )

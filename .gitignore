@@ -1,6 +1,12 @@
 # O harness upstream e clonado pelo bootstrap.sh no commit fixado em
 # vendor/avo.lock. Nao e redistribuido aqui: tem licenca propria.
-vendor/
+#
+# Ignorar `vendor/` inteiro levaria junto o proprio avo.lock, que e NOSSO
+# arquivo e o unico ponteiro versionado para o commit auditado — sem ele o
+# bootstrap nao tem o que fixar e a reprodutibilidade vira folclore. Por isso a
+# regra e sobre o CONTEUDO de vendor/, com uma excecao explicita para o lock.
+vendor/*
+!vendor/avo.lock
 
 # Runs de trabalho. O que merece sobreviver vai para examples/ ou experiments/.
 runs/
@@ -30,3 +36,13 @@ htmlcov/
 # Editores e sistema
 .DS_Store
 *.swp
+
+# Segredos. Nao ha nenhum neste repositorio e nao deve haver — o avaliador
+# executa codigo de candidato no mesmo processo (veja SECURITY.md). Esta secao
+# existe para que um .env criado por engano nao vire commit.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
