@@ -24,17 +24,24 @@ modo não supervisionado existe e gasta quota — é opt-in de propósito.
 
 ## Os alvos
 
-| alvo | domínio | `f` maximiza | tier |
-|---|---|---|---|
-| `etl_agg` | agregação de transações (JSONL → dict) | throughput, geomean de 3 formas de dado | 0 · Python |
-| `csv_normalize` | normalização de cadastro sujo (CSV → canônico) | throughput sob correção exata | 0 · Python |
-| `sql_agg` | consulta analítica sobre base congelada | throughput, frio vs quente | 0,5 · SQLite |
-| `dedupe_match` | record linkage / deduplicação | **F1** sob orçamento de tempo | 1 · qualidade |
+| alvo | domínio | `f` maximiza | mutantes | headroom medido | custo do seed |
+|---|---|---|---|---|---|
+| `etl_agg` | agregação de transações (JSONL → dict) | throughput, geomean de 3 formas de dado | 9 | 3,4× em 3 passos | 3,0s |
+| `csv_normalize` | normalização de cadastro sujo (CSV → canônico) | throughput sob correção exata | 15 | 5,1× em 6 passos | 4,9s |
+| `sql_agg` | consulta analítica sobre SQLite congelado | throughput, frio vs quente | 14 | 4,3× em 7 degraus | 8,0s |
+| `dedupe_match` | record linkage / deduplicação | **F1** sob orçamento de tempo | 9 | 3,6× em 7 versões | 9,2s |
 
-Os três primeiros maximizam velocidade; o quarto maximiza **qualidade**. Isso é
-deliberado: a tese central do paper (C14) é que "o agente subjacente permanece o
-mesmo; apenas as ferramentas e a avaliação mudam". Um alvo cuja métrica tem
-forma diferente é o teste dessa tese dentro da bancada.
+O headroom não é estimativa: para cada alvo foram escritas e medidas versões
+progressivamente melhores pelo avaliador de verdade. Nenhum movimento isolado
+vale mais de 46% do ganho, que é a propriedade que permite a uma ablação
+distinguir braços. `make verify` confere os quatro.
+
+Os três primeiros maximizam velocidade; o quarto maximiza **qualidade** sob um
+orçamento de tempo. Isso é deliberado: a tese central do paper (C14) é que "o
+agente subjacente permanece o mesmo; apenas as ferramentas e a avaliação mudam".
+Um alvo cuja métrica tem forma diferente é o teste dessa tese dentro da própria
+bancada — e o gate do `dedupe_match` precisa provar coisas que os outros não
+precisam, como que o candidato **não leu o gabarito**.
 
 ## O que tem aqui
 

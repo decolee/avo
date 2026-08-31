@@ -57,13 +57,20 @@ test:
 test-fast:
 	@cd $(ROOT) && $(PY) -m pytest -m "not slow"
 
+# `examples/` guarda o registro congelado de um run de verdade: o codigo ali e o
+# que o agente produziu, byte a byte, e reformata-lo falsificaria o registro que
+# o diretorio existe para preservar. Por isso ele sai do FORMATADOR — e so dele.
+# O `ruff check` continua valendo em tudo: import morto e variavel nao usada sao
+# defeito mesmo num artefato.
+SEM_FORMATADOR := --exclude examples
+
 ## lint: ruff check + ruff format --check (o que o CI cobra)
 lint:
-	@cd $(ROOT) && ruff check . && ruff format --check .
+	@cd $(ROOT) && ruff check . && ruff format --check $(SEM_FORMATADOR) .
 
 ## fmt: aplica o ruff format e as correcoes automaticas do ruff check
 fmt:
-	@cd $(ROOT) && ruff check --fix . && ruff format .
+	@cd $(ROOT) && ruff check --fix . && ruff format $(SEM_FORMATADOR) .
 
 ## selftest: o gate de cada alvo contra seus mutantes — a checagem que mais importa
 selftest:

@@ -58,7 +58,11 @@ jobs:
         run: ruff check .
 
       - name: Formatacao (ruff format --check)
-        run: ruff format --check .
+        # `examples/` fica de fora do formatador: e o registro congelado de um
+        # run real, e o codigo la e o que o agente produziu byte a byte.
+        # Reformata-lo falsificaria exatamente o que o diretorio preserva. O
+        # `ruff check` acima continua valendo em tudo.
+        run: ruff format --check --exclude examples .
 
       - name: Gerar os datasets congelados
         run: make data
