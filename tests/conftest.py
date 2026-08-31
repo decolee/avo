@@ -30,6 +30,7 @@ pytest, senão a suíte passa contra um Python que ninguém está testando.
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -182,6 +183,47 @@ def copy_seed(target: Path, destino: Path) -> Path:
         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
     )
     return destino
+
+
+# ------------------------------------------------------- tabela do --selftest
+
+
+@dataclass(frozen=True)
+class LinhaSelftest:
+    """Uma linha da tabela que `MutantSuite.selftest` imprime."""
+
+    veredito: str  # "PASS" ou "FAIL"
+    rotulo: str
+
+    @property
+    def e_mutante(self) -> bool:
+        return self.rotulo.startswith("mutante ")
+
+    @property
+    def e_referencia(self) -> bool:
+        return self.rotulo.upper().startswith("REFER")
+
+
+_LINHA_RE = re.compile(r"^\s*(PASS|FAIL)\s{2,}(.+?)\s*$")
+
+
+def parse_selftest_table(stdout: str) -> list[LinhaSelftest]:
+    """Lê a tabela PASS/FAIL da saída de `eval.py --selftest`.
+
+    A tabela é o único contrato entre o avaliador e quem verifica que o gate
+    morde. Ela é texto de propósito: é o mesmo que o agente e o revisor humano
+    leem, então checar o texto checa exatamente o que eles veem — e não uma
+    estrutura paralela que poderia divergir da impressão.
+
+    Alvos podem imprimir linhas além das da suíte de mutantes (o `csv_normalize`
+    acrescenta uma linha `SEED`, julgando o próprio `x_0` pelo mesmo gate); elas
+    são devolvidas junto e classificadas por `e_mutante` / `e_referencia`.
+    """
+    return [
+        LinhaSelftest(m.group(1), m.group(2))
+        for m in (_LINHA_RE.match(linha) for linha in stdout.splitlines())
+        if m
+    ]
 
 
 # ------------------------------------------------------------------- dados
