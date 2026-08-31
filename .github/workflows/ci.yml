@@ -1,0 +1,199 @@
+# CI do AVO Data Lab.
+#
+# A ordem dos passos e deliberada: as checagens baratas (lint) rodam antes das
+# caras (medicao), e o GATE fica num passo separado e bem visivel no fim. Isso
+# nao e cosmetico. Um gate furado — um `eval.py` que aceita um mutante — e a
+# falha mais grave que este repositorio pode ter: nada quebra, os runs
+# continuam, os numeros continuam subindo, e semanas de lineage acabam
+# construidas em cima de uma funcao f que nao mede mais o que dizia medir.
+# Quando isso acontecer, quem olhar a aba de Actions tem que ver de longe QUAL
+# linha ficou vermelha.
+#
+# Sem segredos, de proposito: nada aqui precisa de credencial, e uma bancada que
+# executa codigo de candidato nao deve ter nenhuma por perto (veja SECURITY.md).
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Cancela runs antigos do mesmo branch: o feedback que importa e o do ultimo push.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  verificacao:
+    name: verify (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Instalar (editavel, com extras de dev)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --editable ".[dev]"
+
+      - name: Lint (ruff check)
+        run: ruff check .
+
+      - name: Formatacao (ruff format --check)
+        run: ruff format --check .
+
+      - name: Gerar os datasets congelados
+        run: make data
+
+      - name: Conferir o lock dos datasets
+        # `make data` reescreve o dataset.lock.json. Se ele mudou em relacao ao
+        # que esta commitado, o gerador nao e deterministico — e um dataset que
+        # muda sozinho invalida qualquer comparacao entre dois runs.
+        run: git diff --exit-code -- 'targets/*/dataset.lock.json'
+
+      - name: Testes (incluindo os lentos, que medem tempo)
+        run: python -m pytest -q
+
+      # ------------------------------------------------------------------
+      # O passo que mais importa. Separado, nomeado em maiuscula e com banner:
+      # se algum dia ele ficar vermelho, tem que ser obvio qual e.
+      # ------------------------------------------------------------------
+      - name: "GATE: --selftest de TODOS os alvos"
+        run: |
+          echo "=================================================================="
+          echo " GATE — cada alvo contra seus proprios mutantes"
+          echo " Um mutante ACEITO e um atalho que a busca vai achar sozinha."
+          echo "=================================================================="
+          make selftest
+
+      # `pytest` ja roda o --budget de cada alvo (tests/test_budget.py, marcado
+      # slow). Este passo repete de proposito em UMA perna da matriz: quando o
+      # dimensionamento sai da faixa, a causa e o dataset, nao o codigo, e ver
+      # isso no nome do passo poupa quem for ler o log de abrir a saida do
+      # pytest. Numa perna so porque medir tempo duas vezes nao mede melhor.
+      - name: Dimensionamento (--budget)
+        if: matrix.python == '3.11'
+        run: make budget
+
+  determinismo-dos-datasets:
+    # Os datasets nao vao para o git; o que vai e o dataset.lock.json com o
+    # SHA256 de cada arquivo. Esse lock so significa alguma coisa se o gerador
+    # produzir sempre os mesmos bytes. Este job prova isso duas vezes: gerando
+    # do zero, e regenerando por cima com --force.
+    name: datasets deterministicos
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Instalar
+        run: python -m pip install --editable ".[dev]"
+
+      - name: Rodada 1 — gerar do zero
+        run: make data
+
+      - name: O lock bate com o commitado?
+        run: |
+          if ! git diff --exit-code -- 'targets/*/dataset.lock.json'; then
+            echo "::error::o dataset.lock.json mudou depois de gerar os dados do zero."
+            echo "O gerador nao e deterministico, ou o lock commitado esta desatualizado."
+            echo "Rode 'make clean-data && make data' localmente e confira o diff."
+            exit 1
+          fi
+          echo "lock identico ao commitado."
+
+      - name: Rodada 2 — apagar e regenerar
+        run: |
+          make clean-data
+          make data
+
+      - name: O lock continua batendo?
+        run: |
+          if ! git diff --exit-code -- 'targets/*/dataset.lock.json'; then
+            echo "::error::o lock mudou entre duas geracoes na MESMA maquina."
+            echo "Isso e nao-determinismo de verdade: seed nao fixada, ordem de dict,"
+            echo "timestamp ou hash aleatorio dentro de algum make_data.py."
+            exit 1
+          fi
+          echo "duas geracoes independentes, os mesmos SHA256."
+
+  aparato:
+    # O aparato tambem pode quebrar. Sao tres coisas verificaveis em segundos:
+    # os scripts tem sintaxe valida, os hooks sao executaveis, e o
+    # protect_arbiter realmente bloqueia — a garantia mais facil de perder numa
+    # refatoracao, porque nada mais falha quando ela some.
+    name: aparato (scripts e hooks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sintaxe dos scripts
+        run: |
+          for s in bootstrap.sh .claude/hooks/*.sh; do
+            echo "bash -n $s"
+            bash -n "$s"
+          done
+
+      - name: Bit de execucao
+        run: |
+          falhou=0
+          for s in bootstrap.sh .claude/hooks/*.sh; do
+            if [ ! -x "$s" ]; then
+              echo "::error file=$s::sem bit de execucao (git update-index --chmod=+x $s)"
+              falhou=1
+            fi
+          done
+          exit $falhou
+
+      - name: settings.json e JSON valido
+        run: python -c "import json; json.load(open('.claude/settings.json')); print('ok')"
+
+      - name: O protect_arbiter bloqueia mesmo?
+        env:
+          CLAUDE_PROJECT_DIR: ${{ github.workspace }}
+        run: |
+          set +e
+          payload='{"cwd":"'"$PWD"'","tool_name":"Edit","tool_input":{"file_path":"'"$PWD"'/targets/etl_agg/eval.py"}}'
+          printf '%s' "$payload" | .claude/hooks/protect_arbiter.sh >/dev/null 2>&1
+          bloqueou=$?
+          printf '%s' "$payload" | AVO_LAB_ALLOW_ARBITER_EDIT=1 .claude/hooks/protect_arbiter.sh >/dev/null 2>&1
+          liberou=$?
+          set -e
+          echo "sem valvula: exit $bloqueou (esperado 2) | com valvula: exit $liberou (esperado 0)"
+          [ "$bloqueou" = "2" ] || { echo "::error::protect_arbiter NAO bloqueou a edicao do arbitro"; exit 1; }
+          [ "$liberou" = "0" ] || { echo "::error::AVO_LAB_ALLOW_ARBITER_EDIT=1 nao liberou"; exit 1; }
+
+      - name: O gate_guard ignora arquivo fora de targets/?
+        env:
+          CLAUDE_PROJECT_DIR: ${{ github.workspace }}
+        run: |
+          printf '%s' '{"cwd":"'"$PWD"'","tool_name":"Write","tool_input":{"file_path":"'"$PWD"'/README.md"}}' \
+            | .claude/hooks/gate_guard.sh
+          echo "exit $? (esperado 0, sem rodar selftest nenhum)"

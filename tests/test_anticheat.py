@@ -280,9 +280,25 @@ def test_candidato_memoizador_nao_pontua(target: Path, tmp_path: Path):
         if arquivo.is_file() and arquivo.name != entrypoint:
             (trapaceiro / arquivo.name).write_bytes(arquivo.read_bytes())
     original = (seed_dir / entrypoint).read_text(encoding="utf-8")
-    simbolo = "transform" if "def transform" in original else None
-    if simbolo is None:
-        pytest.skip(f"{target.name}: não achei o símbolo padrão para embrulhar")
+    # O símbolo exportado é declarado como SYMBOL no eval.py do alvo. Procurar
+    # `def transform` fixo faria este teste PULAR silenciosamente qualquer alvo
+    # com outro nome — e pular é pior que falhar: o alvo fica sem cobertura e o
+    # relatório diz "passou". O csv_normalize exporta `normalize` e escapava
+    # exatamente assim.
+    fonte_eval = (target / "eval.py").read_text(encoding="utf-8")
+    simbolo = next(
+        (
+            linha.split("=", 1)[1].strip().strip("\"'")
+            for linha in fonte_eval.splitlines()
+            if linha.startswith("SYMBOL")
+        ),
+        None,
+    )
+    if not simbolo or f"def {simbolo}" not in original:
+        pytest.skip(
+            f"{target.name}: eval.py não declara SYMBOL, ou o seed não define "
+            f"`def {simbolo}` — nada para embrulhar"
+        )
     (trapaceiro / entrypoint).write_text(
         original.replace(f"def {simbolo}(", f"def _honesto_{simbolo}(", 1)
         + f'''

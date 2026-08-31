@@ -17,7 +17,7 @@ O objetivo não é abstrair o target. É garantir que as três falhas registrada
 """
 
 from .contracts import CanonError, canon_hash, canon_hash_rows, compare_mappings, stdlib_only
-from .datakit import DatasetSpec, dataset_lock_path, generate, verify_lock
+from .datakit import DatasetDrift, DatasetSpec, dataset_lock_path, generate, verify_lock
 from .evalkit import (
     AVO_RESULT,
     Gate,
@@ -41,6 +41,7 @@ from .evalkit import (
 __all__ = [
     "AVO_RESULT",
     "CanonError",
+    "DatasetDrift",
     "DatasetSpec",
     "Gate",
     "Measurement",

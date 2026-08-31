@@ -1,0 +1,13 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Vulnerabilidade de seguranca
+    url: https://github.com/decolee/avo/security/advisories/new
+    about: >-
+      Nao abra issue publica com exploit funcional — use o Security Advisory
+      privado. Leia SECURITY.md, e note a distincao: fuga de GATE (candidato que
+      pontua sem resolver) e issue publica normal, e ate bem-vinda.
+  - name: Como projetar um alvo
+    url: https://github.com/decolee/avo/blob/main/docs/TARGET_DESIGN.md
+    about: >-
+      As cinco propriedades de um alvo valido e as falhas historicas que as
+      produziram. Leia antes de propor um alvo novo.

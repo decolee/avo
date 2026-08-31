@@ -23,6 +23,10 @@ from pathlib import Path
 LOCK_NAME = "dataset.lock.json"
 
 
+class DatasetDrift(RuntimeError):
+    """O dado no disco diverge do lock e regerar em cima dele o congelaria assim."""
+
+
 def sha256_file(path: str | Path, chunk: int = 1 << 20) -> str:
     digest = hashlib.sha256()
     with open(path, "rb") as fh:
@@ -79,15 +83,28 @@ def generate(
 
     Idempotente de propósito: `make setup` roda a cada sessão e regerar 20 MB
     toda vez é desperdício. `force=True` reconstrói do zero.
+
+    **Um arquivo que já existe nunca é abençoado.** Se ele está no disco mas
+    diverge do lock, esta função levanta `DatasetDrift` em vez de reescrever o
+    lock com o hash do arquivo derivado. Sem isso o lock se auto-invalida da
+    pior forma possível: `verify_lock` acusa a divergência, o operador roda
+    `make data` para "consertar", o gerador pula o arquivo porque ele existe, e
+    o lock é reescrito em cima do dado adulterado. Tudo fica verde e o dataset
+    congelado deixou de ser congelado sem que ninguém veja.
     """
     target_dir = Path(target_dir)
     out = data_dir(target_dir)
     out.mkdir(parents=True, exist_ok=True)
     report = GenerateReport()
+    locked = ((_read_lock(target_dir) or {}).get("files")) or {}
 
+    drifted: list[str] = []
     for spec in specs:
         path = out / spec.filename
         if path.exists() and not force:
+            expected = (locked.get(spec.filename) or {}).get("sha256")
+            if expected and sha256_file(path) != expected:
+                drifted.append(spec.filename)
             report.skipped.append(spec.filename)
             continue
         tmp = path.with_suffix(path.suffix + ".partial")
@@ -98,6 +115,19 @@ def generate(
             if tmp.exists():
                 tmp.unlink()
         report.written.append(spec.filename)
+
+    if drifted:
+        raise DatasetDrift(
+            f"{', '.join(sorted(drifted))} em {out} diverge(m) do {LOCK_NAME} e já "
+            "existia(m) no disco, então não foi(ram) regerado(s). Reescrever o lock "
+            "agora congelaria o dado adulterado.\n"
+            "  Se a mudança foi deliberada (o gerador mudou), regere de verdade: "
+            "`make data FORCE=1` ou `python3 make_data.py --force`, e diga no commit "
+            "o que mudou — o dataset novo move o score de TODAS as versões do lineage "
+            "de uma vez.\n"
+            "  Se não foi deliberada, apague `data/` e regere: alguém escreveu no "
+            "dataset congelado."
+        )
 
     if write_lock:
         lock = {

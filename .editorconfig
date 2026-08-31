@@ -1,0 +1,40 @@
+# Regras de arquivo que nao dependem do editor de ninguem.
+# Existe por um motivo pratico: os datasets sao congelados por SHA256, e um
+# editor que troca LF por CRLF ou tira o newline final muda o hash de um arquivo
+# versionado sem mudar o conteudo. Aqui isso viraria um "dataset corrompido" no
+# make verify, com meia hora de investigacao antes de alguem olhar o final de
+# linha.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.py]
+indent_size = 4
+max_line_length = 100
+
+[*.{yml,yaml,json,toml}]
+indent_size = 2
+
+[*.md]
+# Duas espacos no fim da linha e quebra de linha em Markdown; cortar
+# silenciosamente mudaria o texto renderizado.
+trim_trailing_whitespace = false
+
+[Makefile]
+# A receita do make EXIGE tab. Espaco vira "missing separator" e nada mais.
+indent_style = tab
+
+[*.{sh,bash}]
+indent_size = 4
+
+[*.{jsonl,csv,tsv}]
+# Dado congelado: nada de reformatar, nada de mexer no fim do arquivo.
+insert_final_newline = unset
+trim_trailing_whitespace = false

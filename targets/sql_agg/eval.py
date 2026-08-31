@@ -104,6 +104,20 @@ PARAMS_GATE = (
 LIMITE_SQL_S = 45.0
 
 
+#: Este alvo nao usa as camadas anti-memoizacao do labkit (caminho novo e modulo
+#: novo a cada execucao), e a ausencia e deliberada: o candidato aqui e SQL, nao
+#: um modulo Python. Nao ha estado de processo para sobreviver entre execucoes,
+#: porque cada execucao abre uma conexao nova sobre uma COPIA nova do banco
+#: congelado. O caminho equivalente de trapaca — guardar a resposta numa tabela
+#: e so le-la — e fechado no gate: `setup.sql` recusa CREATE TABLE, e `query.sql`
+#: so aceita um comando SELECT/WITH. Ver os mutantes `setup_materializa_resposta`
+#: e `ddl_dentro_da_consulta`.
+#:
+#: O nome desta constante e verificado por tests/test_anticheat.py, que exige das
+#: alternativas: ou o alvo usa as camadas, ou declara aqui por que nao precisa.
+SEM_DEFESA_DE_MEDICAO = "candidato e SQL: nao ha modulo Python para memoizar"
+
+
 def data(name: str) -> Path:
     return datakit.data_dir(HERE) / name
 

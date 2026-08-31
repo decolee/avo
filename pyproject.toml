@@ -34,5 +34,7 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q --strict-markers"
+# Sem `-q` aqui: um `-q` na linha de comando viraria `-qq`, que suprime a linha
+# final de contagem. Quem quiser silencio passa -q; o padrao mostra o resultado.
+addopts = "--strict-markers"
 markers = ["slow: mede tempo de verdade; pode levar dezenas de segundos"]

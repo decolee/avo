@@ -823,10 +823,30 @@ def main() -> int:
         evalkit.emit_failure(f"gate: {detalhe}")
         return 0
 
+    # Caminho novo por execução (acima, em `regimes`) derruba cache indexado por
+    # caminho. Não derruba cache indexado pelo CONTEÚDO: medido neste alvo,
+    # 130,9x de score falso com a saída correta e o mesmo fingerprint. Módulo
+    # novo por execução derruba qualquer cache em processo; a proibição de
+    # escrever em disco derruba o que sobreviveria às duas.
+    violacoes: list[str] = []
+
+    def fresh():
+        chamada = contracts.as_callable(evalkit.load_module(candidato, "cand_timed"), SYMBOL)
+
+        def guardada(*args):
+            with evalkit.no_disk_writes(violacoes):
+                return chamada(*args)
+
+        return guardada
+
     try:
-        medicao = evalkit.measure(fn, regimes(), repeats=5, warmup=1)
+        medicao = evalkit.measure(fn, regimes(), repeats=5, warmup=1, fn_factory=fresh)
     except Exception as exc:  # noqa: BLE001
         evalkit.emit_failure(f"falhou durante a medição: {type(exc).__name__}: {exc}")
+        return 0
+
+    if violacoes:
+        evalkit.emit_failure(f"o candidato escreveu em disco durante a medição: {violacoes[0]}")
         return 0
 
     suspeito, detalhe_fisica = evalkit.implausible_speed(medicao.per_regime, _pisos())

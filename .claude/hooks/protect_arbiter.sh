@@ -35,9 +35,16 @@ payload="$(cat 2>/dev/null || true)"
 # CLAUDE_PROJECT_DIR e o caminho normal; a derivacao a partir do proprio script
 # e o plano B para quando o hook e chamado fora do Claude Code (um teste no
 # terminal, por exemplo) ou por uma versao que nao exporta a variavel.
+#
+# A derivacao usa expansao do bash e nao `dirname`: um PATH minimo sem coreutils
+# fazia o fallback devolver "/" silenciosamente, e um hook que calcula a raiz
+# errada nao bloqueia nada — falhava aberto exatamente onde precisa falhar
+# fechado. Descoberto alimentando o hook com PATH restrito.
 raiz="${CLAUDE_PROJECT_DIR:-}"
 if [ -z "$raiz" ] || [ ! -d "$raiz" ]; then
-    raiz="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." 2>/dev/null && pwd)" || raiz="$PWD"
+    aqui="${BASH_SOURCE[0]%/*}"
+    [ "$aqui" = "${BASH_SOURCE[0]}" ] && aqui="."
+    raiz="$(cd -- "$aqui/../.." 2>/dev/null && pwd)" || raiz="$PWD"
 fi
 
 # --------------------------------------------------------------- extracao
@@ -115,10 +122,21 @@ fi
 rel="${caminho#"$raiz"/}"
 
 # ------------------------------------------------------------- veredito
+# Os padroes aparecem duas vezes, ancorados e nao ancorados. O par ancorado
+# (`targets/...`) casa o caso normal, com a raiz detectada certo. O par com
+# `*/` na frente e a rede: se a raiz for detectada errada, `rel` continua
+# absoluto e o padrao ancorado nao casaria — e o hook liberaria a edicao do
+# arbitro justamente na situacao em que ele esta mais confuso.
 protegido=""
 case "$rel" in
-    targets/*/eval.py) protegido="o avaliador (a funcao f) do alvo '$(printf '%s' "$rel" | cut -d/ -f2)'" ;;
-    labkit/*) protegido="labkit/, a biblioteca compartilhada pelos avaliadores" ;;
+    targets/*/eval.py | */targets/*/eval.py)
+        alvo_tocado="${rel##*targets/}"
+        alvo_tocado="${alvo_tocado%%/*}"
+        protegido="o avaliador (a funcao f) do alvo '$alvo_tocado'"
+        ;;
+    labkit/* | */labkit/*)
+        protegido="labkit/, a biblioteca compartilhada pelos avaliadores"
+        ;;
 esac
 
 [ -n "$protegido" ] || exit 0
