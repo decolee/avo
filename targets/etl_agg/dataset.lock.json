@@ -1,0 +1,29 @@
+{
+  "files": {
+    "gate_adv.jsonl": {
+      "bytes": 1468092,
+      "purpose": "UNICO dataset que decide correcao: 6 casas, notionais grandes, bordas",
+      "rows": 4207,
+      "sha256": "6e56d885e0ca9c8a7a95efe2e4663e10c6760ac19f47e6f70a933df4b042ca66"
+    },
+    "perf_narrow.jsonl": {
+      "bytes": 8641941,
+      "purpose": "poucos grupos grandes (~150 grupos)",
+      "rows": 25000,
+      "sha256": "047fce56c5745ef15999a5cb92d6ebdd66386ec989c0c1d9e8df14683ae11402"
+    },
+    "perf_skew.jsonl": {
+      "bytes": 8642570,
+      "purpose": "distribuicao enviesada: poucas contas concentram o volume",
+      "rows": 25000,
+      "sha256": "df4c6c3fd2a33b7615941b711f269f5da135297854693acf62a4e7fb145c12fc"
+    },
+    "perf_wide.jsonl": {
+      "bytes": 8642847,
+      "purpose": "muitos grupos pequenos (~4500 grupos)",
+      "rows": 25000,
+      "sha256": "23703b35dccfc360857c29e89aa58d67b89788c86fd53c0d22252d70ee06a4ef"
+    }
+  },
+  "version": 1
+}

@@ -1,0 +1,32 @@
+# O harness upstream e clonado pelo bootstrap.sh no commit fixado em
+# vendor/avo.lock. Nao e redistribuido aqui: tem licenca propria.
+vendor/
+
+# Runs de trabalho. O que merece sobreviver vai para examples/ ou experiments/.
+runs/
+
+# Datasets gerados: dezenas de MB reconstruidos em segundos por make_data.py.
+# O que e commitado e o dataset.lock.json com o SHA256 de cada arquivo — o
+# checksum e que torna "dataset congelado" uma afirmacao verificavel.
+targets/*/data/
+
+# Nao use um padrao cego como *.jsonl aqui. Ele levaria junto o scores.jsonl do
+# lineage e as trajetorias em examples/, que sao justamente o registro que a
+# gente quer versionar. Ignore por caminho, nao por extensao.
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Ferramentas
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editores e sistema
+.DS_Store
+*.swp

@@ -1,0 +1,59 @@
+name: etl_agg
+description: >-
+  Agregacao de transacoes financeiras (JSONL largo -> dict por account|ccy) sob
+  correcao exata. Score = media geometrica do throughput em tres formas de dado.
+
+seed: seed
+knowledge_base: kb
+entrypoint: transform.py
+
+evaluate:
+  command: ["python3", "{target}/eval.py", "--workdir", "{workdir}"]
+  cwd: "."
+  timeout: 10m
+
+baselines:
+  command: ["python3", "{target}/eval.py", "--baselines"]
+
+score:
+  direction: maximize
+
+agent:
+  goal: |
+    Otimize work/transform.py para maximizar throughput mantendo a correcao exata.
+
+    O avaliador mede a mediana de 5 execucoes em tres FORMAS de dado diferentes,
+    nao tres repeticoes da mesma:
+
+      wide    ~4500 grupos pequenos
+      narrow  ~150 grupos grandes
+      skew    volume concentrado numa minoria de contas
+
+    O numero maximizado e a media geometrica dos tres. Uma mudanca que acelera
+    um regime e regride outro perde para uma que melhora os tres modestamente —
+    e isso e proposital: o que interessa e transformacao geral, nao um truque
+    que so vale numa forma de dado.
+
+    A correcao e decidida num dataset separado e adversarial, nunca nos dados de
+    performance. Candidato incorreto vale ZERO, nao "um pouco menos".
+
+    Apenas a biblioteca padrao. Isso e verificado estaticamente: qualquer import
+    fora da stdlib reprova antes mesmo de rodar.
+
+  notes: |
+    Antes de comecar:
+
+      - kb/00-contrato.md e a verdade sobre o formato de saida. Leia inteiro:
+        `n` conta TODAS as linhas, `net` soma so as liquidadas, e a diferenca
+        entre arredondar no final e arredondar durante a acumulacao e a coisa
+        que o gate mais persegue.
+      - kb/10-performance.md tem o mapa do custo em Python e como medir sem se
+        enganar. kb/20-medicao.md diz qual tamanho de delta acreditar.
+      - O registro tem dezesseis campos; a agregacao precisa de cinco. Essa
+        folga e real e e parte do problema.
+      - Prefira mudancas defensaveis como transformacao geral. Hardcode de
+        chaves, tabelas de resultado memorizadas ou qualquer coisa que dependa
+        deste dataset especifico passa no gate e nao vale nada — a KB avisa e o
+        supervisor cobra.
+      - `./avo-eval` de dentro do run dir mede sem tocar no lineage. Use a
+        vontade: uma avaliacao do seed custa ~3s.

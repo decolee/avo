@@ -1,0 +1,87 @@
+diff --git a/__pycache__/transform.cpython-311.pyc b/__pycache__/transform.cpython-311.pyc
+index e8c461a..2880541 100644
+Binary files a/__pycache__/transform.cpython-311.pyc and b/__pycache__/transform.cpython-311.pyc differ
+diff --git a/transform.py b/transform.py
+index 47ac7d6..57a269c 100644
+--- a/transform.py
++++ b/transform.py
+@@ -1,68 +1,22 @@
+-"""Agregacao por (account, ccy) — extracao dirigida dos cinco campos usados.
+-
+-O registro tem dezesseis campos e a agregacao consome cinco. `json.loads`
+-materializa os dezesseis: constroi dict, faz unescape de todas as strings,
+-converte todos os numeros. Onze desses campos sao jogados fora imediatamente.
+-
+-Aqui cada campo e localizado pela sua chave e fatiado direto da linha. A busca e
+-por nome de chave, nao por posicao, entao a ordem dos campos no arquivo nao
+-importa. O que ela assume e mais estreito e esta declarado: as chaves aparecem
+-uma unica vez por linha, e os valores de `account`, `ccy` e `status` sao tokens
+-sem aspas escapadas nem barra invertida — o que o contrato do ledger garante.
+-Se essa suposicao quebrar, o gate reprova no dataset adversarial.
+-"""
++"""Tentativa: arredondar durante a acumulacao para manter os floats pequenos."""
+ import json
+ 
+ 
+-def _field(line, key, find=str.find):
+-    """Posicao logo apos `"<key>":` na linha, tolerando espaco depois dos dois pontos."""
+-    i = find(line, key)
+-    if i < 0:
+-        raise ValueError(f"campo ausente: {key}")
+-    i += len(key)
+-    while line[i] == " ":
+-        i += 1
+-    return i
+-
+-
+ def transform(path):
+     agg = {}
+-    find = str.find
++    loads = json.loads
+     with open(path) as fh:
+         for line in fh:
+-            i = _field(line, '"account":') + 1
+-            j = find(line, '"', i)
+-            account = line[i:j]
+-
+-            i = _field(line, '"ccy":') + 1
+-            j = find(line, '"', i)
+-            key = account + "|" + line[i:j]
+-
+-            i = _field(line, '"amount":')
+-            j = find(line, ",", i)
+-            amount = float(line[i:j])
+-
+-            i = _field(line, '"ts":')
+-            j = find(line, ",", i)
+-            ts = int(line[i:j])
+-
+-            i = _field(line, '"status":') + 1
+-            j = find(line, '"', i)
+-            settled = line[i:j] == "settled"
+-
++            row = loads(line)
++            key = row["account"] + "|" + row["ccy"]
+             acc = agg.get(key)
+             if acc is None:
+                 agg[key] = acc = [0, 0.0, 0.0, 0]
+             acc[0] += 1
+-            acc[1] += amount
+-            if settled:
+-                acc[2] += amount
+-            if ts > acc[3]:
+-                acc[3] = ts
+-
+-    if not agg:
+-        json.loads("{}")  # mantem a dependencia declarada em uso
+-    return {
+-        k: {"n": a[0], "gross": round(a[1], 2), "net": round(a[2], 2), "last_ts": a[3]}
+-        for k, a in agg.items()
+-    }
++            amount = row["amount"]
++            acc[1] = round(acc[1] + amount, 2)
++            if row["status"] == "settled":
++                acc[2] = round(acc[2] + amount, 2)
++            if row["ts"] > acc[3]:
++                acc[3] = row["ts"]
++    return {k: {"n": a[0], "gross": a[1], "net": a[2], "last_ts": a[3]} for k, a in agg.items()}

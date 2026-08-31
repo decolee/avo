@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "avo-data-lab"
+version = "1.0.0"
+description = "Bancada AVO para engenharia de dados: targets, gates adversariais e protocolo de ablação"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["pyyaml>=6"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+avo-lab = "labkit.cli:main"
+
+[tool.setuptools]
+packages = ["labkit"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Os seeds são deliberadamente ingênuos: é o x_0 que o agente vai melhorar.
+"targets/*/seed/*.py" = ["C4", "SIM", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = ["slow: mede tempo de verdade; pode levar dezenas de segundos"]

@@ -1,0 +1,16 @@
+{
+  "files": {
+    "gate_shop.sqlite": {
+      "bytes": 28672,
+      "purpose": "UNICO banco que decide correcao: bordas de data, empates, fan-out, NULLs",
+      "sha256": "105ee0122ed02ce5d5d947bcc0769005caa2266b9cc22a89775215533ac9317a"
+    },
+    "perf_shop.sqlite": {
+      "bytes": 50728960,
+      "purpose": "banco de performance: 24 meses, 200k pedidos largos, ~400k itens. So mede tempo.",
+      "rows": 200000,
+      "sha256": "27b8860a250faaf53aba262f2ea5ceb05bd5632d2e79ae282ccf595c6845380c"
+    }
+  },
+  "version": 1
+}
