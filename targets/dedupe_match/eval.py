@@ -94,9 +94,41 @@ ORCAMENTO_GATE_S = 6.0
 #: checagem tem que dar o mesmo veredito em toda avaliacao.
 SEMENTE_PERMUTACAO = 20260831
 
+#: Modulos da stdlib negados estaticamente ao candidato. Nao e paranoia
+#: generica: cada um destes e uma porta de arquivo que NAO passa por
+#: `builtins.open` / `io.open` / `os.open`, e portanto contorna a interceptacao
+#: de IO. `subprocess.run(["cat", gabarito])` le a resposta sem tocar em nenhuma
+#: das tres. Nenhum deles tem uso legitimo numa funcao pura sobre uma lista de
+#: dicionarios em memoria, entao negar e barato e nao restringe ninguem honesto.
+IMPORTS_NEGADOS = ("subprocess", "multiprocessing", "ctypes", "mmap", "socket")
+
 
 def data(name: str) -> Path:
     return datakit.data_dir(HERE) / name
+
+
+def imports_negados(caminho: str) -> tuple[bool, str]:
+    """Recusa estaticamente os modulos que dao a volta na interceptacao de IO."""
+    import ast
+
+    try:
+        arvore = ast.parse(Path(caminho).read_text(encoding="utf-8"), filename=caminho)
+    except SyntaxError as exc:
+        return False, f"{Path(caminho).name} nao compila: SyntaxError: {exc}"
+    nomes: set[str] = set()
+    for no in ast.walk(arvore):
+        if isinstance(no, ast.Import):
+            nomes.update(a.name.split(".")[0] for a in no.names)
+        elif isinstance(no, ast.ImportFrom) and no.level == 0 and no.module:
+            nomes.add(no.module.split(".")[0])
+    proibidos = sorted(nomes & set(IMPORTS_NEGADOS))
+    if proibidos:
+        return False, (
+            "match() e uma funcao pura sobre os registros recebidos; estes modulos sao "
+            "portas de arquivo que contornam essa regra e nao sao permitidos: "
+            + ", ".join(proibidos)
+        )
+    return True, "ok"
 
 
 # ------------------------------------------------------------------- dados
@@ -469,7 +501,10 @@ def _mut_depende_da_ordem(records):
     pares = set()
     for i, a in enumerate(records):
         for b in records[i + 1 : i + 4]:
-            if _normalizar(a["nome"])[:3] and _normalizar(a["nome"])[:3] == _normalizar(b["nome"])[:3]:
+            if (
+                _normalizar(a["nome"])[:3]
+                and _normalizar(a["nome"])[:3] == _normalizar(b["nome"])[:3]
+            ):
                 x, y = a["id"], b["id"]
                 pares.add((x, y) if x <= y else (y, x))
     return sorted(pares)
@@ -594,16 +629,20 @@ def main() -> int:
         saudavel, mensagem = evalkit.budget_report(parede, label="avaliacao do seed")
         print(mensagem)
         print(f"  gate:      {detalhe_gate}")
-        print(f"  orcamento: {orcamento.usado:.1f}s de {ORCAMENTO_S:.1f}s "
-              f"({orcamento.usado / ORCAMENTO_S:.0%} gastos pelo seed)")
+        print(
+            f"  orcamento: {orcamento.usado:.1f}s de {ORCAMENTO_S:.1f}s "
+            f"({orcamento.usado / ORCAMENTO_S:.0%} gastos pelo seed)"
+        )
         for linha in detalhes:
             print(f"  {linha}")
         folga = ORCAMENTO_S / orcamento.usado if orcamento.usado else 0.0
         if not ok_gate:
             print("  ATENCAO: o proprio seed reprovou no gate.")
         if folga < 1.3:
-            print(f"  ATENCAO: o seed cabe no orcamento com folga de so {folga:.2f}x. "
-                  "Numa maquina mais lenta ele zera. Aumente ORCAMENTO_S.")
+            print(
+                f"  ATENCAO: o seed cabe no orcamento com folga de so {folga:.2f}x. "
+                "Numa maquina mais lenta ele zera. Aumente ORCAMENTO_S."
+            )
         return 0 if (saudavel and ok_gate and folga >= 1.3) else 1
 
     if args.baselines:
@@ -622,10 +661,11 @@ def main() -> int:
         evalkit.emit_failure(f"{ENTRYPOINT} ausente em {args.workdir}")
         return 0
 
-    ok_imports, detail = contracts.stdlib_only(str(candidato))
-    if not ok_imports:
-        evalkit.emit_failure(detail)
-        return 0
+    for checagem in (contracts.stdlib_only, imports_negados):
+        ok_imports, detail = checagem(str(candidato))
+        if not ok_imports:
+            evalkit.emit_failure(detail)
+            return 0
 
     try:
         fn = contracts.as_callable(evalkit.load_module(candidato), SYMBOL)

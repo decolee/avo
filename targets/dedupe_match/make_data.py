@@ -59,74 +59,257 @@ from labkit import datakit  # noqa: E402
 # --------------------------------------------------------------- catalogos
 
 PRENOMES = (
-    "José", "João", "Antônio", "Francisco", "Carlos", "Paulo", "Pedro", "Lucas",
-    "Luiz", "Marcos", "Márcio", "Rafael", "Daniel", "Bruno", "Eduardo", "Felipe",
-    "Rodrigo", "Gustavo", "Thiago", "André", "Fernando", "Ricardo", "Sérgio",
-    "Maria", "Ana", "Francisca", "Antônia", "Adriana", "Juliana", "Márcia",
-    "Fernanda", "Patrícia", "Aline", "Sandra", "Camila", "Amanda", "Bruna",
-    "Jéssica", "Letícia", "Júlia", "Luciana", "Vanessa", "Mariana", "Beatriz",
-    "Simone", "Cláudia", "Débora", "Renata", "Tatiane", "Vera",
+    "José",
+    "João",
+    "Antônio",
+    "Francisco",
+    "Carlos",
+    "Paulo",
+    "Pedro",
+    "Lucas",
+    "Luiz",
+    "Marcos",
+    "Márcio",
+    "Rafael",
+    "Daniel",
+    "Bruno",
+    "Eduardo",
+    "Felipe",
+    "Rodrigo",
+    "Gustavo",
+    "Thiago",
+    "André",
+    "Fernando",
+    "Ricardo",
+    "Sérgio",
+    "Maria",
+    "Ana",
+    "Francisca",
+    "Antônia",
+    "Adriana",
+    "Juliana",
+    "Márcia",
+    "Fernanda",
+    "Patrícia",
+    "Aline",
+    "Sandra",
+    "Camila",
+    "Amanda",
+    "Bruna",
+    "Jéssica",
+    "Letícia",
+    "Júlia",
+    "Luciana",
+    "Vanessa",
+    "Mariana",
+    "Beatriz",
+    "Simone",
+    "Cláudia",
+    "Débora",
+    "Renata",
+    "Tatiane",
+    "Vera",
 )
 
 MEIOS = (
-    "de Souza", "dos Santos", "da Silva", "Augusto", "Henrique", "Cristina",
-    "Aparecida", "do Carmo", "Eduardo", "Fernanda", "Regina", "Luiz", "Otávio",
-    "", "", "",
+    "de Souza",
+    "dos Santos",
+    "da Silva",
+    "Augusto",
+    "Henrique",
+    "Cristina",
+    "Aparecida",
+    "do Carmo",
+    "Eduardo",
+    "Fernanda",
+    "Regina",
+    "Luiz",
+    "Otávio",
+    "",
+    "",
+    "",
 )
 
 SOBRENOMES = (
-    "Silva", "Santos", "Oliveira", "Souza", "Rodrigues", "Ferreira", "Alves",
-    "Pereira", "Lima", "Gomes", "Costa", "Ribeiro", "Martins", "Carvalho",
-    "Almeida", "Lopes", "Soares", "Fernandes", "Vieira", "Barbosa", "Rocha",
-    "Dias", "Nascimento", "Andrade", "Moreira", "Nunes", "Marques", "Machado",
-    "Mendes", "Freitas", "Cardoso", "Ramos", "Gonçalves", "Araújo", "Correia",
-    "Teixeira", "Azevedo", "Cavalcanti", "Monteiro", "Moraes", "Peixoto",
+    "Silva",
+    "Santos",
+    "Oliveira",
+    "Souza",
+    "Rodrigues",
+    "Ferreira",
+    "Alves",
+    "Pereira",
+    "Lima",
+    "Gomes",
+    "Costa",
+    "Ribeiro",
+    "Martins",
+    "Carvalho",
+    "Almeida",
+    "Lopes",
+    "Soares",
+    "Fernandes",
+    "Vieira",
+    "Barbosa",
+    "Rocha",
+    "Dias",
+    "Nascimento",
+    "Andrade",
+    "Moreira",
+    "Nunes",
+    "Marques",
+    "Machado",
+    "Mendes",
+    "Freitas",
+    "Cardoso",
+    "Ramos",
+    "Gonçalves",
+    "Araújo",
+    "Correia",
+    "Teixeira",
+    "Azevedo",
+    "Cavalcanti",
+    "Monteiro",
+    "Moraes",
+    "Peixoto",
 )
 
 CIDADES = (
-    ("São Paulo", "SP"), ("Rio de Janeiro", "RJ"), ("Belo Horizonte", "MG"),
-    ("Porto Alegre", "RS"), ("Curitiba", "PR"), ("Salvador", "BA"),
-    ("Fortaleza", "CE"), ("Recife", "PE"), ("Brasília", "DF"),
-    ("Goiânia", "GO"), ("Campinas", "SP"), ("São Bernardo do Campo", "SP"),
-    ("Ribeirão Preto", "SP"), ("Niterói", "RJ"), ("Florianópolis", "SC"),
-    ("Vitória", "ES"), ("Maceió", "AL"), ("João Pessoa", "PB"),
-    ("Uberlândia", "MG"), ("Juiz de Fora", "MG"),
+    ("São Paulo", "SP"),
+    ("Rio de Janeiro", "RJ"),
+    ("Belo Horizonte", "MG"),
+    ("Porto Alegre", "RS"),
+    ("Curitiba", "PR"),
+    ("Salvador", "BA"),
+    ("Fortaleza", "CE"),
+    ("Recife", "PE"),
+    ("Brasília", "DF"),
+    ("Goiânia", "GO"),
+    ("Campinas", "SP"),
+    ("São Bernardo do Campo", "SP"),
+    ("Ribeirão Preto", "SP"),
+    ("Niterói", "RJ"),
+    ("Florianópolis", "SC"),
+    ("Vitória", "ES"),
+    ("Maceió", "AL"),
+    ("João Pessoa", "PB"),
+    ("Uberlândia", "MG"),
+    ("Juiz de Fora", "MG"),
 )
 
 DOMINIOS = (
-    "gmail.com", "hotmail.com", "outlook.com", "uol.com.br", "terra.com.br",
-    "yahoo.com.br", "bol.com.br", "ig.com.br",
+    "gmail.com",
+    "hotmail.com",
+    "outlook.com",
+    "uol.com.br",
+    "terra.com.br",
+    "yahoo.com.br",
+    "bol.com.br",
+    "ig.com.br",
 )
 
 TIPOS_LOGRADOURO = (
-    ("Rua", "R."), ("Avenida", "Av."), ("Alameda", "Al."), ("Travessa", "Tv."),
-    ("Praça", "Pç."), ("Estrada", "Estr."),
+    ("Rua", "R."),
+    ("Avenida", "Av."),
+    ("Alameda", "Al."),
+    ("Travessa", "Tv."),
+    ("Praça", "Pç."),
+    ("Estrada", "Estr."),
 )
 
 LOGRADOUROS = (
-    "das Acácias", "Sete de Setembro", "Barão do Rio Branco", "São João",
-    "Dom Pedro II", "Getúlio Vargas", "Santos Dumont", "das Palmeiras",
-    "Marechal Deodoro", "Quinze de Novembro", "Tiradentes", "das Flores",
-    "João Pessoa", "Voluntários da Pátria", "Duque de Caxias", "Amazonas",
+    "das Acácias",
+    "Sete de Setembro",
+    "Barão do Rio Branco",
+    "São João",
+    "Dom Pedro II",
+    "Getúlio Vargas",
+    "Santos Dumont",
+    "das Palmeiras",
+    "Marechal Deodoro",
+    "Quinze de Novembro",
+    "Tiradentes",
+    "das Flores",
+    "João Pessoa",
+    "Voluntários da Pátria",
+    "Duque de Caxias",
+    "Amazonas",
 )
 
 RAMOS = (
-    "Comercial", "Distribuidora", "Industrial", "Transportes", "Alimentos",
-    "Construções", "Serviços", "Tecnologia", "Engenharia", "Confecções",
-    "Farmacêutica", "Agropecuária", "Metalúrgica", "Logística", "Importadora",
-    "Exportadora", "Papelaria", "Refrigeração", "Automação", "Consultoria",
-    "Empreendimentos", "Participações", "Mineração", "Têxtil",
+    "Comercial",
+    "Distribuidora",
+    "Industrial",
+    "Transportes",
+    "Alimentos",
+    "Construções",
+    "Serviços",
+    "Tecnologia",
+    "Engenharia",
+    "Confecções",
+    "Farmacêutica",
+    "Agropecuária",
+    "Metalúrgica",
+    "Logística",
+    "Importadora",
+    "Exportadora",
+    "Papelaria",
+    "Refrigeração",
+    "Automação",
+    "Consultoria",
+    "Empreendimentos",
+    "Participações",
+    "Mineração",
+    "Têxtil",
 )
 
 MARCAS = (
-    "Acácia", "Andorinha", "Bandeirante", "Cristal", "Diamante", "Estrela",
-    "Fênix", "Guarani", "Horizonte", "Ipiranga", "Jandaia", "Kairós",
-    "Lumiar", "Marajoara", "Nordeste", "Oceano", "Paranapanema", "Quaresmeira",
-    "Rio Verde", "Sertão", "Tupinambá", "União", "Vanguarda", "Xingu",
-    "Aurora", "Bonsucesso", "Caiçara", "Dourado", "Embiara", "Farroupilha",
-    "Girassol", "Hortência", "Itaúna", "Jequitibá", "Laranjeiras", "Mangueiral",
-    "Natividade", "Orquídea", "Pindorama", "Quilombo", "Recanto", "Solimões",
-    "Tamoio", "Ubatã", "Vitória Régia", "Zamboni",
+    "Acácia",
+    "Andorinha",
+    "Bandeirante",
+    "Cristal",
+    "Diamante",
+    "Estrela",
+    "Fênix",
+    "Guarani",
+    "Horizonte",
+    "Ipiranga",
+    "Jandaia",
+    "Kairós",
+    "Lumiar",
+    "Marajoara",
+    "Nordeste",
+    "Oceano",
+    "Paranapanema",
+    "Quaresmeira",
+    "Rio Verde",
+    "Sertão",
+    "Tupinambá",
+    "União",
+    "Vanguarda",
+    "Xingu",
+    "Aurora",
+    "Bonsucesso",
+    "Caiçara",
+    "Dourado",
+    "Embiara",
+    "Farroupilha",
+    "Girassol",
+    "Hortência",
+    "Itaúna",
+    "Jequitibá",
+    "Laranjeiras",
+    "Mangueiral",
+    "Natividade",
+    "Orquídea",
+    "Pindorama",
+    "Quilombo",
+    "Recanto",
+    "Solimões",
+    "Tamoio",
+    "Ubatã",
+    "Vitória Régia",
+    "Zamboni",
 )
 
 SUFIXOS_PJ = ("LTDA", "S/A", "ME", "EIRELI", "EPP")
@@ -158,8 +341,20 @@ def _typo(rnd: random.Random, texto: str) -> str:
     if modo < 0.70:  # letra dobrada
         return texto[:i] + texto[i] + texto[i:]
     if modo < 0.90:  # letra trocada por vizinha de teclado
-        vizinhos = {"a": "s", "e": "r", "i": "o", "o": "p", "u": "y", "s": "a",
-                    "r": "t", "n": "m", "m": "n", "c": "v", "l": "k", "t": "y"}
+        vizinhos = {
+            "a": "s",
+            "e": "r",
+            "i": "o",
+            "o": "p",
+            "u": "y",
+            "s": "a",
+            "r": "t",
+            "n": "m",
+            "m": "n",
+            "c": "v",
+            "l": "k",
+            "t": "y",
+        }
         c = texto[i].lower()
         return texto[:i] + vizinhos.get(c, c) + texto[i + 1 :]
     return texto[:i] + texto[i + 1 :]  # letra faltando
@@ -343,9 +538,11 @@ def _nome_pf(rnd: random.Random, ent: dict, perfil: Perfil, intacto: bool) -> st
         return nome
     partes = nome.split()
     if rnd.random() < perfil.abrevia_meio and len(partes) > 2:
-        partes = [partes[0]] + [
-            (p[0] + "." if p[0].isupper() and len(p) > 2 else p) for p in partes[1:-1]
-        ] + [partes[-1]]
+        partes = (
+            [partes[0]]
+            + [(p[0] + "." if p[0].isupper() and len(p) > 2 else p) for p in partes[1:-1]]
+            + [partes[-1]]
+        )
     if rnd.random() < 0.30:
         partes = [p for p in partes if p.lower() not in ("de", "da", "do", "dos", "das")]
     if rnd.random() < 0.18 and len(partes) > 2:
@@ -533,7 +730,9 @@ def _construir(perfil: Perfil) -> tuple[list[dict], list[list[str]]]:
         clusters.append([_registro(rnd, ent, perfil, i == 0) for i in range(tamanho)])
 
     for tamanho, quantos in (
-        (2, perfil.clusters_2), (3, perfil.clusters_3), (4, perfil.clusters_4)
+        (2, perfil.clusters_2),
+        (3, perfil.clusters_3),
+        (4, perfil.clusters_4),
     ):
         for _ in range(quantos):
             cluster(fabrica(rnd), tamanho)
@@ -588,8 +787,17 @@ def _gate_bank() -> list[dict]:
     neste alvo `correct` significa "respeitou o contrato", nao "acertou".
     """
     rnd = random.Random(4199)
-    perfil = Perfil("gate", seed=4199, singletons=0, clusters_2=0, clusters_3=0,
-                    clusters_4=0, homonimos=0, quase_homonimos=0, domicilios=0)
+    perfil = Perfil(
+        "gate",
+        seed=4199,
+        singletons=0,
+        clusters_2=0,
+        clusters_3=0,
+        clusters_4=0,
+        homonimos=0,
+        quase_homonimos=0,
+        domicilios=0,
+    )
     registros: list[dict] = []
     for _ in range(80):
         ent = _entidade_pf(rnd)
@@ -597,8 +805,16 @@ def _gate_bank() -> list[dict]:
         if rnd.random() < 0.5:
             registros.append(_registro(rnd, ent, perfil, False))
 
-    vazio = {"nome": "", "cidade": "", "uf": "", "telefone": "", "email": "",
-             "documento": "", "nascimento": "", "endereco": ""}
+    vazio = {
+        "nome": "",
+        "cidade": "",
+        "uf": "",
+        "telefone": "",
+        "email": "",
+        "documento": "",
+        "nascimento": "",
+        "endereco": "",
+    }
     bordas = [
         dict(vazio),
         dict(vazio, nome="   "),
