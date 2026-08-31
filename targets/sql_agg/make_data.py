@@ -194,6 +194,21 @@ def _build_perf(path: Path, n_customers: int, n_orders: int, seed: int) -> None:
     # cobrindo captura.
     months = [(2023 + (m // 12), (m % 12) + 1) for m in range(24)]
 
+    # As datas são sorteadas e depois ORDENADAS antes de virar linha: numa
+    # tabela de pedidos de verdade, `order_id` é uma sequência e cresce junto com
+    # `order_date`. Isso não é cosmético — é o que decide se um índice ajuda. Com
+    # id e data correlacionados, percorrer o índice de `(status, order_date)`
+    # entrega os `order_id` em ordem crescente e as buscas seguintes em
+    # `order_items` ficam sequenciais; com id e data embaralhados, o mesmo índice
+    # destrói a localidade e fica mais lento que a varredura. Dado sintético
+    # embaralhado ensinaria a lição errada sobre índice.
+    datas = sorted(
+        (lambda y, m: f"{y:04d}-{m:02d}-{rnd.randrange(1, _month_days(y, m) + 1):02d}")(
+            *months[rnd.randrange(len(months))]
+        )
+        for _ in range(n_orders)
+    )
+
     orders = []
     items = []
     refunds = []
@@ -205,14 +220,13 @@ def _build_perf(path: Path, n_customers: int, n_orders: int, seed: int) -> None:
         # quase iguais e a ordenação do result set não teria significado.
         idx = int(n_customers * (rnd.random() ** 2.4))
         customer_id = min(idx, n_customers - 1) + 1
-        year, month = months[rnd.randrange(len(months))]
-        day = rnd.randrange(1, _month_days(year, month) + 1)
+        data_pedido = datas[order_id - 1]
         status = rnd.choice(STATUSES)
         orders.append(
             (
                 order_id,
                 customer_id,
-                f"{year:04d}-{month:02d}-{day:02d}",
+                data_pedido,
                 status,
                 rnd.choice(CHANNELS),
                 rnd.choice(PAYMENTS),
@@ -221,14 +235,18 @@ def _build_perf(path: Path, n_customers: int, n_orders: int, seed: int) -> None:
                 f"{rnd.randrange(10_000, 99_999):05d}-{rnd.randrange(0, 999):03d}",
                 f"CUPOM{rnd.randrange(9999):04d}" if rnd.random() < 0.25 else None,
                 rnd.choice(DEVICES),
-                # A nota é o grosso do peso da linha. Ela existe para que varrer
-                # `orders` custe leitura de página de verdade, e não só CPU.
+                # A nota é o grosso do peso da linha, e é ela que faz a
+                # aritmética do índice fechar: varrer `orders` custa leitura de
+                # página proporcional aos BYTES, enquanto construir um índice
+                # custa uma ordenação proporcional às LINHAS. Linha gorda e
+                # poucas linhas é a combinação em que um índice cobrindo se paga
+                # dentro de um relatório — que é a lição que precisa atravessar
+                # para o Postgres.
                 f"pedido {order_id} via {rnd.choice(CHANNELS)} conferido em "
-                f"{rnd.randrange(10**12):012d} lote {rnd.randrange(99_999):05d} "
-                f"origem {rnd.choice(CITIES)} obs {rnd.randrange(10**14):014d}",
+                + " ".join(f"{rnd.randrange(10**12):012d}" for _ in range(48)),
             )
         )
-        for _ in range(rnd.randrange(1, 4)):
+        for _ in range(rnd.randrange(6, 19)):
             item_id += 1
             items.append(
                 (
@@ -239,14 +257,14 @@ def _build_perf(path: Path, n_customers: int, n_orders: int, seed: int) -> None:
                     rnd.randrange(150, 90_000),
                 )
             )
-        if rnd.random() < 0.09:
+        if rnd.random() < 0.12:
             refund_id += 1
             refunds.append(
                 (
                     refund_id,
                     order_id,
                     rnd.randrange(100, 120_000),
-                    f"{year:04d}-{month:02d}-{day:02d}",
+                    data_pedido,
                 )
             )
 
@@ -292,8 +310,20 @@ class _GateBuilder:
         self._order_id += 1
         oid = self._order_id
         self.orders.append(
-            (oid, customer_id, date, status, "web", "pix", "Recife", "PE", "50000-000",
-             None, "ios", f"pedido {oid}")
+            (
+                oid,
+                customer_id,
+                date,
+                status,
+                "web",
+                "pix",
+                "Recife",
+                "PE",
+                "50000-000",
+                None,
+                "ios",
+                f"pedido {oid}",
+            )
         )
         for qty, unit in item_values:
             self._item_id += 1
@@ -311,6 +341,7 @@ def _gate_rows() -> _GateBuilder:
         g.customer(cid, REGIONS[cid % len(REGIONS)])
     g.customer(13, None)  # região NULL: o contrato manda propagar o NULL
     g.customer(14, "Sul")  # nenhum pedido: não pode aparecer no result set
+    g.customer(15, "Norte")  # maior id e maior receita: inverte a ordem natural
 
     # --- 2023-12: mês inteiro fora da janela [2024-01-01, ...) do primeiro
     # conjunto de parâmetros, e dentro da janela larga do terceiro. Pega filtro
@@ -339,10 +370,12 @@ def _gate_rows() -> _GateBuilder:
     g.order(7, "2024-01-15", [(1, 80_000)], refund=80_000)
     # Cliente 8: bruto 30000 e estorno 10000 -> pct = 33.33. Exige arredondar.
     g.order(8, "2024-01-16", [(1, 30_000)], refund=10_000)
-    # Cliente 9: dois pedidos cujo pct por pedido arredonda diferente do pct do
-    # grupo. Arredondar por pedido e tirar média dá 33.34; o contrato dá 33.33.
-    g.order(9, "2024-01-17", [(1, 30_000)], refund=10_000)
-    g.order(9, "2024-01-18", [(1, 3)], refund=1)
+    # Cliente 9: dois pedidos de tamanhos muito diferentes. A média dos
+    # percentuais por pedido dá 25.00; a razão entre as somas do grupo dá 49.50.
+    # É essa distância que separa "arredondar no lugar certo" de "arredondar por
+    # pedido e tirar média", e sem ela o gate fica cego para o erro.
+    g.order(9, "2024-01-17", [(1, 100_000)], refund=50_000)
+    g.order(9, "2024-01-18", [(1, 1_000)])
     # Cliente 10: mesmo mês, quatro status. Só o `delivered` entra; os outros
     # três existem para pegar filtro de status errado, e o `returned` em
     # particular para pegar quem lê "não cancelado" no lugar de "entregue".
@@ -358,6 +391,12 @@ def _gate_rows() -> _GateBuilder:
     # empate acima só existir depois de somar o grupo inteiro.
     g.order(1, "2024-01-28", [(1, 1)])
     g.order(2, "2024-01-29", [(1, 1)])
+    # Cliente 15: o maior customer_id é também o primeiro do ranking, em todos os
+    # meses. Sem essa inversão, a ordem natural do plano (mês, customer_id) é a
+    # mesma do contrato (mês, líquido DESC, customer_id) e uma consulta SEM
+    # ORDER BY passaria por coincidência — o gate não estaria verificando ordem
+    # nenhuma, só fingindo.
+    g.order(15, "2024-01-26", [(1, 500_000)])
 
     # --- 2024-02: mês com bissexto e com empate triplo na fronteira do top_n.
     g.order(1, "2024-02-01", [(1, 100_000)])
@@ -365,6 +404,7 @@ def _gate_rows() -> _GateBuilder:
     g.order(3, "2024-02-15", [(1, 100_000)])
     g.order(4, "2024-02-16", [(2, 25_000)], refund=1)
     g.order(5, "2024-02-17", [(1, 40_000)])
+    g.order(15, "2024-02-20", [(1, 500_000)])
     # Estorno maior que a venda: líquido negativo, e o ranking tem que aceitar.
     g.order(6, "2024-02-18", [(1, 10_000)], refund=95_000)
 
@@ -372,6 +412,7 @@ def _gate_rows() -> _GateBuilder:
     # não cinco: quem materializa "sempre top_n linhas" quebra aqui.
     g.order(7, "2024-03-05", [(1, 12_345)])
     g.order(8, "2024-03-31", [(1, 12_000)])  # borda superior exclusiva do 1º set
+    g.order(15, "2024-03-20", [(1, 500_000)])
 
     # --- 2024-04: existe só para a borda. Com d1 = '2024-04-01' nenhuma destas
     # linhas pode aparecer; um `<=` no lugar de `<` traz a primeira.
@@ -479,9 +520,9 @@ def specs() -> list[datakit.DatasetSpec]:
     return [
         datakit.DatasetSpec(
             PERF_DB,
-            lambda p: _build_perf(p, n_customers=5000, n_orders=200_000, seed=20240131),
-            purpose="banco de performance: 24 meses, 200k pedidos largos, ~400k itens. So mede tempo.",
-            rows=200_000,
+            lambda p: _build_perf(p, n_customers=600, n_orders=60_000, seed=20240131),
+            purpose="banco de performance: 24 meses, 60k pedidos largos, ~720k itens. So mede tempo.",
+            rows=60_000,
         ),
         datakit.DatasetSpec(
             GATE_DB,

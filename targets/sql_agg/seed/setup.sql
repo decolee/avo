@@ -1,0 +1,24 @@
+-- DDL executada ANTES da consulta, sobre uma COPIA do banco congelado.
+--
+-- O x_0 nao prepara nada: o seed mede o banco como ele vem, e essa e a linha de
+-- base contra a qual qualquer indice tem que se justificar.
+--
+-- O que este arquivo aceita:
+--     CREATE INDEX / CREATE UNIQUE INDEX
+--     CREATE VIEW
+--     ANALYZE
+--
+-- O que ele recusa, e por que:
+--     CREATE TABLE    materializar o resultado faz o numero subir sem que
+--                     nenhuma consulta tenha ficado melhor. E a trapaca que
+--                     este alvo existe para nao premiar.
+--     CREATE TEMP ... objeto temporario morre com a conexao de setup e nao
+--                     existiria na hora da consulta.
+--     PRAGMA          vale so para a conexao que o executou, e a consulta roda
+--                     em outra. Nao mudaria a medicao.
+--     INSERT/UPDATE/DELETE/DROP/ALTER/ATTACH -- alterar dado nao e otimizar.
+--
+-- Cuidado com o preco: o regime `frio` cronometra este arquivo junto com as
+-- quatro consultas do lote. Um indice util se paga ali; um indice a mais so
+-- aparece como custo. Meça antes de criar -- kb/10-sqlite-plano-e-indices.md
+-- tem os numeros deste banco.

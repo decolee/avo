@@ -1,0 +1,70 @@
+name: sql_agg
+description: >-
+  Receita por cliente e mes com ranking, em SQLite, sob igualdade exata do result
+  set. O candidato evolui SQL: a consulta e o esquema fisico (indices, views,
+  ANALYZE). Score = media geometrica de tres regimes: frio, quente e janela larga.
+
+seed: seed
+knowledge_base: kb
+entrypoint: query.sql
+
+evaluate:
+  command: ["python3", "{target}/eval.py", "--workdir", "{workdir}"]
+  cwd: "."
+  timeout: 10m
+
+baselines:
+  command: ["python3", "{target}/eval.py", "--baselines"]
+
+score:
+  direction: maximize
+
+agent:
+  goal: |
+    Otimize work/query.sql (e, se ajudar, work/setup.sql) para maximizar o score
+    mantendo o result set EXATAMENTE igual ao contrato.
+
+    Voce mexe em SQL, nao em Python. Dois arquivos:
+
+      query.sql  a consulta medida. UM unico SELECT (pode abrir com WITH), com os
+                 parametros nomeados :d0, :d1 e :top_n. Sem DDL, sem DML.
+      setup.sql  DDL opcional executada ANTES da consulta: CREATE INDEX,
+                 CREATE VIEW, ANALYZE. Nada que altere dados, e nada de
+                 CREATE TABLE.
+
+    O avaliador mede tres regimes sobre o mesmo banco congelado:
+
+      frio    setup.sql + as quatro janelas trimestrais de 2024, num banco
+              recem-copiado. Aqui o preco de criar indice aparece.
+      quente  as mesmas quatro janelas, com o banco ja preparado. Aqui o
+              beneficio do indice aparece.
+      larga   2023 inteiro numa consulta so, com corte mais fundo. Pune o plano
+              que so funciona em faixa curta.
+
+    O numero maximizado e a media geometrica dos tres. Indice util sobe `quente`
+    e `larga` mais do que afunda `frio`; indice do mundo inteiro afunda `frio` e
+    nao volta. Uma mudanca que acelera um regime e regride outro perde para uma
+    que melhora os tres modestamente.
+
+    A correcao e decidida num banco separado e adversarial, consultado com QUATRO
+    conjuntos de parametros diferentes — inclusive um que devolve zero linhas.
+    Candidato incorreto vale ZERO, nao "um pouco menos".
+
+  notes: |
+    Antes de comecar:
+
+      - kb/00-contrato.md e a verdade sobre o esquema, as colunas de saida e as
+        regras de borda. Leia inteiro: a janela de datas e [:d0, :d1) com o fim
+        EXCLUSIVO, `n_estornos` conta pedidos com estorno e nao linhas, e o
+        ORDER BY (mes DESC, liquido_cents DESC, customer_id) faz parte do
+        contrato — o gate compara linha a linha, na ordem.
+      - kb/10-sqlite-plano-e-indices.md ensina a ler EXPLAIN QUERY PLAN neste
+        banco e o que custa cada coisa. kb/20-medicao.md diz em qual delta
+        acreditar.
+      - O banco congelado NUNCA e alterado: cada medicao roda sobre uma copia, e
+        a consulta abre a conexao em modo somente leitura.
+      - Materializar o resultado numa tabela, embutir as datas, ou devolver
+        sempre :top_n linhas passa longe do que este alvo mede. O gate recusa
+        CREATE TABLE pelo nome e roda a consulta com quatro janelas diferentes.
+      - `./avo-eval` de dentro do run dir mede sem tocar no lineage. Use a
+        vontade: uma avaliacao do seed custa ~12s.

@@ -1,0 +1,47 @@
+{
+  "files": {
+    "gate_bank.json": {
+      "bytes": 36200,
+      "purpose": "UNICO banco que decide correcao: forma, determinismo, pureza, orcamento",
+      "rows": 147,
+      "sha256": "3c384f65bfa8afb8118234005c738e1d09d6e94258e0843eb53ea069ccc6487c"
+    },
+    "labels_empresas.json": {
+      "bytes": 18621,
+      "purpose": "gabarito de empresas: pares verdadeiros. So o avaliador le",
+      "rows": 665,
+      "sha256": "ee11f505033704af36735af4b9e89020ca058a55d2edc932671025c42dae8087"
+    },
+    "labels_pessoas.json": {
+      "bytes": 18621,
+      "purpose": "gabarito de pessoas: pares verdadeiros. So o avaliador le",
+      "rows": 665,
+      "sha256": "a9b755a0ca3197217f069c0f4a1852774217bf764f8a5ba1ce632ab740d1449a"
+    },
+    "labels_ruidoso.json": {
+      "bytes": 18621,
+      "purpose": "gabarito de ruidoso: pares verdadeiros. So o avaliador le",
+      "rows": 665,
+      "sha256": "07969050e5f1b569c37d7cfe5232df65dce70484c54d3e11739e079523dacdf6"
+    },
+    "records_empresas.json": {
+      "bytes": 607673,
+      "purpose": "banco empresas: registros SEM rotulo, o que match() recebe",
+      "rows": 2255,
+      "sha256": "afa27980bfc1a40b6df9de5efc3dc64e48f493e6ac977b18cf2fc70b90415cdb"
+    },
+    "records_pessoas.json": {
+      "bytes": 593901,
+      "purpose": "banco pessoas: registros SEM rotulo, o que match() recebe",
+      "rows": 2345,
+      "sha256": "b0b76dc8539412434e3d13168475037051805790c7c6537ea5d44422b46d8a5a"
+    },
+    "records_ruidoso.json": {
+      "bytes": 564719,
+      "purpose": "banco ruidoso: registros SEM rotulo, o que match() recebe",
+      "rows": 2255,
+      "sha256": "e3cbed2f33dc7e24c2075ca51239466924484964c05e99f027e9f46a2782d0dd"
+    }
+  },
+  "version": 1
+}

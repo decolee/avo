@@ -3,13 +3,13 @@
     "gate_shop.sqlite": {
       "bytes": 28672,
       "purpose": "UNICO banco que decide correcao: bordas de data, empates, fan-out, NULLs",
-      "sha256": "105ee0122ed02ce5d5d947bcc0769005caa2266b9cc22a89775215533ac9317a"
+      "sha256": "34e12ef19afe9798175e6f15df63382ae115841d3339a901bec5e04f312cd2f3"
     },
     "perf_shop.sqlite": {
-      "bytes": 50728960,
-      "purpose": "banco de performance: 24 meses, 200k pedidos largos, ~400k itens. So mede tempo.",
-      "rows": 200000,
-      "sha256": "27b8860a250faaf53aba262f2ea5ceb05bd5632d2e79ae282ccf595c6845380c"
+      "bytes": 72245248,
+      "purpose": "banco de performance: 24 meses, 60k pedidos largos, ~720k itens. So mede tempo.",
+      "rows": 60000,
+      "sha256": "6cceeff29a3af2dc5f8d13999b018a85da941bac85ae40537b84a41b9140393b"
     }
   },
   "version": 1

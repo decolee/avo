@@ -1,0 +1,77 @@
+name: dedupe_match
+description: >-
+  Record linkage de cadastro (pessoas fisicas, empresas, cadastro ruidoso) sob
+  orcamento de tempo fixo. Score = media geometrica do F1 em tres bancos
+  rotulados independentes. Alvo de QUALIDADE: o que se maximiza e acerto, nao
+  throughput.
+
+seed: seed
+knowledge_base: kb
+entrypoint: match.py
+
+evaluate:
+  command: ["python3", "{target}/eval.py", "--workdir", "{workdir}"]
+  cwd: "."
+  timeout: 10m
+
+baselines:
+  command: ["python3", "{target}/eval.py", "--baselines"]
+
+score:
+  direction: maximize
+
+agent:
+  goal: |
+    Melhore work/match.py para maximizar o F1 medio, sem estourar o orcamento
+    de tempo.
+
+    match(records) recebe uma lista de registros de cadastro e devolve os pares
+    de ids que sao a mesma entidade. O avaliador mede F1 em tres bancos
+    rotulados INDEPENDENTES, que sao formas de cadastro diferentes e nao tres
+    repeticoes do mesmo:
+
+      pessoas    pessoas fisicas, corrupcao moderada
+      empresas   razao social: LTDA/LIMITADA, "&" virando "E", nome fantasia
+      ruidoso    pessoas fisicas com o dobro de erro de digitacao
+
+    O numero maximizado e a media geometrica dos tres F1. Uma normalizacao
+    afinada para pessoa fisica que regride em razao social perde para uma que
+    melhora as tres modestamente — o que interessa e linkage geral, nao um
+    truque de banco.
+
+    A restricao vinculante e TEMPO. O tempo de todas as chamadas de match soma
+    num unico teto (14s por padrao) e estourar vale ZERO, nao "um pouco menos".
+    O seed ja gasta mais da metade do teto fazendo a coisa mais burra possivel:
+    qualquer comparacao mais cara colocada dentro daquele laco O(n^2) estoura o
+    orcamento muito antes de melhorar o F1. Bloqueio esperto contra comparacao
+    exaustiva e o problema de verdade, e nao um detalhe de implementacao.
+
+    Apenas a biblioteca padrao. Isso e verificado estaticamente: qualquer import
+    fora da stdlib reprova antes mesmo de rodar.
+
+  notes: |
+    Antes de comecar:
+
+      - kb/00-contrato.md e a verdade sobre a saida e sobre o que `correct`
+        significa AQUI: contrato, nao acerto. Errar muito vale F1 baixo; violar
+        o contrato vale zero. Leia inteiro — as quatro clausulas (forma,
+        orcamento, determinismo, pureza) sao verificadas, nao pedidas.
+      - `match` e uma funcao pura. Ela nao le disco nem escreve em disco, e isso
+        e interceptado durante a execucao. O gabarito existe em disco e ler o
+        gabarito reprova; nao e uma regra de etiqueta.
+      - kb/10-record-linkage.md tem o mapa do dominio: normalizacao, bloqueio,
+        similaridade aproximada, combinacao de campos e fechamento transitivo,
+        com o custo de cada um. kb/20-medicao.md diz em que delta acreditar e
+        como ler precisao e recall.
+      - `notes` traz precisao e recall separados por banco. Use: recall baixo
+        com precisao alta e problema de normalizacao ou bloqueio; o inverso e
+        limiar frouxo ou falta de campo corroborante. Sao consertos opostos.
+      - Os negativos dificeis sao construidos de proposito — homonimo exato na
+        mesma cidade, nome a uma letra de distancia, telefone e endereco
+        compartilhados por pessoas diferentes. Todo par adversarial tem ao menos
+        um campo presente dos dois lados que o separa. Achar esse campo e o
+        trabalho.
+      - Prefira mudancas defensaveis como linkage geral. Limiar afinado no
+        terceiro decimal para estes tres bancos passa no gate e nao vale nada.
+      - `./avo-eval` de dentro do run dir mede sem tocar no lineage. Uma
+        avaliacao do seed custa ~10s.
