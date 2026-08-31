@@ -572,9 +572,9 @@ def checar_consistencia_perf(setup_sql: str, query_sql: str) -> tuple[bool, str]
 
     Sem ela, `... AND (SELECT COUNT(*) FROM orders) < 1000` é verdadeiro nas 35
     linhas do gate e falso nas 60.000 do benchmark: o candidato passa correto e
-    é cronometrado devolvendo zero linha, cinco vezes acima de qualquer
-    otimização honesta. Uma data embutida fora do intervalo do banco de gate faz
-    o mesmo mais discretamente.
+    é cronometrado devolvendo zero linha — dez vezes o score do seed, duas vezes
+    e meia o do melhor candidato honesto. Uma data embutida fora do intervalo do
+    banco de gate faz o mesmo mais discretamente.
 
     A cópia usa o mesmo prefixo e o mesmo nome de arquivo que as do relógio (ver
     `PREFIXO_COPIA`), e é feita mesmo quando `setup.sql` é vazio: rodar direto no
@@ -621,7 +621,13 @@ def checar_consistencia_perf(setup_sql: str, query_sql: str) -> tuple[bool, str]
 
 
 def judge_medicao(candidato) -> tuple[bool, str]:
-    """O gate mais a consistência no banco medido. É o que `main` aplica."""
+    """O gate mais a consistência no banco medido, num julgador só.
+
+    `main` roda as duas separadamente, para que a reprovação diga qual das duas
+    falhou. Aqui elas vêm juntas porque `--selftest` precisa de um `Gate` único
+    para julgar os mutantes `trapaca_*`: cada um deles passa no gate e é a
+    segunda metade que os pega.
+    """
     ok, detalhe = GATE.check(candidato)
     if not ok:
         return False, detalhe

@@ -370,7 +370,12 @@ def _montar_guarda():
         if chave[0] <= 0:
             return
         if evento == "open":
-            arquivo, modo, flags = args
+            # Desempacotamento defensivo: o arbitro nao pode quebrar por uma
+            # aridade inesperada do evento. Errar aqui derruba um `open` do
+            # proprio avaliador, nao o do candidato.
+            arquivo = args[0]
+            modo = args[1] if len(args) > 1 else None
+            flags = args[2] if len(args) > 2 else 0
             try:
                 caminho = os.path.realpath(os.fspath(arquivo))
             except TypeError:  # descritor numerico: nao ha caminho a julgar
@@ -789,6 +794,49 @@ def _mut_cache_em_sqlite(records):
     return referencia(records)
 
 
+def guarda_do_import_rejeita() -> tuple[bool, str]:
+    """O ataque que a suite de mutantes nao consegue expressar, e que passou.
+
+    Os mutantes sao funcoes soltas: eles nao tem corpo de modulo, entao nenhum
+    deles consegue reproduzir o atalho mais barato que existiu contra este
+    alvo — ler `data/labels_*.json` no IMPORT do modulo do candidato, guardar
+    num global e devolver a resposta de dentro de uma `match` que nunca toca no
+    disco. Enquanto a guarda cobria so a chamada, isso marcava F1 = 1,0 nos tres
+    bancos com `correct: true` e 0,0s de orcamento.
+
+    Este teste escreve um candidato assim num diretorio temporario e exige que a
+    guarda o rejeite no import. Ele fica aqui, e nao em tests/, porque e o
+    contrato do arbitro que ele protege: quem mexer na guarda ve o alarme na
+    hora, rodando o mesmo `--selftest` de sempre.
+    """
+    import tempfile
+    import textwrap
+
+    fonte = textwrap.dedent(
+        f"""
+        import json
+
+        with open({str(HERE / "data" / "labels_pessoas.json")!r}, encoding="utf-8") as fh:
+            _GABARITO = [tuple(par) for par in json.load(fh)]
+
+
+        def match(records):
+            ids = {{reg["id"] for reg in records}}
+            return [p for p in _GABARITO if p[0] in ids and p[1] in ids]
+        """
+    )
+    with tempfile.TemporaryDirectory(prefix="dedupe-selftest-") as tmp:
+        caminho = Path(tmp) / ENTRYPOINT
+        caminho.write_text(fonte, encoding="utf-8")
+        marca = len(_VIOLACOES)
+        with _sem_disco(), contextlib.suppress(BaseException):
+            evalkit.load_module(caminho, "mutante_import")
+        sys.modules.pop("mutante_import", None)
+        if len(_VIOLACOES) > marca:
+            return True, f"rejeitado no import: {_VIOLACOES[marca]}"
+    return False, "PASSOU: o import do modulo do candidato nao esta guardado"
+
+
 MUTANTS = evalkit.MutantSuite(
     reference=referencia,
     mutants=[
@@ -863,7 +911,12 @@ def main() -> int:
         return 0
 
     if args.selftest:
-        return 0 if MUTANTS.selftest(GATE) else 1
+        rejeitou_import, detalhe_import = guarda_do_import_rejeita()
+        print(
+            f"  {'FAIL' if rejeitou_import else 'PASS':4}  "
+            f"{'mutante le_o_gabarito_no_import (deve falhar)':44} {detalhe_import[:70]}"
+        )
+        return 0 if (MUTANTS.selftest(GATE) and rejeitou_import) else 1
 
     if args.budget:
         # Mede o SEED, nao a referencia: e o seed que o agente paga no passo 1.
