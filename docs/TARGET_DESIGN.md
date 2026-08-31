@@ -194,13 +194,28 @@ foi preciso descobrir as três — cada correção expôs o próximo ataque.
    conteúdo, por `lru_cache` —, não só a que você antecipou.
    *Ainda passa:* cache em **disco**, que não é estado de módulo.
 3. **Proibição de escrever em disco durante a medição.**
-   `evalkit.no_disk_writes` intercepta `builtins.open`, `io.open` e `os.open`
-   e recusa qualquer abertura para escrita. Duas sutilezas que valem manter: a
-   violação é **anotada antes** de a exceção subir, então um candidato que
-   embrulhe o `open` em `try/except` não apaga o registro — só deixa de saber
-   que falhou; e `.pyc`/`__pycache__` são liberados, porque um `import` tardio
-   dentro da função medida grava bytecode e reprovar por isso seria reprovar
-   candidato honesto.
+   `evalkit.no_disk_writes` instala um **gancho de auditoria**
+   (`sys.addaudithook`) e recusa qualquer abertura para escrita. Duas sutilezas
+   que valem manter: a violação é **anotada antes** de a exceção subir, então um
+   candidato que embrulhe a operação em `try/except` não apaga o registro — só
+   deixa de saber que falhou; e `.pyc`/`__pycache__` são liberados, porque um
+   `import` tardio dentro da função medida grava bytecode e reprovar por isso
+   seria reprovar candidato honesto.
+
+   A primeira versão desta camada remendava `builtins.open`, `io.open` e
+   `os.open`, e **uma auditoria adversarial a derrubou** com três candidatos de
+   poucas linhas: `io.FileIO`, `os.popen` (que importa `subprocess` por dentro,
+   invisível para qualquer checagem de AST) e `sqlite3.connect` (que abre o
+   arquivo no C). Nenhum dos três passa por `builtins.open`. Num gancho de
+   auditoria quem dispara o evento é o próprio interpretador, no ponto da
+   abertura, então os três caem na mesma rede.
+
+   Detalhe de implementação que é defesa, não estilo: `sys.addaudithook` não
+   pode ser removido, então a guarda liga e desliga por um contador — e esse
+   contador vive numa **célula de fecho**, não numa global do módulo. Numa
+   global seria um interruptor com etiqueta, e uma linha do tipo
+   `evalkit._PROFUNDIDADE = 0` desligaria a defesa inteira. Um ataque escrito
+   exatamente assim passou numa auditoria antes da mudança.
 
 O custo das três somadas é de microssegundos por execução. O único efeito real é
 que trabalho feito no import passa a ser cobrado em toda execução, o que é justo:
@@ -234,9 +249,12 @@ pegou, não esta.
 Trapacear passou de valer um milhão a custar caro. É a propriedade que se quer:
 não é que a trapaça seja proibida, é que ela deixa de compensar.
 
-**O que ainda não é coberto.** Só as portas de arquivo do CPython são
-interceptadas. Código que abra arquivo por dentro de C — `sqlite3.connect`, por
-exemplo — passa pela camada 3. Fecha-se o caminho fácil, não todos.
+**O que ainda não é coberto.** A camada 3 vê o que o interpretador reporta.
+Código nativo carregado via `ctypes` que abra arquivo sem passar por evento de
+auditoria continua invisível — e um candidato com alcance ao objeto da guarda
+pode manipulá-lo, o que uma das auditorias demonstrou e resolveu no
+`dedupe_match` tirando o objeto sensível de dentro do alcance em vez de tentar
+limitar o alcance.
 
 A defesa completa contra qualquer cache seria **dados diferentes a cada
 execução**: N variantes por regime, mesma forma, bytes diferentes. Isso

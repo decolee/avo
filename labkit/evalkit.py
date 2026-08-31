@@ -32,6 +32,7 @@ import argparse
 import contextlib
 import importlib.util
 import json
+import os
 import statistics
 import sys
 import time
@@ -194,73 +195,123 @@ def measure(
 PLAUSIBILITY_RATIO = 0.5
 
 
-@contextlib.contextmanager
-def no_disk_writes(violations: list[str]):
-    """Proíbe escrita em disco enquanto o candidato roda. Terceira camada.
+#: Eventos de auditoria que abrem arquivo por dentro do C ou saem do processo, e
+#: que por isso nunca apareceriam num `open` do lado Python. Bloquear pelo evento
+#: fecha a familia inteira de uma vez: `os.popen` importa `subprocess` por
+#: dentro (invisivel para uma checagem de AST), e `sqlite3.connect` abre o
+#: arquivo no C. Uma auditoria adversarial derrubou a versao anterior desta
+#: guarda — que so remendava `builtins.open`/`io.open`/`os.open` — com
+#: candidatos usando exatamente esses caminhos.
+_EVENTOS_NEGADOS = (
+    "os.system",
+    "os.exec",
+    "os.spawn",
+    "os.posix_spawn",
+    "os.startfile",
+    "sqlite3.connect",
+    "shutil.copyfile",
+    "shutil.move",
+)
 
-    As duas primeiras defesas — caminho novo e módulo novo por execução — matam
-    qualquer memoização **em processo**. Sobrava um caminho: gravar o resultado
-    num arquivo indexado pelo conteúdo da entrada e lê-lo nas execuções
-    seguintes. Um cache em disco atravessa o `fn_factory` intacto, porque não é
-    estado de módulo, e devolve trabalho já pago de graça.
 
-    A técnica veio do gate do `dedupe_match`, que precisava dela por outro
-    motivo (impedir a leitura do gabarito), e generaliza bem. Duas sutilezas que
-    valem manter:
+def _montar_guarda():
+    """Fecha a guarda sobre celulas, nao sobre globais do modulo.
 
-    - A violação é **anotada antes** de a exceção subir. Um candidato que
-      embrulhe o `open` em `try/except` não apaga o registro; só deixa de saber
-      que falhou.
-    - `.pyc` e `__pycache__` são liberados. Um `import` tardio dentro da função
-      medida grava bytecode, e reprovar por isso seria reprovar candidato
-      honesto.
-
-    Leitura continua livre: nos alvos de throughput, ler o arquivo de entrada é
-    exatamente o trabalho. Um alvo que também precise restringir leitura — como
-    o `dedupe_match`, cujo gabarito mora no disco — adiciona essa regra por
-    cima, no seu próprio gate.
-
-    Limite conhecido: só as portas de arquivo do CPython são interceptadas.
-    Código que abra arquivo por dentro de C (`sqlite3.connect`, por exemplo)
-    passa. Fecha o caminho fácil, não todos.
+    `sys.addaudithook` nao pode ser removido: uma vez instalado, fica. Por isso
+    a guarda liga e desliga por um contador, e esse contador **nao** pode viver
+    numa global do modulo — seria um interruptor com etiqueta, e uma linha do
+    tipo `evalkit._PROFUNDIDADE = 0` desligaria a defesa inteira. Numa celula de
+    fecho o mesmo ataque nao tem o que atribuir.
     """
-    import builtins
-    import io
-    import os
+    profundidade = [0]
+    instalado = [False]
+    registro: list[list[str]] = []
 
-    original_builtins, original_io, original_os = builtins.open, io.open, os.open
+    def _negar(descricao: str, mensagem: str) -> None:
+        if registro:
+            registro[-1].append(descricao)
+        raise PermissionError(mensagem)
 
-    def _deny(path_like) -> None:
+    def auditor(evento: str, args) -> None:
+        if profundidade[0] <= 0:
+            return
+        if evento == "open":
+            caminho, modo, flags = (list(args) + [None, None, None])[:3]
+            try:
+                resolvido = os.path.realpath(os.fspath(caminho))
+            except (TypeError, ValueError):
+                return
+            if resolvido.endswith(".pyc") or f"{os.sep}__pycache__{os.sep}" in resolvido:
+                return
+            escrita = False
+            if isinstance(modo, str):
+                escrita = any(c in modo for c in ("w", "a", "x", "+"))
+            elif isinstance(flags, int):
+                escrita = bool(
+                    flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_TRUNC)
+                )
+            if escrita:
+                _negar(
+                    f"escreveu em {resolvido}",
+                    "o candidato nao pode escrever em disco durante a medicao: um cache "
+                    "em disco devolve trabalho ja pago de graca, sem que nada tenha "
+                    "ficado mais rapido",
+                )
+            return
+        if evento in _EVENTOS_NEGADOS or evento.startswith("subprocess."):
+            _negar(
+                f"disparou {evento}",
+                f"o candidato nao pode usar {evento} durante a medicao: e uma porta de "
+                "arquivo ou de processo que escapa da medicao",
+            )
+
+    @contextlib.contextmanager
+    def no_disk_writes(violations: list[str]):
+        """Proibe escrita em disco enquanto o candidato roda. Terceira camada.
+
+        As duas primeiras defesas — caminho novo e modulo novo por execucao —
+        matam qualquer memoizacao **em processo**. Sobrava um caminho: gravar o
+        resultado num arquivo indexado pelo conteudo da entrada e le-lo nas
+        execucoes seguintes. Um cache em disco atravessa o `fn_factory` intacto,
+        porque nao e estado de modulo, e devolve trabalho ja pago de graca.
+
+        A guarda e um gancho de auditoria (`sys.addaudithook`), nao um remendo em
+        `builtins.open`. A diferenca importa: quem dispara o evento e o proprio
+        interpretador, no ponto em que o arquivo e aberto, entao `io.FileIO`,
+        `os.popen` e `sqlite3.connect` caem na mesma rede. A versao remendada
+        desta guarda foi derrubada por uma auditoria adversarial usando
+        exatamente esses tres caminhos.
+
+        Duas sutilezas que valem manter:
+
+        - A violacao e **anotada antes** de a excecao subir. Um candidato que
+          embrulhe a operacao em `try/except` nao apaga o registro; so deixa de
+          saber que falhou.
+        - `.pyc` e `__pycache__` sao liberados. Um `import` tardio dentro da
+          funcao medida grava bytecode, e reprovar por isso seria reprovar
+          candidato honesto.
+
+        Leitura continua livre: nos alvos de throughput, ler o arquivo de entrada
+        e exatamente o trabalho. Um alvo que tambem precise restringir leitura —
+        como o `dedupe_match`, cujo gabarito mora no disco — adiciona essa regra
+        por cima, no seu proprio gate.
+        """
+        nonlocal instalado
+        if not instalado[0]:
+            sys.addaudithook(auditor)
+            instalado[0] = True
+        registro.append(violations)
+        profundidade[0] += 1
         try:
-            resolved = os.path.realpath(os.fspath(path_like))
-        except TypeError:  # descritor numérico: não há caminho a julgar
-            return
-        if resolved.endswith(".pyc") or f"{os.sep}__pycache__{os.sep}" in resolved:
-            return
-        violations.append(f"escreveu em {resolved}")
-        raise PermissionError(
-            "o candidato não pode escrever em disco durante a medição: um cache em "
-            "disco devolve trabalho já pago de graça, sem que nada tenha ficado mais "
-            "rápido"
-        )
+            yield
+        finally:
+            profundidade[0] -= 1
+            registro.pop()
 
-    def _guarded_open(file, mode="r", *args, **kwargs):
-        if any(flag in mode for flag in ("w", "a", "x", "+")):
-            _deny(file)
-        return original_builtins(file, mode, *args, **kwargs)
+    return no_disk_writes
 
-    def _guarded_os_open(path, flags, *args, **kwargs):
-        if flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_TRUNC):
-            _deny(path)
-        return original_os(path, flags, *args, **kwargs)
 
-    builtins.open = _guarded_open
-    io.open = _guarded_open
-    os.open = _guarded_os_open
-    try:
-        yield
-    finally:
-        builtins.open, io.open, os.open = original_builtins, original_io, original_os
+no_disk_writes = _montar_guarda()
 
 
 def unique_alias(path: str | Path, tmpdir: str | Path) -> str:
