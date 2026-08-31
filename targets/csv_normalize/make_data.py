@@ -25,8 +25,8 @@ vírgula citada — e um arquivo de performance, que precisa ser grande e por is
 é gerado por regra, nunca tem. Um gate que rodasse ali aprovaria o atalho, e a
 busca inteira convergiria para código que quebra no primeiro arquivo real.
 
-A ORDEM DAS COLUNAS É DIFERENTE entre perf e gate, de propósito. Treze colunas,
-quatro usadas; quem decorar as posições em vez de ler o cabeçalho lê o município
+A ORDEM DAS COLUNAS É DIFERENTE entre perf e gate, de propósito. Dezoito colunas,
+cinco usadas; quem decorar as posições em vez de ler o cabeçalho lê o município
 achando que é o valor. Isso não é maldade gratuita: é a mesma classe de suposição
 que o `split(",")` codifica, e ela precisa ter consequência em algum lugar.
 
@@ -49,38 +49,49 @@ sys.path.insert(0, str(HERE.parent.parent))
 
 from labkit import datakit, evalkit  # noqa: E402
 
-#: Layout dos arquivos de performance. `doc` na posição 1, `nome` na 2,
-#: `data_ref` na 6, `valor` na 8 — decore por sua conta e risco.
+#: Layout dos arquivos de performance. Dezoito colunas; a transformação usa
+#: cinco. `doc` na posição 1, `nome` na 2, `uf` na 7, `data_ref` na 8,
+#: `valor` na 10 — decore por sua conta e risco.
 COLUNAS_PERF = (
     "id",
     "doc",
     "nome",
     "fantasia",
     "municipio",
+    "bairro",
     "uf",
     "data_ref",
     "data_cad",
     "valor",
     "valor_bruto",
+    "desconto",
     "status",
     "canal",
+    "cep",
+    "origem",
+    "versao",
     "obs",
 )
 
-#: Mesmas treze colunas, outra ordem. O cabeçalho é a fonte da verdade.
+#: Mesmas dezoito colunas, outra ordem. O cabeçalho é a fonte da verdade.
 COLUNAS_GATE = (
     "obs",
     "nome",
+    "cep",
     "valor",
     "doc",
     "id",
     "status",
-    "uf",
+    "versao",
     "data_cad",
     "municipio",
+    "uf",
     "valor_bruto",
+    "bairro",
     "canal",
+    "origem",
     "data_ref",
+    "desconto",
     "fantasia",
 )
 
@@ -132,7 +143,22 @@ PRENOMES_ACENTUADOS = (
     "Sebastião",
 )
 MUNICIPIOS = ("São Paulo", "Rio de Janeiro", "Belo Horizonte", "Curitiba", "Recife", "Salvador")
-UFS = ("SP", "RJ", "MG", "PR", "PE", "BA")
+#: Sigla e nome por extenso da mesma unidade federativa. O cadastro legado usa
+#: as duas formas na mesma coluna, que é exatamente por que existe uma tabela de
+#: consulta em vez de um `strip().upper()`.
+UFS = (
+    ("SP", "São Paulo"),
+    ("RJ", "Rio de Janeiro"),
+    ("MG", "Minas Gerais"),
+    ("PR", "Paraná"),
+    ("PE", "Pernambuco"),
+    ("BA", "Bahia"),
+    ("ES", "Espírito Santo"),
+    ("GO", "Goiás"),
+    ("AM", "Amazonas"),
+    ("CE", "Ceará"),
+)
+
 STATUS = ("ATIVO", "ativo", "Inativo", "SUSPENSO", "")
 CANAIS = ("web", "loja", "call-center", "parceiro")
 
@@ -143,6 +169,24 @@ ESPACOS = ("\u00a0", "\u2009", "\u202f", "\t", "\u3000")
 LARGURA_ZERO = ("\u200b", "\u200c", "\ufeff")
 
 SENTINELAS = ("", "NULL", "N/A", "-", "   ", "n/a", "\u00a0")
+
+
+def _campo_uf(rnd: random.Random, sujo: bool) -> str:
+    """A mesma UF em qualquer das formas em que o cadastro legado a escreve."""
+    sigla, nome = rnd.choice(UFS)
+    escolha = rnd.random()
+    if escolha < 0.55:
+        return sigla if not sujo or rnd.random() < 0.7 else sigla.lower()
+    if escolha < 0.90:
+        if not sujo:
+            return unicodedata.normalize("NFD", nome) if rnd.random() < 0.2 else nome
+        forma = rnd.random()
+        if forma < 0.3:
+            return unicodedata.normalize("NFD", nome)
+        if forma < 0.6:
+            return nome.upper()
+        return nome
+    return rnd.choice(("", "XX", "-", "N/A", "ND"))  # desconhecida -> None
 
 
 # ------------------------------------------------------------------ escrita
@@ -253,9 +297,7 @@ def _valor_sujo(rnd: random.Random) -> str:
     return "sem informacao"  # inválido, não sentinela
 
 
-def _linhas_perf(
-    n: int, n_docs: int, seed: int, sujo: bool, cnpj_frac: float = 0.25
-) -> list[dict]:
+def _linhas_perf(n: int, n_docs: int, seed: int, sujo: bool, cnpj_frac: float = 0.25) -> list[dict]:
     rnd = random.Random(seed)
     # CNPJ nasce com 13-14 dígitos e CPF com 8-11: o mesmo documento tem que
     # cair na mesma chave venha ele pontuado ou cru. Um CNPJ com zeros à
@@ -271,9 +313,7 @@ def _linhas_perf(
     for i in range(n):
         idx = rnd.randrange(n_docs)
         if sujo:
-            nome = _sujar_texto(
-                rnd, f"{rnd.choice(PRENOMES_ACENTUADOS)} {rnd.choice(SOBRENOMES)}"
-            )
+            nome = _sujar_texto(rnd, f"{rnd.choice(PRENOMES_ACENTUADOS)} {rnd.choice(SOBRENOMES)}")
             data_ref, valor = _data_suja(rnd), _valor_sujo(rnd)
         else:
             nome = f"{rnd.choice(PRENOMES)} {rnd.choice(SOBRENOMES)}"
@@ -290,13 +330,18 @@ def _linhas_perf(
                 "nome": nome,
                 "fantasia": f"UNIDADE {i % 400:03d}",
                 "municipio": rnd.choice(MUNICIPIOS),
-                "uf": rnd.choice(UFS),
+                "uf": _campo_uf(rnd, sujo),
                 "data_ref": data_ref,
                 "data_cad": _data_limpa(rnd),
                 "valor": valor,
                 "valor_bruto": f"{rnd.uniform(0, 30000):.2f}",
                 "status": rnd.choice(STATUS),
                 "canal": rnd.choice(CANAIS),
+                "bairro": f"BAIRRO {i % 120:03d}",
+                "desconto": f"{rnd.uniform(0, 200):.2f}",
+                "cep": f"{rnd.randrange(10**7, 10**8):08d}",
+                "origem": "cadastro-legado",
+                "versao": "v7",
                 "obs": obs,
             }
         )
@@ -310,7 +355,9 @@ def _gate_linhas() -> list[dict]:
     """Cada linha existe para punir uma suposição. Os comentários dizem qual."""
     linhas: list[dict] = []
 
-    def add(doc: str, nome: str, data_ref: str, valor: str, obs: str = "ok") -> None:
+    def add(
+        doc: str, nome: str, data_ref: str, valor: str, uf: str = "SP", obs: str = "ok"
+    ) -> None:
         i = len(linhas)
         linhas.append(
             {
@@ -319,13 +366,18 @@ def _gate_linhas() -> list[dict]:
                 "nome": nome,
                 "fantasia": f"FANTASIA {i:03d}",
                 "municipio": MUNICIPIOS[i % len(MUNICIPIOS)],
-                "uf": UFS[i % len(UFS)],
+                "bairro": f"BAIRRO {i:03d}",
+                "uf": uf,
                 "data_ref": data_ref,
                 "data_cad": "2024-01-01",
                 "valor": valor,
                 "valor_bruto": "0,00",
+                "desconto": "0,00",
                 "status": STATUS[i % len(STATUS)],
                 "canal": CANAIS[i % len(CANAIS)],
+                "cep": f"{i:08d}",
+                "origem": "cadastro-legado",
+                "versao": "v7",
                 "obs": obs,
             }
         )
@@ -346,7 +398,7 @@ def _gate_linhas() -> list[dict]:
         "Marcos Vinícius",
         "2024-01-02",
         "10,00",
-        'obs com, vírgula e "aspas"\ne quebra',
+        obs='obs com, vírgula e "aspas"\ne quebra',  # coluna ignorada, citação hostil
     )
 
     # --- datas ------------------------------------------------------------
@@ -365,7 +417,9 @@ def _gate_linhas() -> list[dict]:
     add("222.222.222-13", "Data Sentinela B", "-", "1,00")
     add("222.222.222-14", "Data Vazia", "", "1,00")
     add("222.222.222-15", "Iso Mes Absurdo", "2024-13-01", "1,00")  # -> None
-    add("222.222.222-16", "Mes Primeiro Seria Valido", "04/13/2024", "1,00")  # dia 4, mês 13 -> None
+    add(
+        "222.222.222-16", "Mes Primeiro Seria Valido", "04/13/2024", "1,00"
+    )  # dia 4, mês 13 -> None
     add("222.222.222-17", "Data Com Espaco", " 2024-04-03 ", "1,00")
 
     # --- decimais ---------------------------------------------------------
@@ -397,6 +451,21 @@ def _gate_linhas() -> list[dict]:
     add("333.333.333-26", "Parenteses Com Espaco", "2024-01-02", "(  1.234,56  )")
     add("333.333.333-27", "Traco Duplo", "2024-01-02", "--")  # nulo
     add("333.333.333-28", "Largura Zero No Numero", "2024-01-02", "1.2\u200b34,56")
+
+    # --- unidade federativa ----------------------------------------------
+    add("555.555.555-01", "Uf Sigla", "2024-01-02", "1,00", uf="SP")
+    add("555.555.555-02", "Uf Sigla Minuscula", "2024-01-02", "1,00", uf=" sp ")
+    add("555.555.555-03", "Uf Nome Nfc", "2024-01-02", "1,00", uf="São Paulo")
+    add("555.555.555-04", "Uf Nome Nfd", "2024-01-02", "1,00", uf="Sa\u0303o Paulo")
+    add("555.555.555-05", "Uf Nome Sem Acento", "2024-01-02", "1,00", uf="SAO PAULO")
+    add("555.555.555-06", "Uf Nome Espaco Duplo", "2024-01-02", "1,00", uf="Rio  de   Janeiro")
+    add("555.555.555-07", "Uf Nome Composto", "2024-01-02", "1,00", uf="espírito santo")
+    add("555.555.555-08", "Uf Desconhecida", "2024-01-02", "1,00", uf="XX")
+    add("555.555.555-09", "Uf Sentinela", "2024-01-02", "1,00", uf="-")
+    add("555.555.555-10", "Uf Vazia", "2024-01-02", "1,00", uf="")
+    add("555.555.555-11", "Uf Nbsp", "2024-01-02", "1,00", uf="\u00a0MG\u00a0")
+    add("555.555.555-12", "Uf Largura Zero", "2024-01-02", "1,00", uf="P\u200bR")
+    add("555.555.555-13", "Uf Nome Nao Ascii Estranho", "2024-01-02", "1,00", uf="SÃO PAÜLO")
 
     # --- documento --------------------------------------------------------
     add("12.345.678/0001-99", "Cnpj Pontuado", "2024-01-02", "1,00")
@@ -482,11 +551,10 @@ def _normalizacao_ingenua(path: str) -> dict:
 def _divergencias(esperado: dict, obtido: dict) -> int:
     """Quantas chaves diferem, contando ausência e sobra como divergência."""
     total = len(set(esperado) ^ set(obtido))
+    campos = ("n", "nulos", "invalidos", "nome", "uf", "data", "valor")
     for chave in set(esperado) & set(obtido):
         a, b = esperado[chave], obtido[chave]
-        if any(a.get(c) != b.get(c) for c in ("n", "nulos", "invalidos", "nome", "data")):
-            total += 1
-        elif a.get("valor") != b.get("valor"):
+        if any(a.get(c) != b.get(c) for c in campos):
             total += 1
     return total
 
@@ -547,7 +615,7 @@ def _build_gate(path: Path) -> None:
 
 # ------------------------------------------------------------------- specs
 
-LINHAS_PERF = 13_000
+LINHAS_PERF = 9_000
 
 
 def specs() -> list[datakit.DatasetSpec]:
@@ -555,7 +623,7 @@ def specs() -> list[datakit.DatasetSpec]:
         datakit.DatasetSpec(
             "perf_limpo.csv",
             lambda p: _escrever_perf(
-                p, _linhas_perf(LINHAS_PERF, 9000, seed=21, sujo=False), com_bom=False
+                p, _linhas_perf(LINHAS_PERF, 6200, seed=21, sujo=False), com_bom=False
             ),
             purpose="ASCII, data ISO, decimal simples, quase sem duplicata",
             rows=LINHAS_PERF,
@@ -563,7 +631,7 @@ def specs() -> list[datakit.DatasetSpec]:
         datakit.DatasetSpec(
             "perf_sujo.csv",
             lambda p: _escrever_perf(
-                p, _linhas_perf(LINHAS_PERF, 7000, seed=22, sujo=True), com_bom=True
+                p, _linhas_perf(LINHAS_PERF, 4800, seed=22, sujo=True), com_bom=True
             ),
             purpose="acento combinante, espaco estranho, decimal BR/US, sentinelas, BOM",
             rows=LINHAS_PERF,
@@ -571,7 +639,7 @@ def specs() -> list[datakit.DatasetSpec]:
         datakit.DatasetSpec(
             "perf_dup.csv",
             lambda p: _escrever_perf(
-                p, _linhas_perf(LINHAS_PERF, 260, seed=23, sujo=True), com_bom=False
+                p, _linhas_perf(LINHAS_PERF, 180, seed=23, sujo=True), com_bom=False
             ),
             purpose="poucos documentos, muitas linhas por documento",
             rows=LINHAS_PERF,

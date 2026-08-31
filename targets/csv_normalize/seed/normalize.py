@@ -7,12 +7,13 @@ CONTRATO (a verdade completa está em kb/00-contrato.md):
     chave : documento canônico — só dígitos, 11 (CPF) ou 14 (CNPJ) posições,
             preenchido com zeros à esquerda. Ex.: "00012345678"
     valor : {"n": int, "nulos": int, "invalidos": int,
-             "nome": str, "data": str|None, "valor": float|None}
+             "nome": str, "uf": str|None, "data": str|None, "valor": float|None}
 
     n          linhas do arquivo que caíram nesta chave, antes da deduplicação
     nulos      quantas delas tinham `valor` numa sentinela de nulo declarada
     invalidos  quantas tinham `valor` com texto que não é número nem sentinela
     nome       texto normalizado da linha VENCEDORA
+    uf         sigla de duas letras da linha vencedora, resolvida por tabela
     data       data ISO da linha vencedora, ou None
     valor      número da linha vencedora arredondado a 2 casas, ou None
 
@@ -37,11 +38,41 @@ from datetime import datetime
 
 SENTINELAS = ["", "NULL", "N/A", "NA", "NONE", "NIL", "-", "--"]
 LARGURA_ZERO = ["\u200b", "\u200c", "\u200d", "\ufeff"]
-FORMATOS = ["%d/%m/%Y", "%d-%m-%y", "%Y-%m-%d"]
+FORMATOS = ["%Y-%m-%d", "%d/%m/%Y", "%d-%m-%y"]
 
 OK = 0
 NULO = 1
 INVALIDO = 2
+
+ESTADOS = [
+    ("AC", "Acre"),
+    ("AL", "Alagoas"),
+    ("AP", "Amapá"),
+    ("AM", "Amazonas"),
+    ("BA", "Bahia"),
+    ("CE", "Ceará"),
+    ("DF", "Distrito Federal"),
+    ("ES", "Espírito Santo"),
+    ("GO", "Goiás"),
+    ("MA", "Maranhão"),
+    ("MT", "Mato Grosso"),
+    ("MS", "Mato Grosso do Sul"),
+    ("MG", "Minas Gerais"),
+    ("PA", "Pará"),
+    ("PB", "Paraíba"),
+    ("PR", "Paraná"),
+    ("PE", "Pernambuco"),
+    ("PI", "Piauí"),
+    ("RJ", "Rio de Janeiro"),
+    ("RN", "Rio Grande do Norte"),
+    ("RS", "Rio Grande do Sul"),
+    ("RO", "Rondônia"),
+    ("RR", "Roraima"),
+    ("SC", "Santa Catarina"),
+    ("SP", "São Paulo"),
+    ("SE", "Sergipe"),
+    ("TO", "Tocantins"),
+]
 
 
 def tirar_largura_zero(bruto):
@@ -57,6 +88,28 @@ def normalizar_texto(bruto):
     espacos = re.compile(r"\s+")
     texto = espacos.sub(" ", texto)
     return texto.strip().upper()
+
+
+def tirar_acentos(bruto):
+    decomposto = unicodedata.normalize("NFD", bruto)
+    resultado = ""
+    for caractere in decomposto:
+        if unicodedata.combining(caractere) == 0:
+            resultado = resultado + caractere
+    return resultado
+
+
+def normalizar_uf(bruto):
+    texto = normalizar_texto(bruto)
+    if texto == "" or texto in SENTINELAS:
+        return None
+    chave = tirar_acentos(texto)
+    for sigla, nome in ESTADOS:
+        if chave == sigla:
+            return sigla
+        if chave == tirar_acentos(nome).upper():
+            return sigla
+    return None
 
 
 def normalizar_documento(bruto):
@@ -136,7 +189,7 @@ def normalizar_valor(bruto):
         parte_fracao = ""
     else:
         parte_inteira = texto[:corte]
-        parte_fracao = texto[corte + 1:]
+        parte_fracao = texto[corte + 1 :]
 
     digitos = parte_inteira.replace(".", "").replace(",", "")
     if digitos == "" and parte_fracao == "":
@@ -172,6 +225,7 @@ def normalize(path):
             {
                 "chave": chave,
                 "nome": normalizar_texto(linha["nome"]),
+                "uf": normalizar_uf(linha["uf"]),
                 "data": normalizar_data(linha["data_ref"]),
                 "valor": normalizar_valor(linha["valor"]),
             }
@@ -205,6 +259,7 @@ def normalize(path):
             "nulos": nulos,
             "invalidos": invalidos,
             "nome": vencedor["nome"],
+            "uf": vencedor["uf"],
             "data": vencedor["data"],
             "valor": vencedor["valor"][0],
         }

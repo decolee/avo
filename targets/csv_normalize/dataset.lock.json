@@ -1,28 +1,28 @@
 {
   "files": {
     "gate_adv.csv": {
-      "bytes": 8496,
+      "bytes": 14048,
       "purpose": "UNICO dataset que decide correcao: BOM, CRLF, citacao, NFD, ambiguidade",
-      "rows": 73,
-      "sha256": "e012ed8d7b73a595ef473aa238ce3e46028fe524467727767eaa822e8bd0d4c1"
+      "rows": 86,
+      "sha256": "1390ab93b81147c71b7623979757c64c344c545d05160e009192bae7f1aa7aac"
     },
     "perf_dup.csv": {
-      "bytes": 1711298,
+      "bytes": 1615864,
       "purpose": "poucos documentos, muitas linhas por documento",
-      "rows": 13000,
-      "sha256": "7b0fa88193f5e3f75d61ff8a6dd678a2a2e47d82c986878e5ecea43aff6941f0"
+      "rows": 9000,
+      "sha256": "ae3b9acc2c302a0d3dcb121e26a7d40ba1efd40568c8e1b43e6d0836ffb64304"
     },
     "perf_limpo.csv": {
-      "bytes": 1607277,
+      "bytes": 1543903,
       "purpose": "ASCII, data ISO, decimal simples, quase sem duplicata",
-      "rows": 13000,
-      "sha256": "ac98e470b4c58902445e3d8f15879246e1d4e5d89ed6853d2cc46126bc510f3d"
+      "rows": 9000,
+      "sha256": "7292f1654956fa05aae173dc5a72467ca04ec23cd4ca369dd0ef96ba54487a3e"
     },
     "perf_sujo.csv": {
-      "bytes": 1714257,
+      "bytes": 1617852,
       "purpose": "acento combinante, espaco estranho, decimal BR/US, sentinelas, BOM",
-      "rows": 13000,
-      "sha256": "290186fce37ad4765c27ba611f30ed286480aa2861a338335ed93aaf47666f41"
+      "rows": 9000,
+      "sha256": "3accfb9a723337522abcd864a2452f47ce0fabd395bc57cf48518ed4987f48e6"
     }
   },
   "version": 1

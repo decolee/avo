@@ -27,7 +27,7 @@ Campo a campo, com o rigor que cada tipo merece:
 
   `n`, `nulos`, `invalidos`  igualdade exata. São contagens; não há tolerância
                              razoável para uma contagem errada.
-  `nome`, `data`             igualdade exata de string. A normalização é
+  `nome`, `uf`, `data`       igualdade exata de string. A normalização é
                              determinística e o contrato declara o resultado
                              caractere a caractere. Quando divergem, o
                              diagnóstico mostra os codepoints em `ascii()` —
@@ -321,7 +321,15 @@ def _melhor(data_atual: str | None, data_nova: str | None) -> bool:
 # ------------------------------------------------------------------ pipeline
 
 
-def _pipeline(path, doc_fn=_doc, texto_fn=_texto, data_fn=_data, valor_fn=_valor, melhor_fn=_melhor):
+def _pipeline(
+    path,
+    doc_fn=_doc,
+    texto_fn=_texto,
+    data_fn=_data,
+    valor_fn=_valor,
+    melhor_fn=_melhor,
+    uf_fn=_uf,
+):
     """A montagem. Um passe, um dicionário, vencedor decidido na hora.
 
     As funções são parâmetros para que cada mutante troque UMA peça e nada mais.
@@ -335,7 +343,7 @@ def _pipeline(path, doc_fn=_doc, texto_fn=_texto, data_fn=_data, valor_fn=_valor
         if cabecalho is None:
             return saida
         posicao = {nome: i for i, nome in enumerate(cabecalho)}
-        i_doc, i_nome, i_data, i_valor = (posicao[c] for c in COLUNAS)
+        i_doc, i_nome, i_uf, i_data, i_valor = (posicao[c] for c in COLUNAS)
 
         for linha in leitor:
             chave = doc_fn(linha[i_doc])
@@ -350,6 +358,7 @@ def _pipeline(path, doc_fn=_doc, texto_fn=_texto, data_fn=_data, valor_fn=_valor
                     "nulos": 1 if classe == NULO else 0,
                     "invalidos": 1 if classe == INVALIDO else 0,
                     "nome": texto_fn(linha[i_nome]),
+                    "uf": uf_fn(linha[i_uf]),
                     "data": data_iso,
                     "valor": valor,
                 }
@@ -361,6 +370,7 @@ def _pipeline(path, doc_fn=_doc, texto_fn=_texto, data_fn=_data, valor_fn=_valor
                 grupo["invalidos"] += 1
             if melhor_fn(grupo["data"], data_iso):
                 grupo["nome"] = texto_fn(linha[i_nome])
+                grupo["uf"] = uf_fn(linha[i_uf])
                 grupo["data"] = data_iso
                 grupo["valor"] = valor
     return saida
@@ -433,13 +443,15 @@ def judge(fn) -> tuple[bool, str]:
                     "declaradas; `invalidos` o texto que deveria ser número e não é."
                 )
 
-        if "nome" not in linha:
-            return False, f"{chave}.nome: ausente"
-        if linha["nome"] != exp["nome"]:
-            return False, (
-                f"{chave}.nome: esperado {ascii(exp['nome'])}, obtido {ascii(linha['nome'])} "
-                "(codepoints em ascii() de propósito: NFC vs NFD é invisível na tela)"
-            )
+        for campo in ("nome", "uf"):
+            if campo not in linha:
+                return False, f"{chave}.{campo}: ausente"
+            if linha[campo] != exp[campo]:
+                return False, (
+                    f"{chave}.{campo}: esperado {ascii(exp[campo])}, "
+                    f"obtido {ascii(linha[campo])} (codepoints em ascii() de propósito: "
+                    "NFC vs NFD é invisível na tela)"
+                )
 
         if "data" not in linha:
             return False, f"{chave}.data: ausente"
@@ -480,7 +492,7 @@ GATE = evalkit.Gate(judge=judge, description="dataset adversarial, campo a campo
 def fingerprint(resultado) -> str:
     return contracts.canon_hash(
         resultado,
-        fields=("n", "nulos", "invalidos", "nome", "data", "valor"),
+        fields=("n", "nulos", "invalidos", "nome", "uf", "data", "valor"),
         places={"valor": 2},
     )[:16]
 
@@ -504,7 +516,9 @@ def _mut_texto_so_strip(path):
 
 def _mut_texto_sem_largura_zero(path):
     """Colapsa espaço mas deixa o lixo invisível. Passa em qualquer inspeção visual."""
-    return _pipeline(path, texto_fn=lambda s: " ".join(unicodedata.normalize("NFC", s).split()).upper())
+    return _pipeline(
+        path, texto_fn=lambda s: " ".join(unicodedata.normalize("NFC", s).split()).upper()
+    )
 
 
 def _mut_data_mes_primeiro(path):
@@ -514,7 +528,9 @@ def _mut_data_mes_primeiro(path):
 
 def _mut_pivot_ano_50(path):
     """Move a janela de dois dígitos de 68/69 para 50. Plausível e errado."""
-    return _pipeline(path, data_fn=lambda s: _data(s, janela=lambda aa: 2000 + aa if aa <= 50 else 1900 + aa))
+    return _pipeline(
+        path, data_fn=lambda s: _data(s, janela=lambda aa: 2000 + aa if aa <= 50 else 1900 + aa)
+    )
 
 
 def _mut_decimal_sempre_br(path):
@@ -549,6 +565,23 @@ def _mut_traco_nao_e_sentinela(path):
     return _pipeline(path, valor_fn=lambda s: _valor(s, traco_e_sentinela=False))
 
 
+def _mut_uf_com_acento(path):
+    """Compara o nome do estado sem tirar os acentos: `SÃO PAULO` deixa de casar."""
+
+    def uf(bruto):
+        texto = _texto(bruto)
+        if not texto or texto in _SENTINELAS:
+            return None
+        return _UF_POR_CHAVE.get(texto)
+
+    return _pipeline(path, uf_fn=uf)
+
+
+def _mut_uf_desconhecida_vira_texto(path):
+    """Devolve o texto cru quando não reconhece a UF, em vez de `None`."""
+    return _pipeline(path, uf_fn=lambda s: _uf(s, desconhecida_e_none=False))
+
+
 def _mut_dedup_primeiro_vence(path):
     """Mantém o primeiro registro da chave. `setdefault` puro faz exatamente isto."""
     return _pipeline(path, melhor_fn=lambda atual, nova: False)
@@ -579,8 +612,8 @@ def _mut_colunas_por_posicao(path):
             chave = _doc(linha[1])
             if chave is None:
                 continue
-            valor, classe = _valor(linha[8])
-            data_iso = _data(linha[6])
+            valor, classe = _valor(linha[10])
+            data_iso = _data(linha[8])
             grupo = saida.get(chave)
             if grupo is None:
                 saida[chave] = {
@@ -588,6 +621,7 @@ def _mut_colunas_por_posicao(path):
                     "nulos": 1 if classe == NULO else 0,
                     "invalidos": 1 if classe == INVALIDO else 0,
                     "nome": _texto(linha[2]),
+                    "uf": _uf(linha[7]),
                     "data": data_iso,
                     "valor": valor,
                 }
@@ -598,7 +632,7 @@ def _mut_colunas_por_posicao(path):
             elif classe == INVALIDO:
                 grupo["invalidos"] += 1
             if _melhor(grupo["data"], data_iso):
-                grupo.update(nome=_texto(linha[2]), data=data_iso, valor=valor)
+                grupo.update(nome=_texto(linha[2]), uf=_uf(linha[7]), data=data_iso, valor=valor)
     return saida
 
 
@@ -608,10 +642,11 @@ def _mut_split_por_virgula(path):
     with open(path, encoding="utf-8-sig") as fh:
         cabecalho = fh.readline().rstrip("\r\n").split(",")
         posicao = {nome: i for i, nome in enumerate(cabecalho)}
-        i_doc, i_nome, i_data, i_valor = (posicao[c] for c in COLUNAS)
+        i_doc, i_nome, i_uf, i_data, i_valor = (posicao[c] for c in COLUNAS)
+        i_maior = max(i_doc, i_nome, i_uf, i_data, i_valor)
         for bruta in fh:
             linha = bruta.rstrip("\r\n").split(",")
-            if len(linha) <= i_valor:
+            if len(linha) <= i_maior:
                 continue
             chave = _doc(linha[i_doc])
             if chave is None:
@@ -625,6 +660,7 @@ def _mut_split_por_virgula(path):
                     "nulos": 1 if classe == NULO else 0,
                     "invalidos": 1 if classe == INVALIDO else 0,
                     "nome": _texto(linha[i_nome]),
+                    "uf": _uf(linha[i_uf]),
                     "data": data_iso,
                     "valor": valor,
                 }
@@ -635,7 +671,9 @@ def _mut_split_por_virgula(path):
             elif classe == INVALIDO:
                 grupo["invalidos"] += 1
             if _melhor(grupo["data"], data_iso):
-                grupo.update(nome=_texto(linha[i_nome]), data=data_iso, valor=valor)
+                grupo.update(
+                    nome=_texto(linha[i_nome]), uf=_uf(linha[i_uf]), data=data_iso, valor=valor
+                )
     return saida
 
 
@@ -650,6 +688,8 @@ MUTANTS = evalkit.MutantSuite(
         ("decimal_sempre_br", _mut_decimal_sempre_br),
         ("parenteses_positivos", _mut_parenteses_positivos),
         ("traco_nao_e_sentinela", _mut_traco_nao_e_sentinela),
+        ("uf_com_acento", _mut_uf_com_acento),
+        ("uf_desconhecida_vira_texto", _mut_uf_desconhecida_vira_texto),
         ("dedup_primeiro_vence", _mut_dedup_primeiro_vence),
         ("dedup_ignora_data", _mut_dedup_ignora_data),
         ("doc_sem_padding", _mut_doc_sem_padding),
@@ -730,7 +770,9 @@ def main() -> int:
             evalkit.load_module(HERE / "seed" / ENTRYPOINT, "seedmod"), SYMBOL
         )
         ok_seed, detalhe_seed = GATE.check(seed_fn)
-        print(f"\n  {'PASS' if ok_seed else 'FAIL'}  SEED (deve passar){' ' * 27}{detalhe_seed[:70]}")
+        print(
+            f"\n  {'PASS' if ok_seed else 'FAIL'}  SEED (deve passar){' ' * 27}{detalhe_seed[:70]}"
+        )
         return 0 if (passou and ok_seed) else 1
 
     if args.budget:
@@ -763,7 +805,10 @@ def main() -> int:
 
     ok_imports, detalhe = contracts.stdlib_only(str(candidato))
     if not ok_imports:
-        evalkit.emit_failure(f"somente stdlib é permitido — {detalhe}")
+        # `stdlib_only` já devolve uma frase completa e diz qual dos dois motivos
+        # reprovou (não compila / importa de fora da stdlib). Embrulhá-la num
+        # prefixo próprio mandaria o agente investigar a coisa errada.
+        evalkit.emit_failure(detalhe)
         return 0
 
     try:

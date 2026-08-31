@@ -1,0 +1,68 @@
+name: csv_normalize
+description: >-
+  Normalizacao de cadastro legado (CSV sujo -> registros canonicos por documento)
+  sob correcao exata. Score = media geometrica do throughput em tres formas de dado.
+
+seed: seed
+knowledge_base: kb
+entrypoint: normalize.py
+
+evaluate:
+  command: ["python3", "{target}/eval.py", "--workdir", "{workdir}"]
+  cwd: "."
+  timeout: 10m
+
+baselines:
+  command: ["python3", "{target}/eval.py", "--baselines"]
+
+score:
+  direction: maximize
+
+agent:
+  goal: |
+    Otimize work/normalize.py para maximizar throughput mantendo a correcao exata.
+
+    O avaliador mede a mediana de 5 execucoes em tres FORMAS de dado diferentes,
+    nao tres repeticoes da mesma:
+
+      limpo   ASCII, data ISO, decimal simples, ~6200 documentos
+      sujo    acento combinante, espaco estranho, decimal BR e US, sentinelas, BOM
+      dup     180 documentos para 9000 linhas
+
+    O numero maximizado e a media geometrica dos tres. Uma mudanca que acelera
+    um regime e regride outro perde para uma que melhora os tres modestamente —
+    e isso e proposital: o que interessa e normalizacao geral, nao um truque que
+    so vale numa forma de dado.
+
+    A correcao e decidida num dataset separado e adversarial, nunca nos dados de
+    performance. Candidato incorreto vale ZERO, nao "um pouco menos".
+
+    Apenas a biblioteca padrao. Isso e verificado estaticamente: qualquer import
+    fora da stdlib reprova antes mesmo de rodar.
+
+  notes: |
+    Antes de comecar:
+
+      - kb/00-contrato.md e a verdade sobre o formato de saida. Leia inteiro. As
+        quatro regras que o gate mais persegue: data ambigua e dia-primeiro
+        SEMPRE; a vircula/ponto decimal segue a regra dos tres digitos; "-" e
+        sentinela de nulo e nao lixo; e o desempate da deduplicacao e "data
+        maior, empate vai para o ultimo do arquivo".
+      - kb/10-performance.md tem o mapa de custo medido e — importante — diz
+        onde a intuicao erra. `re.compile` dentro do laco e barato porque o
+        modulo `re` tem cache; o ganho esta em nao usar regex, nao em ica-lo.
+      - kb/20-medicao.md diz qual tamanho de delta acreditar e qual e o headroom
+        real deste target.
+      - O arquivo tem DEZOITO colunas e a transformacao usa CINCO. Essa folga e
+        real e e parte do problema.
+      - A ordem das colunas MUDA entre os arquivos de performance e o de gate. O
+        cabecalho e a fonte da verdade; indices escritos na mao reprovam.
+      - E CSV de verdade: campo citado com virgula dentro, campo citado com
+        quebra de linha dentro, aspas duplicadas, BOM, e CRLF misturado com LF.
+        `linha.split(",")` e o atalho mais rapido e mais errado disponivel.
+      - Prefira mudancas defensaveis como transformacao geral. Hardcode de
+        chaves, tabelas de resultado memorizadas ou qualquer coisa que dependa
+        deste dataset especifico passa no gate e nao vale nada — a KB avisa, o
+        avaliador reprova velocidade implausivel, e o supervisor cobra.
+      - `./avo-eval` de dentro do run dir mede sem tocar no lineage. Use a
+        vontade: uma avaliacao do seed custa ~8s.
