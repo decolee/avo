@@ -677,6 +677,111 @@ def _mut_split_por_virgula(path):
     return saida
 
 
+def _mut_data_sem_largura_zero(path):
+    """Não tira largura zero da data. Uma chamada a menos por linha no laço quente.
+
+    Escrito por extenso, e não como `_data(s.strip())`: delegar para `_data`
+    devolveria o `.translate()` que este mutante existe para tirar, e o mutante
+    passaria a testar a si mesmo. O `--selftest` não pegaria — o mutante seria
+    igual à referência e simplesmente falharia como ela passa. Quem pega é o
+    `_assert_dataset_has_teeth` do `make_data.py`, que exige de cada mutante
+    pelo menos uma divergência real contra o gate.
+    """
+
+    def data(bruto):
+        s = bruto.strip()
+        if not s or s.upper() in _SENTINELAS:
+            return None
+        tamanho = len(s)
+        try:
+            if tamanho == 10 and s[4] == "-" and s[7] == "-":
+                ano, mes, dia = int(s[0:4]), int(s[5:7]), int(s[8:10])
+            elif tamanho == 10 and s[2] == "/" and s[5] == "/":
+                dia, mes, ano = int(s[0:2]), int(s[3:5]), int(s[6:10])
+            elif tamanho == 8 and s[2] == "-" and s[5] == "-":
+                dia, mes, aa = int(s[0:2]), int(s[3:5]), int(s[6:8])
+                ano = _ano_de_dois_digitos(aa)
+            else:
+                return None
+        except ValueError:
+            return None
+        if not _valido_no_calendario(ano, mes, dia):
+            return None
+        return f"{ano:04d}-{mes:02d}-{dia:02d}"
+
+    return _pipeline(path, data_fn=data)
+
+
+def _mut_bissexto_so_mod4(path):
+    """`ano % 4 == 0` e pronto. Esquece que 2100 não é bissexto e 2000 é."""
+
+    def data(bruto):
+        s = bruto.translate(_LARGURA_ZERO).strip()
+        if not s or s.upper() in _SENTINELAS:
+            return None
+        tamanho = len(s)
+        try:
+            if tamanho == 10 and s[4] == "-" and s[7] == "-":
+                ano, mes, dia = int(s[0:4]), int(s[5:7]), int(s[8:10])
+            elif tamanho == 10 and s[2] == "/" and s[5] == "/":
+                dia, mes, ano = int(s[0:2]), int(s[3:5]), int(s[6:10])
+            elif tamanho == 8 and s[2] == "-" and s[5] == "-":
+                dia, mes, aa = int(s[0:2]), int(s[3:5]), int(s[6:8])
+                ano = _ano_de_dois_digitos(aa)
+            else:
+                return None
+        except ValueError:
+            return None
+        if mes < 1 or mes > 12 or dia < 1 or ano < 1 or ano > 9999:
+            return None
+        limite = 29 if (mes == 2 and ano % 4 == 0) else _DIAS_NO_MES[mes]
+        if dia > limite:
+            return None
+        return f"{ano:04d}-{mes:02d}-{dia:02d}"
+
+    return _pipeline(path, data_fn=data)
+
+
+def _mut_sem_utf8_sig(path):
+    """Abre como `utf-8` e o BOM fica colado no nome da primeira coluna."""
+    saida: dict[str, dict] = {}
+    with open(path, newline="", encoding="utf-8") as fh:
+        leitor = csv.reader(fh)
+        cabecalho = next(leitor, None)
+        if cabecalho is None:
+            return saida
+        posicao = {nome: i for i, nome in enumerate(cabecalho)}
+        i_doc, i_nome, i_uf, i_data, i_valor = (posicao[c] for c in COLUNAS)
+        for linha in leitor:
+            chave = _doc(linha[i_doc])
+            if chave is None:
+                continue
+            valor, classe = _valor(linha[i_valor])
+            data_iso = _data(linha[i_data])
+            grupo = saida.get(chave)
+            if grupo is None:
+                saida[chave] = {
+                    "n": 1,
+                    "nulos": 1 if classe == NULO else 0,
+                    "invalidos": 1 if classe == INVALIDO else 0,
+                    "nome": _texto(linha[i_nome]),
+                    "uf": _uf(linha[i_uf]),
+                    "data": data_iso,
+                    "valor": valor,
+                }
+                continue
+            grupo["n"] += 1
+            if classe == NULO:
+                grupo["nulos"] += 1
+            elif classe == INVALIDO:
+                grupo["invalidos"] += 1
+            if _melhor(grupo["data"], data_iso):
+                grupo.update(
+                    nome=_texto(linha[i_nome]), uf=_uf(linha[i_uf]), data=data_iso, valor=valor
+                )
+    return saida
+
+
 MUTANTS = evalkit.MutantSuite(
     reference=reference,
     mutants=[
@@ -695,6 +800,9 @@ MUTANTS = evalkit.MutantSuite(
         ("doc_sem_padding", _mut_doc_sem_padding),
         ("colunas_por_posicao", _mut_colunas_por_posicao),
         ("split_por_virgula", _mut_split_por_virgula),
+        ("data_sem_largura_zero", _mut_data_sem_largura_zero),
+        ("bissexto_so_mod4", _mut_bissexto_so_mod4),
+        ("sem_utf8_sig", _mut_sem_utf8_sig),
     ],
 )
 

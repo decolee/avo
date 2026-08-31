@@ -59,12 +59,13 @@ mais do que a que melhora um muito. Quando um regime regride, diga por quê no
 `NOTES.md` — quase sempre é sinal de que a mudança está explorando a forma de um
 dos datasets em vez do formato.
 
-O caso clássico aqui é a deduplicação preguiçosa: adiar a normalização do nome e
-da UF para depois de saber quem venceu é um ganho enorme em `dup`, quase nulo em
-`limpo` (onde quase toda linha é vencedora) e legítimo nos dois. Já um parser
-que assume que todo campo é ASCII ganha em `limpo`, regride em `sujo` e reprova
-no gate — a mesma mudança medida em três lugares dá três respostas, e é para
-isso que os três regimes existem.
+Nem toda assimetria é suspeita, e a diferença importa. Uma mudança que evita
+trabalho proporcionalmente ao número de linhas descartadas por chave ganha muito
+em `dup` e quase nada em `limpo` — e é legítima nos dois, porque o que ela
+explora é uma propriedade do *contrato* (só a linha vencedora tem os campos
+lidos), não do arquivo. Já um parser que assume que todo campo é ASCII ganha em
+`limpo`, regride em `sujo` e reprova no gate, porque o que ele explora é uma
+propriedade de um dos datasets. A mesma medição em três lugares separa as duas.
 
 ## Custo de uma avaliação
 
@@ -72,8 +73,9 @@ Cerca de 8 s para o seed, menos conforme você acelera. `./avo-eval` de dentro d
 run dir é barato: use antes de submeter, sempre. Submeter sem medir é chute, e o
 framework vai registrar o chute no lineage junto com o resto.
 
-Para calibrar expectativa: o headroom medido deste target é de cerca de **4,4x**
-entre o seed e uma implementação bem feita, distribuído em seis movimentos
-independentes, sendo os dois maiores de ~1,6x cada. Não existe aqui um único
-movimento que capture o ganho inteiro. Se o seu primeiro passo deu 4x, ou você
-achou algo que eu não achei — ótimo, documente — ou você está medindo um cache.
+Para calibrar expectativa: o headroom deste target está na casa de **alguns
+fatores**, não de uma ordem de grandeza, e está distribuído — nenhum movimento
+isolado captura o ganho inteiro, e chegar lá custa vários passos independentes.
+Isso é uma propriedade do alvo e não uma meta: se o seu primeiro passo deu 4x,
+ou você achou algo que eu não achei — ótimo, documente e mostre a medição — ou
+você está medindo um cache.

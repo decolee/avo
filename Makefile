@@ -115,12 +115,19 @@ submit:
 status:
 	@cd $(ROOT) && $(PY) -m avo status $(if $(RUN),--run $(RUN),)
 
+# Comentario FORA da receita de proposito: linha iniciada por # dentro de uma
+# receita vai para o shell e o make a ecoa na tela.
+#
+# `-exec ... +` e nao `-delete` nem `| xargs -r`: o -delete do GNU find liga
+# -depth sozinho, o que anula o -prune do vendor/ e faz o comando sair 1 (a
+# receita quebrava); e `xargs -r` nao existe no macOS. Com `-exec +`, nada roda
+# quando nao ha match, e vendor/ fica de fora — e clone de terceiro, nao cache
+# nosso.
 ## clean: remove caches de ferramenta e bytecode (nao toca em datasets nem runs)
 clean:
 	@cd $(ROOT) && rm -rf .pytest_cache .ruff_cache
-	@cd $(ROOT) && find . -path ./vendor -prune -o -name '__pycache__' -type d -print0 \
-		| xargs -0 --no-run-if-empty rm -rf
-	@cd $(ROOT) && find . -path ./vendor -prune -o -name '*.pyc' -type f -delete
+	@cd $(ROOT) && find . -path ./vendor -prune -o -name '__pycache__' -type d -prune -exec rm -rf {} +
+	@cd $(ROOT) && find . -path ./vendor -prune -o -name '*.pyc' -type f -exec rm -f {} +
 	@echo "caches removidos (datasets e runs preservados; use clean-data para os datasets)"
 
 ## clean-data: apaga os datasets gerados — 'make data' os reconstroi identicos

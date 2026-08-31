@@ -74,9 +74,22 @@ COLUNAS_PERF = (
 )
 
 #: Mesmas dezoito colunas, outra ordem. O cabeçalho é a fonte da verdade.
+#:
+#: A primeira coluna é uma das CINCO que a transformação usa, de propósito. O
+#: BOM se cola ao nome da primeira coluna do cabeçalho: enquanto a primeira
+#: coluna era `obs` — que a transformação ignora — abrir o arquivo como `utf-8`
+#: em vez de `utf-8-sig` não tinha consequência nenhuma, e a regra do contrato
+#: ("pode haver BOM, abra com utf-8-sig") não era verificada por ninguém. Com
+#: `nome` na frente, quem esquece o `-sig` procura a coluna e acha `﻿nome`.
+#:
+#: É `nome` e não `doc` porque as duas armadilhas competem: com `doc` na coluna
+#: 0, `linha.split(",")` acerta a chave de quase toda linha (nenhum documento
+#: tem vírgula) e o gate passa a rejeitá-lo por 2 registros em vez de 64. `doc`
+#: fica depois de `obs` e `valor`, que têm vírgula citada, para que o atalho do
+#: split desloque a chave e falhe alto.
 COLUNAS_GATE = (
-    "obs",
     "nome",
+    "obs",
     "cep",
     "valor",
     "doc",
@@ -421,6 +434,17 @@ def _gate_linhas() -> list[dict]:
         "222.222.222-16", "Mes Primeiro Seria Valido", "04/13/2024", "1,00"
     )  # dia 4, mês 13 -> None
     add("222.222.222-17", "Data Com Espaco", " 2024-04-03 ", "1,00")
+    # Largura zero DENTRO da data. O contrato manda remover U+200B/C/D e U+FEFF
+    # de `data_ref` como remove de `nome` e de `valor`, e sem esta linha o gate
+    # nunca via a diferenca: quem apaga o `.translate()` do caminho da data —
+    # uma chamada por linha no laco quente, otimizacao tentadora — passava.
+    add("222.222.222-18", "Data Largura Zero", "2024-0​4-03", "1,00")
+    add("222.222.222-19", "Data Largura Zero Aa", "05-0​6-60", "1,00")  # -> 2060-06-05
+    # Ano bissexto de verdade: divisivel por 100 nao e bissexto, por 400 e.
+    # Sem estas duas o gate aceitava o atalho `ano % 4 == 0`, que e o jeito
+    # classico de errar a regra e nao custa nada a menos que o certo.
+    add("222.222.222-20", "Bissexto Seculo Nao", "29/02/2100", "1,00")  # -> None
+    add("222.222.222-21", "Bissexto Seculo Sim", "29/02/2000", "1,00")  # -> 2000-02-29
 
     # --- decimais ---------------------------------------------------------
     add("333.333.333-01", "Decimal Br", "1.234,56", "1.234,56")

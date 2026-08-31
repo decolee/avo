@@ -148,7 +148,14 @@ if [ ! -d "$VENDOR/.git" ]; then
             "o commit $COMMIT exista la dentro."
 fi
 
-SUJO="$(git -C "$VENDOR" status --porcelain 2>/dev/null || true)"
+# `--untracked-files=no` nao e frouxidao: e o que faz este script ser idempotente
+# de verdade. O passo 4 roda a suite do upstream, o pytest escreve
+# vendor/avo/tests/__pycache__/, e um `status --porcelain` sem essa flag passa a
+# reportar "?? tests/__pycache__/" — a segunda execucao do bootstrap abortava
+# acusando alteracao local que ninguem fez. Descoberto rodando duas vezes
+# seguidas. O que importa para reprodutibilidade e arquivo RASTREADO modificado;
+# bytecode nao muda o que o harness faz.
+SUJO="$(git -C "$VENDOR" status --porcelain --untracked-files=no 2>/dev/null || true)"
 HEAD_ATUAL="$(git -C "$VENDOR" rev-parse HEAD 2>/dev/null || echo "?")"
 
 if [ -n "$SUJO" ]; then
@@ -261,11 +268,30 @@ if [ "${#FALHOS[@]}" -gt 0 ]; then
         "que separa otimizacao de reward hacking, e um gate que aceita mutante nao separa nada."
 fi
 
-# Prova de (b): o harness enxerga os nossos alvos sem copia nenhuma.
-if "$PY" -c 'import avo' 2>/dev/null; then
-    if encontrados="$("$PY" -m avo targets 2>/dev/null)"; then
-        info "harness enxerga da raiz: $(printf '%s' "$encontrados" | grep -c . ) alvo(s) listado(s)"
+# Prova de (b), rodada em vez de afirmada: `avo targets` da raiz tem que listar
+# CADA alvo nosso, sem que nada tenha sido copiado para dentro de vendor/. A
+# listagem inclui tambem os alvos internos do upstream — o que interessa aqui e
+# que os nossos aparecam junto.
+passo "O harness enxerga os alvos sem copia (prova do defeito (b))"
+
+if ! "$PY" -c 'import avo' 2>/dev/null; then
+    info "harness nao importavel neste ambiente; pulando a conferencia."
+elif ! listagem="$(cd "$ROOT" && "$PY" -m avo targets 2>/dev/null)"; then
+    aviso "'python3 -m avo targets' falhou; nao deu para conferir a resolucao de alvos."
+else
+    invisiveis=()
+    for avaliador in "${AVALIADORES[@]}"; do
+        alvo="$(basename "$(dirname "$avaliador")")"
+        printf '%s\n' "$listagem" | grep -Eq "^[[:space:]]*${alvo}([[:space:]]|$)" ||
+            invisiveis+=("$alvo")
+    done
+    if [ "${#invisiveis[@]}" -gt 0 ]; then
+        morre "o harness NAO enxerga: ${invisiveis[*]}" \
+            "Rodando da raiz, resolve_target procura em Path.cwd()/targets antes dos alvos" \
+            "internos. Se um alvo nosso nao aparece, ou o target.yaml nao carrega, ou este" \
+            "script foi rodado de outro diretorio. A solucao NAO e copiar para vendor/."
     fi
+    info "${#AVALIADORES[@]} alvo(s) nosso(s) visiveis da raiz, sem copia nenhuma."
 fi
 
 hr

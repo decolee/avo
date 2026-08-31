@@ -33,26 +33,26 @@ delas é computar e descartar.
 
 ## Técnicas que valem a pena conhecer
 
-**Tabela de consulta no lugar de varredura.** Resolver a UF percorrendo 27 pares
-e recalculando a forma sem acento de cada nome a cada linha é O(27) chamadas de
-função por linha. Um dicionário montado uma vez no import é O(1). Este é o maior
-ganho isolado disponível, e é o mais banal: nada de esperto, só não repetir o
-que não muda.
+**O que não muda entre linhas não precisa ser recalculado nelas.** Qualquer
+tabela, índice ou constante derivada das regras do contrato — e não dos dados —
+pode ser montada uma vez no import. Vale a pena percorrer o laço quente
+perguntando de cada expressão: isto depende da linha, ou eu recalculo a mesma
+coisa nove mil vezes?
 
 **Caminho rápido para ASCII.** `str.isascii()` é uma checagem de flag no objeto
 string, praticamente de graça. Para uma string ASCII, `unicodedata.normalize`,
 a remoção de largura zero e a remoção de acento são todas identidade. Testar
-antes de chamar troca uma chamada de C por um teste booleano — e o regime
-`limpo` é quase todo ASCII. Cuidado: isso é um atalho para o *caso comum*, não
-uma suposição sobre o arquivo. O caminho geral tem que continuar existindo e
-tem que continuar certo, porque o `sujo` e o gate passam por ele.
+antes de chamar troca uma chamada de C por um teste booleano. Cuidado: isso é um
+atalho para o *caso comum*, não uma suposição sobre o arquivo. O caminho geral
+tem que continuar existindo e tem que continuar certo, porque o `sujo` e o gate
+passam por ele.
 
-**Fatiar em vez de `strptime`.** `datetime.strptime` monta um regex, casa,
-constrói um `datetime` e o descarta. Para três formatos de largura fixa,
-`int(s[0:4])` e uma checagem de calendário fazem o mesmo trabalho sem nada
-disso. Cuidado com a equivalência: `strptime` aceita `3/4/2024` e `%Y` exige
-exatamente quatro dígitos — o contrato declara largura fixa justamente para que
-as duas implementações concordem.
+**O que `datetime.strptime` cobra.** Ele monta um regex, casa, constrói um
+objeto `datetime` completo e o descarta — para você ficar com três inteiros.
+Se você trocar por qualquer coisa mais direta, cuidado com a equivalência: as
+duas implementações precisam concordar em `3/4/2024`, em `2024-13-01` e no ano
+bissexto de século. O contrato declara largura fixa e validade de calendário
+justamente para que essa concordância seja possível de verificar.
 
 **Um único passe.** Materializar todas as linhas, depois todos os registros,
 depois agrupar, e só então percorrer cada grupo mais duas vezes custa memória e
@@ -64,12 +64,13 @@ posições fixas evita o hash de string a cada atualização de campo. A diferen
 pequena por linha e real no agregado, e aparece mais no regime `dup`, onde há
 poucas chaves e muitas atualizações por chave.
 
-**`csv.reader` em vez de `csv.DictReader`.** O `reader` é o parser em C. O
-`DictReader` é um invólucro em Python que constrói um dicionário de 18 entradas
-por linha para você usar cinco. Ler o cabeçalho uma vez e guardar os cinco
-índices dá o mesmo resultado sem o invólucro. Guardar os índices **lidos do
-cabeçalho** é otimização; escrever os índices na mão é a suposição que o gate
-existe para punir, porque a ordem das colunas muda entre arquivos.
+**O que o leitor de CSV cobra.** `csv.reader` é o parser em C. `csv.DictReader`
+é um invólucro em Python por cima dele, que constrói um dicionário de dezoito
+entradas por linha para você usar cinco. Trocar de leitor é uma otimização
+legítima; o que não é legítimo é o passo seguinte que ela torna tentador.
+Descobrir as posições das colunas **lendo o cabeçalho** é otimização; escrever
+as posições na mão é a suposição que o gate existe para punir, porque a ordem
+das colunas muda entre arquivos.
 
 **Ligação local de nomes.** Em laço quente, `converte = normalizar_valor` antes
 do laço evita uma busca de global por linha. Vale o mesmo para métodos de dict:
