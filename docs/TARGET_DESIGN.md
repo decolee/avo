@@ -10,9 +10,9 @@ Quando `f` está errado, o agente não trava — ele fica confiante.
 
 ---
 
-## As cinco propriedades de um alvo válido
+## As seis propriedades de um alvo válido
 
-Um alvo precisa das cinco. Faltando qualquer uma, ele produz números que
+Um alvo precisa das seis. Faltando qualquer uma, ele produz números que
 parecem resultado e não são.
 
 | # | propriedade | como se verifica |
@@ -21,14 +21,17 @@ parecem resultado e não são.
 | 2 | O custo está dimensionado | `--budget` verde |
 | 3 | O headroom é graduado | medido à mão; ver §3 |
 | 3b | A medição não é trapaceável | candidato memoizador não pontua; ver §3b |
+| 3c | O gate distingue o que o benchmark não distingue | propriedades compartilhadas por acidente; ver §3c |
 | 4 | O score é diagnóstico | ≥ 2 regimes que são *formas* de dado diferentes |
 
-Quatro saíram de falhas reais desta bancada. A última saiu do guia de targets do
+Cinco saíram de falhas reais desta bancada. A última saiu do guia de targets do
 upstream e é a mais barata de acertar.
 
 Vale notar a ordem em que foram descobertas: 1 e 2 na primeira execução, 3 ao
-corrigir 2, e **3b depois de o alvo já ter sido declarado pronto**. Cada correção
-expôs a seguinte. É a razão de a checklist do fim deste documento existir.
+corrigir 2, **3b depois de o alvo já ter sido declarado pronto**, e **3c só
+quando alguém rodou a busca de verdade e tentou otimizar até o fim**. Cada
+correção expôs a seguinte. É a razão de a checklist do fim deste documento
+existir — e a razão de ela não estar terminada.
 
 ---
 
@@ -272,6 +275,53 @@ avisar.
 
 ---
 
+## 3c. O gate e o benchmark compartilham propriedades por acidente
+
+Descoberto rodando a Sessão 2 do RUNBOOK contra o `etl_agg` — um alvo que já
+tinha nove mutantes, dataset de gate separado, comparação contra soma verdadeira
+com tolerância dimensionada, e três camadas anti-memoização.
+
+**O ataque.** Um candidato que extrai os campos por posição relativa em vez de
+por nome. Ele mede **+28,6%** sobre o melhor candidato honesto e passa no gate.
+
+**Por que passa.** O `gate_adv` e os `perf_*` saem do mesmo gerador. Toda
+propriedade que os dois compartilham — ordem dos campos, presença de todos os
+campos, ausência de escapes, larguras, faixas de valor — é indistinguível de
+contrato do ponto de vista do candidato. O gate só encontra o que ele foi
+construído para **distinguir**, e este nunca tinha visto um registro com outra
+ordem de campos.
+
+**O que doeu.** Ao endurecer o gate (permutando a ordem das chaves em 1 de cada 3
+registros), quatro das cinco versões do lineage daquele run passaram a reprovar
+— incluindo versões que eu tinha commitado por achá-las honestas. Elas
+dependiam da mesma suposição que eu havia rejeitado explicitamente numa outra
+forma, e eu não percebi porque **o gate não me obrigou a perceber**.
+
+O teto defensável real, com a extração dirigida reescrita sem as suposições,
+ficou em +61,4% sobre o passe único — contra os +262% que o lineage inválido
+mostrava. Cerca de 40% do ganho aparente era suposição.
+
+**A regra.** Ao projetar um alvo, enumere explicitamente as propriedades que o
+dataset de gate e o de benchmark compartilham **por acidente de geração**, e
+decida uma a uma: ou vira contrato declarado na KB, ou o gerador do gate a
+quebra em parte dos registros. Não deixe a terceira opção — "ninguém reparou" —
+porque ela é a que a busca encontra.
+
+Perguntas que descobrem essas propriedades depressa:
+
+- Se eu embaralhar a ordem dos campos, o candidato ainda funciona?
+- Se um campo faltar, ele falha alto ou dá resposta errada?
+- Se um registro tiver o dobro do tamanho, ou um campo vazio, ou um escape?
+- O que acontece se o campo que ele procura for o último do objeto?
+
+**Otimização e trapaça não são categorias, são um gradiente.** Um candidato que
+assume ordem de campos dá a resposta certa para qualquer arquivo com aquela
+ordem: não é memorização nem detecção de dataset. A pergunta útil não é "isso é
+trapaça?" e sim **"esta suposição está no contrato?"**. Se não está, ou entra no
+contrato ou entra no gate.
+
+---
+
 ## 4. O score é diagnóstico
 
 **Regimes são formas de dado, não repetições do mesmo dado.** A versão antiga do
@@ -313,6 +363,8 @@ baseline: o seed marca 4,16 e a baseline 6,21, então o agente sabe desde o pass
 [ ] >= 2 regimes que são formas de dado diferentes
 [ ] baseline real, não só o seed
 [ ] a medição usa caminho novo E módulo novo por execução (anti-memoização)
+[ ] enumerei o que o dataset de gate e o de benchmark compartilham por acidente
+[ ] embaralhar a ordem dos campos / faltar um campo reprova quem depende disso
 [ ] tentei trapacear no meu próprio alvo e não consegui
 ```
 

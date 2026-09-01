@@ -314,6 +314,52 @@ def _mut_unrounded(path):
     return out
 
 
+def _mut_assume_ordem_de_campos(path):
+    """Extrai por posicao relativa em vez de por nome de campo.
+
+    Nao e um erro de logica: para um arquivo cujos registros saem sempre na mesma
+    ordem, este mutante da a resposta CERTA, e mede +28,6% sobre o melhor
+    candidato honesto — foi o maior ganho disponivel num run real
+    (`experiments/RESULTS-etl_agg-20260901.md`).
+
+    O que ele codifica e uma propriedade DESTE arquivo, nao do formato: a ordem
+    dos campos nao esta em `kb/00-contrato.md`. Ate o gate passar a permutar a
+    ordem em parte dos registros, nada distinguia este candidato de um honesto.
+    """
+    import re
+
+    padrao = re.compile(
+        r'"account":\s*"([^"]*)".*?'
+        r'"ccy":\s*"([^"]*)".*?'
+        r'"amount":\s*([^,]*).*?'
+        r'"ts":\s*([^,]*).*?'
+        r'"status":\s*"([^"]*)"'
+    )
+    agg = {}
+    with open(path, encoding="utf-8") as fh:
+        for linha in fh:
+            m = padrao.search(linha)
+            if m is None:
+                continue
+            conta, ccy, valor, ts, status = m.groups()
+            k = conta + "|" + ccy
+            a = agg.get(k)
+            if a is None:
+                agg[k] = a = [0, 0.0, 0.0, 0]
+            a[0] += 1
+            v = float(valor)
+            a[1] += v
+            if status == "settled":
+                a[2] += v
+            t = int(ts)
+            if t > a[3]:
+                a[3] = t
+    return {
+        k: {"n": a[0], "gross": round(a[1], 2), "net": round(a[2], 2), "last_ts": a[3]}
+        for k, a in agg.items()
+    }
+
+
 MUTANTS = evalkit.MutantSuite(
     reference=reference,
     mutants=[
@@ -326,6 +372,7 @@ MUTANTS = evalkit.MutantSuite(
         ("agrupa_so_por_conta", _mut_group_by_account_only),
         ("float32_precision", _mut_float32),
         ("valor_nao_arredondado", _mut_unrounded),
+        ("assume_ordem_de_campos", _mut_assume_ordem_de_campos),
     ],
 )
 

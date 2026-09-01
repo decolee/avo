@@ -60,6 +60,32 @@ meio centavo mais uma folga proporcional à magnitude do grupo. Isso quer dizer:
 
 O gate julga a sua lógica, não a ordem em que você somou.
 
+## O que NÃO é contrato — leia antes de otimizar o parsing
+
+Estas propriedades valem para os arquivos que existem hoje e **não** fazem parte
+do contrato. Um candidato pode observá-las; não pode depender delas.
+
+| propriedade do arquivo | é contrato? |
+|---|---|
+| os dezesseis campos aparecem sempre na mesma ordem | **não** |
+| um valor numérico é sempre seguido de vírgula | **não** — em JSON também pode vir `}` |
+| todos os registros têm todos os campos | **não** |
+| `account`, `ccy` e `status` nunca têm escape | **sim**, o ledger garante |
+| a chave de saída é `"<account>|<ccy>"` | **sim** |
+
+As duas primeiras já foram exploradas de verdade. Um candidato que buscava cada
+campo a partir do fim do anterior — e que portanto assumia ordem — media +28,6%
+sobre o melhor candidato honesto e **passava no gate**, porque o `gate_adv` e os
+`perf_*` saíam do mesmo gerador, com a mesma ordem.
+
+O `gate_adv` agora permuta a ordem das chaves em parte dos registros, e um
+candidato posicional falha logo na primeira linha. A história completa está em
+`experiments/REWARD_HACKING.md`.
+
+Extração dirigida continua valendo a pena — vale **+61,4%** sobre `json.loads`
+quando feita corretamente. O que não vale é economizar em cima da forma do
+arquivo.
+
 ## Restrições
 
 - Somente a biblioteca padrão. Verificado estaticamente antes de executar.

@@ -4,6 +4,20 @@
 **Passos:** 6 de 15 — parou por platô declarado, não por limite
 **Máquina:** container Linux, 4 vCPU
 
+> **AVISO — este lineage foi invalidado depois (Sessão 2).**
+>
+> A Sessão 2 endureceu o `gate_adv` para permutar a ordem dos campos, e com isso
+> **as versões v2 a v5 deste run passaram a reprovar**. Elas dependiam de duas
+> suposições que não estão em `kb/00-contrato.md`: que os campos vêm sempre na
+> mesma ordem, e que um valor numérico termina sempre em vírgula (em JSON também
+> pode terminar em `}`).
+>
+> Só a v1 continua válida. O teto defensável real medido depois do conserto é
+> **10,94** (extração dirigida correta, +61,4% sobre a v1), não 15,31.
+>
+> Os números abaixo estão preservados como o que foram medidos na hora, não como
+> evidência de melhoria. Ver `experiments/REWARD_HACKING.md`.
+
 ## Lineage
 
 | ver | primary | Δ | Δ% | resumo |

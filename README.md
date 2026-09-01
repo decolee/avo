@@ -99,7 +99,7 @@ rejeitar, `--budget` que confirma o dimensionamento, e um hook que bloqueia a
 edição do árbitro. Não é zelo: é o resultado de ter escrito um gate que parecia
 sólido, tentado quebrá-lo de propósito, e conseguido.
 
-## As cinco falhas que este repositório existe para não repetir
+## As seis falhas que este repositório existe para não repetir
 
 Todas aconteceram de verdade. Todas viraram verificação automática.
 
@@ -136,10 +136,21 @@ Todas aconteceram de verdade. Todas viraram verificação automática.
    da versão honesta e o cache em disco é reprovado por nome. Trapacear passou de
    valer um milhão a custar caro.
 
-Duas são especialmente instrutivas. A quarta, porque um ganho de 57,8× parece um
+6. **Gate e benchmark compartilhando propriedades por acidente.** Achada rodando
+   a busca de verdade (`experiments/REWARD_HACKING.md`). Como os dois datasets
+   saem do mesmo gerador, tudo que eles compartilham sem querer — ordem dos
+   campos, por exemplo — vira suposição livre para o candidato. Um extrator
+   posicional media **+28,6%** sobre o melhor candidato honesto e passava.
+   → O gerador do gate agora permuta a ordem das chaves. Ao endurecê-lo, **quatro
+   das cinco versões de um lineage real passaram a reprovar** — cerca de 40% do
+   ganho aparente era suposição, não otimização.
+
+Três são especialmente instrutivas. A quarta, porque um ganho de 57,8× parece um
 sucesso retumbante do sistema e era o sintoma de um alvo mal projetado. A quinta,
-porque cada correção expôs a seguinte — e a última só apareceu porque alguém
-tentou trapacear de propósito num alvo que já estava "pronto".
+porque cada correção expôs a seguinte. E a sexta, porque o alvo já tinha nove
+mutantes, gate separado e três camadas anti-memoização — e mesmo assim não
+distinguia "extrai por nome" de "extrai por posição", porque nunca tinha visto um
+registro em outra ordem.
 
 ## Por que ablação, e não mais um benchmark
 

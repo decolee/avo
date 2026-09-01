@@ -50,6 +50,27 @@ CHANNELS = ("pos", "web", "atm", "api", "batch")
 #: mundo, e porque o custo de ignorá-los faz parte do problema.
 NEEDED = ("account", "ccy", "amount", "ts", "status")
 
+#: Ordem em que `_record` monta as chaves. Usada so para conferir que o primeiro
+#: registro do gate NAO sai nessa ordem.
+NEEDED_ORDEM_CANONICA = (
+    "id",
+    "account",
+    "ccy",
+    "amount",
+    "ts",
+    "status",
+    "merchant",
+    "category",
+    "country",
+    "channel",
+    "fx_rate",
+    "memo",
+    "batch_id",
+    "counterparty",
+    "settled_at",
+    "source",
+)
+
 
 def _record(rnd: random.Random, i: int, account: str, amount: float, status: str, ts: int) -> dict:
     """Um registro de ledger. A ordem das chaves é fixa mas não é contrato."""
@@ -184,10 +205,61 @@ def _assert_dataset_has_teeth(rows: list[dict]) -> None:
         )
 
 
+def _permutar_ordem_dos_campos(rows: list[dict], seed: int = 4242) -> list[dict]:
+    """Embaralha a ORDEM das chaves de parte dos registros do gate.
+
+    A ordem dos campos nao esta em `kb/00-contrato.md` e nao e propriedade do
+    formato — e propriedade deste arquivo. Enquanto `gate_adv` e os `perf_*`
+    sairem do mesmo gerador com a mesma ordem, um candidato que assume ordem
+    passa no gate com folga, e o gate existe justamente para achar suposicoes
+    sobre a forma do dado.
+
+    Isso nao e hipotetico: um run real (`experiments/RESULTS-etl_agg-20260901.md`)
+    encontrou uma regex que assume ordem, mede +28,6% sobre o melhor candidato
+    honesto, e passava. Era o maior ganho disponivel na curva e vinha inteiro da
+    suposicao.
+
+    O primeiro registro ja vem permutado de proposito: um candidato posicional
+    falha na primeira linha, com erro claro, em vez de falhar no meio.
+
+    Permutar so uma PARTE mantem a ordem canonica representada tambem, para que
+    o gate exercite os dois casos.
+    """
+    rnd = random.Random(seed)
+    out = []
+    for i, row in enumerate(rows):
+        if i % 3 == 0:
+            chaves = list(row)
+            rnd.shuffle(chaves)
+            out.append({k: row[k] for k in chaves})
+        else:
+            out.append(row)
+    return out
+
+
 def _build_adv(path: Path) -> None:
-    rows = _adv_rows()
+    rows = _permutar_ordem_dos_campos(_adv_rows())
     _assert_dataset_has_teeth(rows)
+    _assert_ordem_permutada(rows)
     _write(path, rows)
+
+
+def _assert_ordem_permutada(rows: list[dict]) -> None:
+    """Prova que o gate consegue reprovar um candidato posicional.
+
+    Se todos os registros sairem na mesma ordem de chaves, a defesa e decorativa.
+    """
+    ordens = {tuple(r) for r in rows}
+    if len(ordens) < 2:
+        raise AssertionError(
+            "gate_adv tem uma unica ordem de campos: um candidato que assume ordem "
+            "passaria. A permutacao nao esta fazendo efeito."
+        )
+    if tuple(rows[0]) == tuple(NEEDED_ORDEM_CANONICA):
+        raise AssertionError(
+            "o primeiro registro do gate_adv esta na ordem canonica; um candidato "
+            "posicional so falharia mais adiante, com erro menos obvio."
+        )
 
 
 def specs() -> list[datakit.DatasetSpec]:
