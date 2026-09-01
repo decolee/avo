@@ -90,6 +90,48 @@ Secundárias, reportadas sempre, nunca promovidas a primária depois:
 - score por regime, não só o agregado: um braço pode ganhar no geomean e estar
   regredindo num regime
 
+## 5b. A catraca de ruído — um confundidor descoberto antes de rodar
+
+Ao testar o modo não supervisionado, um passo falhou por um motivo de ambiente
+(`--dangerously-skip-permissions` não roda como root). O agente morreu em 1,1 s
+sem tocar em nada. **O passo foi ACEITO como v1, com +3,59%.**
+
+O `git diff v0 v1` não toca no `transform.py`. O código era idêntico ao seed. A
+avaliação apenas mediu um pouco mais rápido, e a política *iguala ou melhora*
+commitou.
+
+Isso é um confundidor direto do experimento, e da pior espécie — ele **favorece
+os braços que falham mais**:
+
+- Um braço com mais falhas de agente acumula mais passos "aceitos" sem código
+  novo. `commits aceitos` deixa de medir busca produtiva.
+- Cada aceite por ruído vira o novo incumbente. Como só se commita o que iguala
+  ou melhora, a régua sobe e nunca desce: o score final acumula o **máximo** do
+  ruído em vez da mediana. Com 6 passos e ±3% de ruído, isso infla o resultado
+  de qualquer braço, e infla mais quem tem mais passos vazios.
+
+Não é um defeito do harness — *matches-or-improves* é o critério do paper (§3.2)
+e existe para permitir refactor neutro. É um defeito de **medição** quando o
+ruído é comparável ao efeito, que é exatamente o regime desta bancada.
+
+**Mitigações adotadas, todas registradas no `results.jsonl`:**
+
+1. **Coluna `codigo_mudou`.** Por passo, o runner compara o arquivo do candidato
+   entre as duas versões commitadas. Um aceite sem mudança de código é uma
+   catraca de ruído e é contado à parte.
+2. **`agente_ok` por passo.** Falha de agente é reportada, não escondida numa
+   média.
+3. **Métrica primária inalterada, mas lida com cuidado.** A melhoria relativa
+   continua sendo `primary_final / primary_seed`; a análise reporta em paralelo
+   a melhoria contando **só os passos em que o código mudou**.
+4. **Se um braço tiver taxa de falha de agente muito diferente dos outros**, a
+   comparação daquele braço é reportada como não interpretável — a diferença
+   estaria medindo o ambiente, não a arquitetura.
+
+Vale registrar o método: isto apareceu porque um passo falhou por acaso e eu fui
+olhar *por que* ele tinha sido aceito. Um experimento que só olhasse a curva de
+score teria absorvido o efeito inteiro sem notar.
+
 ## 6. Amostragem e análise
 
 - **n = 5 execuções por braço** por alvo, alvos `etl_agg` e `sql_agg` no mínimo.

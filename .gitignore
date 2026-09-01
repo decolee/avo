@@ -46,3 +46,8 @@ htmlcov/
 *.pem
 *.key
 credentials.json
+
+# Resultados brutos da ablacao: runs completos, dezenas de MB por braco.
+# O results.jsonl e a analise vao para o git; os runs nao.
+experiments/ablacao/resultados/runs/
+experiments/ablacao/alvo_*_sem_kb/
