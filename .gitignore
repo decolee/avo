@@ -51,3 +51,13 @@ credentials.json
 # O results.jsonl e a analise vao para o git; os runs nao.
 experiments/ablacao/resultados/runs/
 experiments/ablacao/alvo_*_sem_kb/
+
+# Transcricao bruta stream-json de cada sessao do braco `greedy`. Mesma regra
+# dos runs acima, pelo mesmo motivo: e o registro CRU, na ordem de megabytes por
+# sessao, e ele nao e o resultado. O resultado — score, custo, turnos, se o
+# codigo mudou — vai para greedy.jsonl, que e commitado por semente.
+#
+# O que destas transcricoes merece sobreviver ao container e destilado no fim da
+# corrida (a linha RESUMO de cada sessao e o que o agente disse ter feito), nao a
+# transcricao inteira.
+experiments/ablacao/resultados/logs/
