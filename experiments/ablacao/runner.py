@@ -138,6 +138,11 @@ def _meta_do_passo(run_dir: Path, passo: int) -> dict:
                 "turnos": a.get("num_turns"),
                 "dur_agente_s": a.get("duration_s"),
                 "erro_agente": (str(a.get("error"))[:200] if a.get("error") else None),
+                # Morrer por TIMEOUT e diferente de falhar: o agente costuma ter
+                # escrito codigo util antes de ser morto. Contar os dois como
+                # "falha" faria a analise marcar um braco como nao interpretavel
+                # por um motivo que nao e dele.
+                "morto_por_tempo": bool(a.get("error") and "exceeded" in str(a.get("error"))),
                 "supervisor": bool(d.get("supervisor")),
             }
     return {}

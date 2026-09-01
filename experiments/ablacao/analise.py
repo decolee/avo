@@ -112,7 +112,12 @@ def main() -> int:
     for braco, rs in sorted(por_braco.items()):
         melhorias = [r["melhoria_relativa"] for r in rs]
         passos = [p for r in rs for p in r.get("passos", [])]
-        falhas = sum(1 for p in passos if p.get("agente_ok") is False)
+        # Falha REAL e o agente nao ter rodado. Morto por tempo conta a parte:
+        # ele quase sempre escreveu codigo antes de acabar o relogio.
+        falhas = sum(
+            1 for p in passos if p.get("agente_ok") is False and not p.get("morto_por_tempo")
+        )
+        mortos = sum(1 for p in passos if p.get("morto_por_tempo"))
         aceitos = sum(1 for p in passos if p.get("aceito"))
         com_codigo = sum(1 for p in passos if p.get("aceito") and p.get("codigo_mudou") is True)
         custo = sum(p.get("custo_usd") or 0.0 for p in passos)
@@ -127,6 +132,7 @@ def main() -> int:
             "aceitos": aceitos,
             "aceitos_com_codigo_novo": com_codigo,
             "catracas_de_ruido": aceitos - com_codigo,
+            "mortos_por_tempo": mortos,
             "custo_usd": round(custo, 4),
         }
 
