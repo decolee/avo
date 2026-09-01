@@ -363,8 +363,12 @@ def main() -> int:
             # Commit por semente: um restart de container já custou uma corrida
             # inteira deste laboratório uma vez. Resultado que não está no git
             # não existe.
+            # `parcial.jsonl` junto: o braço `full` grava ali o registro POR
+            # PASSO, e ele é o único lugar onde o passo intermediário sobrevive
+            # — a curva de custo × ganho é feita dele. Deixá-lo fora do commit
+            # deixava a árvore suja depois de toda semente do `full`.
             subprocess.run(
-                ["git", "add", str(arquivo)],
+                ["git", "add", str(arquivo), str(saida / "parcial.jsonl")],
                 cwd=str(RAIZ),
                 check=False,
                 capture_output=True,
