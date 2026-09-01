@@ -1,0 +1,75 @@
+name: sessionize
+description: >-
+  Sessionizacao de eventos de navegacao (JSONL embaralhado -> sessoes por
+  usuario com corte por intervalo). Score = media geometrica do throughput em
+  tres formas de trafego.
+
+seed: seed
+knowledge_base: kb
+entrypoint: sessionize.py
+
+evaluate:
+  command: ["python3", "{target}/eval.py", "--workdir", "{workdir}"]
+  cwd: "."
+  timeout: 10m
+
+baselines:
+  command: ["python3", "{target}/eval.py", "--baselines"]
+
+score:
+  direction: maximize
+
+agent:
+  goal: |
+    Otimize work/sessionize.py para maximizar throughput mantendo a correcao exata.
+
+    O avaliador mede a mediana de 5 execucoes em tres formas de trafego:
+
+      curto   muitos usuarios, ~2,5 eventos por sessao
+      longo   poucos usuarios, ~4,5 eventos por sessao
+      denso   sessoes longas e sobrepostas, ~10 eventos por sessao
+
+    O numero maximizado e a media geometrica dos tres. Uma mudanca que acelera
+    um regime e regride outro perde para uma que melhora os tres modestamente.
+
+    O que distingue este alvo dos outros do laboratorio: ORDEM IMPORTA. O
+    arquivo vem embaralhado, e a sessao de um usuario so existe em relacao ao
+    evento anterior DELE. Nao ha resposta correta sem ordenar, e COMO ordenar e
+    a maior parte do espaco de busca.
+
+    A correcao e decidida num dataset separado e adversarial. Candidato
+    incorreto vale ZERO, nao "um pouco menos".
+
+    Apenas a biblioteca padrao, verificado estaticamente.
+
+  notes: |
+    Antes de comecar:
+
+      - kb/00-contrato.md e a verdade sobre a saida. Leia a secao da FRONTEIRA:
+        um intervalo de exatamente 1800 s MANTEM a sessao aberta. Trocar `>` por
+        `>=` erra so nos pares que estao exatamente nessa distancia, e o gate
+        tem esses pares de proposito.
+      - kb/10-performance.md tem o mapa de custo de ordenacao e agrupamento em
+        Python; kb/20-medicao.md diz em que tamanho de delta acreditar.
+      - O evento tem dez campos e a sessionizacao precisa de dois. Essa folga e
+        real e faz parte do problema.
+      - Ordenar `ts` como texto da a resposta certa em qualquer dado limpo e
+        errada no gate. Se voce se pegar assumindo largura fixa de campo,
+        pergunte-se de onde vem essa garantia.
+      - `./avo-eval` de dentro do run dir mede sem tocar no lineage. Uma
+        avaliacao do seed custa ~4s: use a vontade.
+
+# Declaracao de headroom, medida a mao e conferida pelo `avo-lab verify`.
+#
+# A checklist de `docs/TARGET_DESIGN.md` exige 3x a 8x de headroom distribuido em
+# pelo menos 4 movimentos, com nenhum passando de 70% do ganho. Isso NAO e
+# verificavel por maquina — precisa de alguem escrevendo versoes melhores e
+# medindo. O que a maquina pode fazer e cobrar que o numero esteja declarado, e
+# recusar o alvo quando ele nao alcanca a barra. Sem isso a exigencia vive so na
+# prosa, e prosa nao reprova ninguem.
+lab:
+  headroom_medido: 1.83
+  movimentos: 3
+  valido: false
+  nota: >-
+    ganho bem distribuido (maior fatia 49%) mas total abaixo do minimo

@@ -95,6 +95,54 @@ def check_yaml(target: Path) -> Check:
     return Check("target.yaml", True, f"{len(kb_files)} arquivos de KB")
 
 
+def check_headroom(target: Path) -> Check:
+    """O alvo declara headroom medido, e ele alcanca a barra?
+
+    A barra esta em `docs/TARGET_DESIGN.md` §3: 3x a 8x distribuido em pelo menos
+    quatro movimentos. Nenhuma maquina consegue medir isso — exige escrever
+    versoes progressivamente melhores e cronometra-las. O que da para exigir e
+    que o numero esteja DECLARADO no `target.yaml` e que ele passe da barra.
+
+    Um alvo abaixo da barra nao e invalido por ser ruim: ele e correto, tem gate
+    e esta dimensionado. Ele so nao serve para o proposito da bancada, que e
+    distinguir bracos numa ablacao. Vale existir, marcado.
+    """
+    try:
+        import yaml
+    except ImportError:
+        return Check("headroom declarado", True, "pulado: pyyaml nao instalado")
+    try:
+        data = yaml.safe_load((target / "target.yaml").read_text(encoding="utf-8")) or {}
+    except Exception as exc:  # noqa: BLE001
+        return Check("headroom declarado", False, f"{type(exc).__name__}: {exc}")
+
+    lab = data.get("lab") or {}
+    if "headroom_medido" not in lab:
+        return Check(
+            "headroom declarado",
+            False,
+            "target.yaml nao declara `lab.headroom_medido` — meça a escada e declare",
+        )
+    h = float(lab.get("headroom_medido") or 0)
+    mov = int(lab.get("movimentos") or 0)
+    alcanca = h >= 3.0 and mov >= 4
+    if bool(lab.get("valido")) != alcanca:
+        return Check(
+            "headroom declarado",
+            False,
+            f"`lab.valido` diz {lab.get('valido')} mas {h}x em {mov} movimentos "
+            f"{'alcanca' if alcanca else 'nao alcanca'} a barra",
+        )
+    if not alcanca:
+        return Check(
+            "headroom declarado",
+            False,
+            f"{h}x em {mov} movimentos — abaixo da barra (3x em 4). "
+            f"{lab.get('nota') or ''}".strip(),
+        )
+    return Check("headroom declarado", True, f"{h}x em {mov} movimentos")
+
+
 def check_lock(target: Path) -> Check:
     from labkit import datakit
 
@@ -126,6 +174,7 @@ def verify(names: list[str] | None, skip_slow: bool, timeout: float) -> list[Tar
             continue
         report = TargetReport(target.name)
         report.checks.append(check_yaml(target))
+        report.checks.append(check_headroom(target))
         report.checks.append(check_lock(target))
         report.checks.append(check_selftest(target, timeout))
         if not skip_slow:

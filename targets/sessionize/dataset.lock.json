@@ -1,0 +1,28 @@
+{
+  "files": {
+    "gate_adv.jsonl": {
+      "bytes": 54062,
+      "purpose": "UNICO dataset que decide correcao: fronteira exata, empates, bordas",
+      "sha256": "0034ff62138e234a89c8aeedeaf06488c10f56bc0beff2504eda80583f9e909d"
+    },
+    "perf_curto.jsonl": {
+      "bytes": 5977500,
+      "purpose": "muitos usuarios, poucos eventos cada",
+      "rows": 30000,
+      "sha256": "84ce36553f6c6a7b86e4eef743dd51681bc9c0528f517645b56e682afa74c354"
+    },
+    "perf_denso.jsonl": {
+      "bytes": 5977643,
+      "purpose": "volume concentrado em pico: sessoes longas e sobrepostas",
+      "rows": 30000,
+      "sha256": "ff12ea2a8efd242ab755bd2a34b3cb56cea1721303e0797869b9ff27c67b11bb"
+    },
+    "perf_longo.jsonl": {
+      "bytes": 5976553,
+      "purpose": "poucos usuarios, muitos eventos cada",
+      "rows": 30000,
+      "sha256": "229ded2b26ad4d67bc3ec4dd9293243d8d250d5bdacdb07bc872185349f1d305"
+    }
+  },
+  "version": 1
+}

@@ -75,3 +75,18 @@ agent:
         terceiro decimal para estes tres bancos passa no gate e nao vale nada.
       - `./avo-eval` de dentro do run dir mede sem tocar no lineage. Uma
         avaliacao do seed custa ~10s.
+
+# Declaracao de headroom, medida a mao e conferida pelo `avo-lab verify`.
+#
+# A checklist de `docs/TARGET_DESIGN.md` exige 3x a 8x de headroom distribuido em
+# pelo menos 4 movimentos, com nenhum passando de 70% do ganho. Isso NAO e
+# verificavel por maquina — precisa de alguem escrevendo versoes melhores e
+# medindo. O que a maquina pode fazer e cobrar que o numero esteja declarado, e
+# recusar o alvo quando ele nao alcanca a barra. Sem isso a exigencia vive so na
+# prosa, e prosa nao reprova ninguem.
+lab:
+  headroom_medido: 3.55
+  movimentos: 7
+  valido: true
+  nota: >-
+    cinco passos positivos; o v4 e negativo e fica no registro
