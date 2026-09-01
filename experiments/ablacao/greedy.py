@@ -48,7 +48,32 @@ def _goal_do_alvo(alvo: str) -> tuple[str, str]:
     return str(agente.get("goal") or ""), str(agente.get("notes") or "")
 
 
-def monta_prompt(alvo: str, run_dir: Path, orcamento_min: int) -> str:
+#: Os dois perfis do controle. A diferença é só a instrução de parada, e ela
+#: existe porque a calibração mostrou que o greedy natural PARA sozinho em ~12
+#: min — bem antes do orçamento. Comparar só o natural contra o `full` daria ao
+#: `full` quatro vezes mais compute e a crítica seria justa. Comparar só o
+#: persistente esconderia o comportamento default, que é o que um engenheiro
+#: realmente obtém quando pede "otimize isso". Os dois são o experimento.
+PERFIS = ("natural", "persistente")
+
+_PARADA = {
+    "natural": """Trabalhe ate acabar o tempo ou ate nao conseguir mais melhorar. Termine com uma
+linha comecando com RESUMO: dizendo o que voce fez e o ultimo score medido.""",
+    "persistente": """Nao pare antes de gastar o orcamento. Quando uma linha de ataque se esgotar,
+procure outra: releia a kb, meca de novo onde esta o custo, tente uma abordagem
+diferente da que voce ja tentou. "Nao consigo melhorar mais" so vale depois de
+voce ter medido pelo menos tres ideias distintas e nenhuma ter passado do ruido.
+
+Guarde a MELHOR versao que voce mediu. Nao ha reversao automatica aqui: se uma
+tentativa piorar o score, e sua responsabilidade desfazer antes de terminar. O
+que estiver no arquivo no fim e o que conta.
+
+Termine com uma linha comecando com RESUMO: dizendo o que voce fez, quantas
+ideias mediu, e o ultimo score medido.""",
+}
+
+
+def monta_prompt(alvo: str, run_dir: Path, orcamento_min: int, perfil: str = "natural") -> str:
     goal, notes = _goal_do_alvo(alvo)
     entrypoint = ""
     import yaml
@@ -84,15 +109,21 @@ Nao ha commit, nao ha versoes, nao ha reversao automatica: o que estiver no
 arquivo quando voce terminar e o que conta. Se voce piorar e nao desfazer, o
 score piora.
 
-Trabalhe ate acabar o tempo ou ate nao conseguir mais melhorar. Termine com uma
-linha comecando com RESUMO: dizendo o que voce fez e o ultimo score medido.
+{_PARADA[perfil]}
 """
 
 
-def roda_greedy(alvo: str, run_dir: Path, timeout_s: float, effort: str, log: Path) -> dict:
+def roda_greedy(
+    alvo: str,
+    run_dir: Path,
+    timeout_s: float,
+    effort: str,
+    log: Path,
+    perfil: str = "natural",
+) -> dict:
     """Uma sessao unica de agente, sem estrutura. Devolve metadados da execucao."""
     orcamento_min = int(timeout_s // 60)
-    prompt = monta_prompt(alvo, run_dir, orcamento_min)
+    prompt = monta_prompt(alvo, run_dir, orcamento_min, perfil)
     argv = [
         "claude",
         "-p",
@@ -109,7 +140,7 @@ def roda_greedy(alvo: str, run_dir: Path, timeout_s: float, effort: str, log: Pa
     ]
     log.parent.mkdir(parents=True, exist_ok=True)
     inicio = time.time()
-    meta: dict = {"backend": "claude_cli_greedy", "model": "claude-opus-5"}
+    meta: dict = {"backend": "claude_cli_greedy", "model": "claude-opus-5", "perfil": perfil}
     with open(log, "a", encoding="utf-8") as fh:
         proc = subprocess.Popen(
             argv,
