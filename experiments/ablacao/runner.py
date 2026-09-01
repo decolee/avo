@@ -144,7 +144,14 @@ def _meta_do_passo(run_dir: Path, passo: int) -> dict:
 
 
 def roda_um(
-    braco: str, semente: int, alvo: str, passos: int, timeout_agente: str, saida: Path
+    braco: str,
+    semente: int,
+    alvo: str,
+    passos: int,
+    timeout_agente: str,
+    saida: Path,
+    effort: str = "medium",
+    teto_usd: float = 2.5,
 ) -> dict:
     cfg = BRACOS[braco]
     alvo_ref = alvo if cfg["kb"] else str(variante_sem_kb(alvo))
@@ -241,6 +248,8 @@ def main() -> int:
     p.add_argument("--passos", type=int, default=6)
     p.add_argument("--rodadas", type=int, default=3, help="n por braço")
     p.add_argument("--timeout-agente", default="15m")
+    p.add_argument("--effort", default="medium", help="igual em todos os bracos, por desenho")
+    p.add_argument("--teto-usd", type=float, default=2.5, help="teto por passo, igual em todos")
     p.add_argument("--saida", default=str(AQUI / "resultados"))
     p.add_argument("--bracos", nargs="*", default=list(BRACOS))
     args = p.parse_args()
@@ -266,7 +275,16 @@ def main() -> int:
                 continue
             t0 = time.time()
             print(f"  {braco} s{rodada}: rodando...", flush=True)
-            reg = roda_um(braco, rodada, args.alvo, args.passos, args.timeout_agente, saida)
+            reg = roda_um(
+                braco,
+                rodada,
+                args.alvo,
+                args.passos,
+                args.timeout_agente,
+                saida,
+                effort=args.effort,
+                teto_usd=args.teto_usd,
+            )
             reg["rodada"] = rodada
             with linha_resultados.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(reg, ensure_ascii=False) + "\n")
