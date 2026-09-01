@@ -111,17 +111,40 @@ def curva_do_greedy(linhas: list[dict]) -> dict[str, list[dict]]:
     return por_braco
 
 
-def _resumo(pontos: list[dict]) -> dict:
+def taxa_usd_por_segundo(pontos: list[dict]) -> float:
+    """US$ por segundo de agente, mediana sobre as sessões com custo medido.
+
+    Serve para imputar o custo das sessões que o timeout matou: o harness só
+    reporta `total_cost_usd` no evento `result`, e uma sessão morta antes dele
+    volta com `None`. Somar esse `None` como zero — que era o que este arquivo
+    fazia — faz o braço parecer mais barato do que foi, e o erro cresce
+    justamente nos braços de orçamento curto, que são os que mais morrem.
+
+    A imputação é segura aqui porque a taxa é notavelmente estável: US$ 0,0049/s
+    no `greedy_b600`, 0,0053 no `greedy_bmax`, 0,0058 na calibração e 0,0049 por
+    passo do `full`. Mesmo assim ela é marcada, e o relatório diz quantos pontos
+    foram imputados.
+    """
+    taxas = [
+        p["custo_usd"] / p["compute_s"]
+        for p in pontos
+        if not p["custo_incompleto"] and p["compute_s"] > 0 and p["custo_usd"] > 0
+    ]
+    return statistics.median(taxas) if taxas else 0.0
+
+
+def _resumo(pontos: list[dict], taxa: float = 0.0) -> dict:
     ganhos = [p["ganho"] for p in pontos]
+    custos = [(p["compute_s"] * taxa if p["custo_incompleto"] else p["custo_usd"]) for p in pontos]
     return {
         "n": len(pontos),
         "compute_s": statistics.fmean(p["compute_s"] for p in pontos) if pontos else 0.0,
-        "custo_usd": statistics.fmean(p["custo_usd"] for p in pontos) if pontos else 0.0,
+        "custo_usd": statistics.fmean(custos) if custos else 0.0,
         "ganho": statistics.fmean(ganhos) if ganhos else 0.0,
         "ganho_dp": statistics.stdev(ganhos) if len(ganhos) > 1 else float("nan"),
         "mde": efeito_minimo(ganhos),
         "ganhos": ganhos,
-        "custo_incompleto": sum(1 for p in pontos if p["custo_incompleto"]),
+        "custo_imputado": sum(1 for p in pontos if p["custo_incompleto"]),
     }
 
 
@@ -146,17 +169,26 @@ def main() -> int:
         return 1
 
     passos = curva_do_full(full)
-    curva_full = {k: _resumo(v) for k, v in sorted(passos.items())}
-    curva_greedy = {k: _resumo(v) for k, v in sorted(curva_do_greedy(greedy).items())}
+    pontos_greedy = curva_do_greedy(greedy)
+    todos = [x for v in passos.values() for x in v] + [x for v in pontos_greedy.values() for x in v]
+    taxa = taxa_usd_por_segundo(todos)
+    curva_full = {k: _resumo(v, taxa) for k, v in sorted(passos.items())}
+    curva_greedy = {k: _resumo(v, taxa) for k, v in sorted(pontos_greedy.items())}
 
     print("=" * 78)
     print("CURVA DO `full` — ganho depois de cada passo, contra o seed da propria semente")
     print("=" * 78)
-    print(f"{'passo':>6} {'n':>3} {'compute':>9} {'US$':>7} {'ganho':>8} {'dp':>7} {'MDE':>7}")
+    print(
+        f"taxa observada: US$ {taxa:.4f} por segundo de agente "
+        "(usada para imputar sessoes mortas antes do evento de custo)\n"
+    )
+    print(
+        f"{'passo':>6} {'n':>3} {'compute':>9} {'US$':>7} {'ganho':>8} {'dp':>7} {'MDE':>7} {'imp':>4}"
+    )
     for k, r in curva_full.items():
         print(
             f"{k:>6} {r['n']:>3} {r['compute_s']:>8.0f}s {r['custo_usd']:>7.2f} "
-            f"{r['ganho']:>7.2f}x {r['ganho_dp']:>7.2f} {r['mde']:>7.2f}"
+            f"{r['ganho']:>7.2f}x {r['ganho_dp']:>7.2f} {r['mde']:>7.2f} {r['custo_imputado']:>4}"
         )
 
     if not curva_greedy:
@@ -169,14 +201,14 @@ def main() -> int:
     print("=" * 78)
     print(
         f"{'braco':>13} {'n':>3} {'compute':>9} {'US$':>7} {'ganho':>8} "
-        f"{'dp':>7} {'MDE':>7} {'kill':>5}"
+        f"{'dp':>7} {'MDE':>7} {'kill':>5} {'imp':>4}"
     )
     for nome, r in curva_greedy.items():
-        pontos = curva_do_greedy(greedy)[nome]
-        mortos = sum(1 for x in pontos if x["morto_por_tempo"])
+        mortos = sum(1 for x in pontos_greedy[nome] if x["morto_por_tempo"])
         print(
             f"{nome:>13} {r['n']:>3} {r['compute_s']:>8.0f}s {r['custo_usd']:>7.2f} "
-            f"{r['ganho']:>7.2f}x {r['ganho_dp']:>7.2f} {r['mde']:>7.2f} {mortos:>5}"
+            f"{r['ganho']:>7.2f}x {r['ganho_dp']:>7.2f} {r['mde']:>7.2f} {mortos:>5} "
+            f"{r['custo_imputado']:>4}"
         )
 
     # A comparação: cada ponto do greedy contra o passo do full de compute mais

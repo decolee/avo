@@ -113,34 +113,15 @@ score piora.
 """
 
 
-def roda_greedy(
-    alvo: str,
-    run_dir: Path,
-    timeout_s: float,
-    effort: str,
-    log: Path,
-    perfil: str = "natural",
-) -> dict:
-    """Uma sessao unica de agente, sem estrutura. Devolve metadados da execucao."""
-    orcamento_min = int(timeout_s // 60)
-    prompt = monta_prompt(alvo, run_dir, orcamento_min, perfil)
-    argv = [
-        "claude",
-        "-p",
-        prompt,
-        "--output-format",
-        "stream-json",
-        "--verbose",
-        "--permission-mode",
-        "acceptEdits",
-        "--model",
-        "claude-opus-5",
-        "--effort",
-        effort,
-    ]
-    log.parent.mkdir(parents=True, exist_ok=True)
+def _uma_sessao(argv: list[str], run_dir: Path, timeout_s: float, log: Path) -> dict:
+    """Uma invocação do CLI. Devolve custo, turnos, `session_id` e como terminou.
+
+    O `session_id` é o que permite retomar a MESMA conversa depois. Ele aparece
+    no evento `init` e no `result`; capturar dos dois é de graça e cobre o caso
+    da sessão morta antes do `result`.
+    """
     inicio = time.time()
-    meta: dict = {"backend": "claude_cli_greedy", "model": "claude-opus-5", "perfil": perfil}
+    meta: dict = {}
     with open(log, "a", encoding="utf-8") as fh:
         proc = subprocess.Popen(
             argv,
@@ -161,6 +142,8 @@ def roda_greedy(
                     ev = json.loads(linha)
                 except json.JSONDecodeError:
                     continue
+                if ev.get("session_id"):
+                    meta["session_id"] = ev["session_id"]
                 if ev.get("type") == "result":
                     for k in ("total_cost_usd", "num_turns", "is_error"):
                         if k in ev:
@@ -176,6 +159,113 @@ def roda_greedy(
     meta["duration_s"] = time.time() - inicio
     meta["morto_por_tempo"] = estourou
     meta["ok"] = not estourou and not meta.get("is_error")
+    return meta
+
+
+def _argv(prompt: str, effort: str, retomar: str | None = None) -> list[str]:
+    argv = [
+        "claude",
+        "-p",
+        prompt,
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--permission-mode",
+        "acceptEdits",
+        "--model",
+        "claude-opus-5",
+        "--effort",
+        effort,
+    ]
+    if retomar:
+        argv += ["--resume", retomar]
+    return argv
+
+
+#: A mensagem de retomada. Ela é MECÂNICA de propósito: não comenta a trajetória,
+#: não sugere direção, não diz se o que veio antes foi bom. Um texto que fizesse
+#: qualquer uma dessas coisas seria um supervisor, e o braço deixaria de ser
+#: "sem estrutura AVO" para virar "com metade dela".
+_RETOMADA = (
+    "Ainda restam {minutos} minutos do seu orcamento. Continue otimizando "
+    "`work/{entrypoint}`. Meca com `./avo-eval --text`. Guarde a melhor versao "
+    "que voce mediu."
+)
+
+
+def roda_greedy(
+    alvo: str,
+    run_dir: Path,
+    timeout_s: float,
+    effort: str,
+    log: Path,
+    perfil: str = "natural",
+    continuo: bool = False,
+) -> dict:
+    """Uma sessão de agente sem estrutura. Devolve metadados agregados.
+
+    Com `continuo=True` a sessão é RETOMADA quando o agente termina antes do
+    orçamento acabar. Isso existe porque a rodada 0 mostrou que a instrução de
+    persistir não segura ninguém: mandado gastar 2471s, o agente parou aos 731s,
+    e mandado gastar 600s parou aos 405s. Sem retomada, a curva do `greedy`
+    simplesmente não tem ponto acima de ~700s, e "o `full` ganhou" continuaria
+    tendo como resposta "o `full` teve três vezes mais compute".
+
+    A retomada é a MESMA conversa (`--resume`), não uma sessão nova: o contexto
+    inteiro continua ali. O que ela adiciona é só a recusa de parar cedo — e
+    isso, sozinho, não é lineage, não é gate, não é supervisor e não é reset de
+    memória. É o esteio mais forte que o controle pode ter sem virar AVO.
+    """
+    import yaml
+
+    dados = yaml.safe_load((RAIZ / "targets" / alvo / "target.yaml").read_text(encoding="utf-8"))
+    entrypoint = str(dados.get("entrypoint") or "")
+
+    log.parent.mkdir(parents=True, exist_ok=True)
+    inicio = time.time()
+    meta: dict = {
+        "backend": "claude_cli_greedy",
+        "model": "claude-opus-5",
+        "perfil": perfil,
+        "continuo": continuo,
+        "segmentos": [],
+        "total_cost_usd": 0.0,
+        "num_turns": 0,
+    }
+    custo_incompleto = False
+    sessao: str | None = None
+
+    for i in range(30):
+        restante = timeout_s - (time.time() - inicio)
+        # Abaixo de três minutos não dá para medir nada de novo: uma avaliação do
+        # seed custa ~8s, mas uma ideia medida custa muito mais. Retomar aqui só
+        # compraria um turno de despedida.
+        if restante < (180.0 if i else 1.0):
+            break
+        prompt = (
+            _RETOMADA.format(minutos=max(1, int(restante // 60)), entrypoint=entrypoint)
+            if i
+            else monta_prompt(alvo, run_dir, int(restante // 60), perfil)
+        )
+        seg = _uma_sessao(_argv(prompt, effort, sessao), run_dir, restante, log)
+        meta["segmentos"].append(seg)
+        sessao = seg.get("session_id") or sessao
+        if seg.get("total_cost_usd") is None:
+            custo_incompleto = True
+        else:
+            meta["total_cost_usd"] += float(seg["total_cost_usd"])
+        meta["num_turns"] += int(seg.get("num_turns") or 0)
+        if not continuo or seg.get("is_error") or not sessao:
+            break
+
+    meta["duration_s"] = time.time() - inicio
+    meta["morto_por_tempo"] = bool(meta["segmentos"] and meta["segmentos"][-1]["morto_por_tempo"])
+    meta["ok"] = bool(meta["segmentos"]) and not any(s.get("is_error") for s in meta["segmentos"])
+    if custo_incompleto:
+        # Um segmento morto antes do evento `result` não reporta custo. Zerar o
+        # total seria mentir para baixo; `None` faz a análise imputar pela taxa
+        # observada e contar o ponto como imputado.
+        meta["total_cost_usd"] = None
     return meta
 
 

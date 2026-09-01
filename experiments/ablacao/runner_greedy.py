@@ -82,6 +82,12 @@ BRACOS_GREEDY = {
     "greedy_b600": {"perfil": "persistente", "orcamento_s": 600.0},
     "greedy_b1200": {"perfil": "persistente", "orcamento_s": 1200.0},
     "greedy_bmax": {"perfil": "persistente", "orcamento_s": None},
+    # O esteio. A rodada 0 mostrou que a instrucao de persistir nao segura o
+    # agente: com 2471s de orcamento ele parou aos 731s, com 600s parou aos 405s.
+    # Sem um braco que realmente gaste o orcamento, "o `full` ganhou" continuaria
+    # tendo como resposta "o `full` teve tres vezes mais compute". Este gasta: a
+    # MESMA conversa e retomada mecanicamente ate o orcamento acabar.
+    "greedy_cont": {"perfil": "persistente", "orcamento_s": None, "continuo": True},
     # Sementes novas do `full`, para a comparação não depender de dados de outro
     # dia. Delegam ao `runner.py`: é o mesmo braço, não um braço parecido.
     "full": {"perfil": None, "orcamento_s": None},
@@ -105,8 +111,13 @@ SEMENTES = {
     "greedy_nat": 5,
     "greedy_b100": 4,
     "greedy_b600": 4,
-    "greedy_b1200": 4,
-    "greedy_bmax": 4,
+    # Um ponto so: com a retomada desligada, 1200s e 2471s de orcamento produzem
+    # a mesma sessao de ~700s. Gastar quatro sementes nos dois seria comprar o
+    # mesmo ponto duas vezes; o orcamento vai para o `greedy_cont`, que e o que
+    # a rodada 0 mostrou estar faltando.
+    "greedy_b1200": 1,
+    "greedy_bmax": 3,
+    "greedy_cont": 4,
     "full": 3,
 }
 
@@ -211,6 +222,7 @@ def roda_um(
         effort=effort,
         log=saida / "logs" / f"{braco}-s{semente}.jsonl",
         perfil=str(cfg["perfil"]),
+        continuo=bool(cfg.get("continuo")),
     )
     wall_agente = time.time() - t0
 
@@ -230,6 +242,8 @@ def roda_um(
         "erro_avaliador": payload.get("error"),
         "codigo_mudou": _codigo_mudou(run_dir, alvo, entrypoint),
         "perfil": cfg["perfil"],
+        "continuo": bool(cfg.get("continuo")),
+        "segmentos": len(meta.get("segmentos") or []),
         "orcamento_s": orcamento_s,
         # Mesmas colunas que o `full` grava por passo, para a análise empilhar
         # os dois braços sem caso especial. Uma sessao do greedy = um "passo".
