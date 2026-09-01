@@ -163,6 +163,35 @@ mutantes, gate separado e três camadas anti-memoização — e mesmo assim não
 distinguia "extrai por nome" de "extrai por posição", porque nunca tinha visto um
 registro em outra ordem.
 
+## O que a ablação mostrou
+
+Rodada em 2026-09-01: 4 braços × 4 sementes × 3 passos, modo não supervisionado
+(um agente novo por passo, sem o conhecimento de quem escreveu os alvos).
+12,2 h, US$ 168. Documento completo em `experiments/ABLATION.md`.
+
+| braço | melhoria relativa | Δ vs `full` | distinguível? |
+|---|---|---|---|
+| `full` | 4,91 | — | — |
+| `no_memory` | 5,26 | +0,35 | não |
+| `no_supervisor` | 5,15 | +0,25 | não |
+| `no_kb` | 5,10 | +0,19 | não |
+
+**Nenhuma diferença é distinguível do ruído** (efeito mínimo detectável com n=4:
+0,611; maior diferença observada: 0,350). Isso era previsível e estava
+pré-registrado.
+
+O resultado que vale mais é o defeito que o experimento encontrou **em si
+mesmo**: com `stagnation_window=3` e runs de 3 passos, o supervisor **nunca
+disparou** em 36 passos elegíveis. O braço `no_supervisor` executava exatamente o
+mesmo código que o `full` — o que transforma a diferença entre eles numa medida
+empírica do piso de ruído do desenho (~0,25), e invalida metade do experimento.
+
+E o primeiro passo captura ~85% do ganho em todos os braços, que é justamente o
+passo em que eles são mais parecidos. Três passos não medem arquitetura.
+
+A §7 do documento tem as três correções e o preço de fazer direito: **US$ 840 e
+~50 h**. Saber o custo antes de prometer a resposta também é resultado.
+
 ## Por que ablação, e não mais um benchmark
 
 A NVIDIA publicou uma arquitetura com cinco componentes, destacou dois como

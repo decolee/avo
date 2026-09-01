@@ -92,6 +92,15 @@ gate parecia sólido até alguém tentar quebrá-lo de propósito.
 **Critério de parada:** `ABLATION.md` escrito, com intervalos de confiança e a
 declaração de efeito mínimo detectável.
 
+> **Resultado da execução de 2026-09-01** (`experiments/ABLATION.md`): rodada com
+> 4 braços × 4 sementes × 3 passos, 12,2 h e US$ 168. **Nenhuma diferença
+> distinguível do ruído**, e o experimento descobriu um defeito no próprio
+> desenho: com `stagnation_window=3` e runs de 3 passos, o supervisor **nunca
+> disparou** em 36 passos — o braço `no_supervisor` era idêntico ao `full` por
+> construção. Antes de repetir, leia a §7 daquele documento: passos por run ≥ 12,
+> alvo cujo primeiro movimento não valha 4×, e orçamento igualado de verdade
+> (o `--max-budget-usd` do harness não segura).
+
 ---
 
 ## Sessão 4 — generalidade (a tese C14)
