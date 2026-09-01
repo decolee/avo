@@ -72,9 +72,16 @@ targets/<nome>/
   make_data.py     datasets determinísticos + dataset.lock.json (SHA256)
 ```
 
-Um alvo só é válido quando `python3 eval.py --selftest` fica verde e
+Um alvo só é **sadio** quando `python3 eval.py --selftest` fica verde e
 `--budget` confirma o dimensionamento. Sem as duas coisas ele não entra —
 `make verify` e o CI recusam.
+
+Ser sadio não basta para o alvo servir ao experimento. Ele também precisa
+declarar `lab.headroom_medido` e `lab.movimentos` no `target.yaml` e alcançar a
+barra de **3× em 4 movimentos** (`docs/TARGET_DESIGN.md` §3). Abaixo dela o
+`verify` emite **aviso**, não erro: o alvo funciona, mas não distingue braços
+numa ablação. Dois dos cinco alvos estão nessa situação — inclusive o `etl_agg`,
+que era a referência até o gate ser endurecido.
 
 ## Contexto de projeto
 

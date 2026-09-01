@@ -10,9 +10,9 @@ Quando `f` está errado, o agente não trava — ele fica confiante.
 
 ---
 
-## As seis propriedades de um alvo válido
+## As sete propriedades de um alvo válido
 
-Um alvo precisa das seis. Faltando qualquer uma, ele produz números que
+Um alvo precisa das sete. Faltando qualquer uma, ele produz números que
 parecem resultado e não são.
 
 | # | propriedade | como se verifica |
@@ -22,6 +22,7 @@ parecem resultado e não são.
 | 3 | O headroom é graduado | medido à mão; ver §3 |
 | 3b | A medição não é trapaceável | candidato memoizador não pontua; ver §3b |
 | 3c | O gate distingue o que o benchmark não distingue | propriedades compartilhadas por acidente; ver §3c |
+| 3d | O headroom é total **e** distribuído | as duas coisas se opõem; ver §3d |
 | 4 | O score é diagnóstico | ≥ 2 regimes que são *formas* de dado diferentes |
 
 Cinco saíram de falhas reais desta bancada. A última saiu do guia de targets do
@@ -322,6 +323,39 @@ contrato ou entra no gate.
 
 ---
 
+## 3d. Espalhar e maximizar o headroom puxam em direções opostas
+
+Descoberto construindo o quinto alvo (`sessionize`), e é a tensão que torna o
+requisito de §3 mais difícil do que ele parece.
+
+A primeira versão do `sessionize` mediu **4,18× em 3 movimentos**, com o maior
+valendo 60% do ganho. Total bom, distribuição ruim. Para criar mais eixos,
+enriqueci o contrato com dois agregados por sessão — páginas distintas e duração
+somada. O resultado:
+
+| versão do alvo | headroom total | maior fatia do ganho | movimentos |
+|---|---|---|---|
+| contrato simples (n, início, fim) | 4,18× | 60% | 3 |
+| contrato enriquecido (+2 agregados) | **1,83×** | **49%** | 3 |
+
+A distribuição melhorou e o total caiu pela metade. O motivo é direto: os
+agregados novos são **trabalho irredutível por evento**. Eles entram igualmente
+no seed e no candidato otimizado, então diluem a vitória do que era otimizável
+(o parsing) sem criar ganho novo.
+
+**A regra.** Adicionar trabalho a um alvo espalha o ganho e reduz o total. Para
+aumentar as duas coisas ao mesmo tempo é preciso adicionar trabalho
+**otimizável** — algo que o seed faz mal e um candidato pode fazer bem — e não
+apenas mais contas. Isso é bem mais difícil de projetar do que parece, e é a
+razão de a barra de §3 reprovar dois dos cinco alvos deste repositório.
+
+Quando os dois não couberem, prefira o **total**: um alvo com 4× concentrado em
+poucos movimentos ainda separa um braço que acha o movimento de um que não acha.
+Um alvo com 1,8× bem distribuído não separa nada, porque 1,8× está perto demais
+do ruído acumulado de uma trajetória inteira.
+
+---
+
 ## 4. O score é diagnóstico
 
 **Regimes são formas de dado, não repetições do mesmo dado.** A versão antiga do
@@ -359,7 +393,8 @@ baseline: o seed marca 4,16 e a baseline 6,21, então o agente sabe desde o pass
 [ ] o gerador se recusa a escrever um dataset de gate sem mordida
 [ ] >= 5 mutantes plausíveis; --selftest verde
 [ ] --budget verde (seed <= 25s, execução mais rápida >= 20ms)
-[ ] headroom medido: >= 4 movimentos, nenhum > 70% do ganho
+[ ] headroom medido: >= 3x total, >= 4 movimentos, nenhum > 70% do ganho
+[ ] `lab.headroom_medido` e `lab.movimentos` declarados no target.yaml
 [ ] >= 2 regimes que são formas de dado diferentes
 [ ] baseline real, não só o seed
 [ ] a medição usa caminho novo E módulo novo por execução (anti-memoização)

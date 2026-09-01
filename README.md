@@ -24,21 +24,32 @@ modo não supervisionado existe e gasta quota — é opt-in de propósito.
 
 ## Os alvos
 
-| alvo | domínio | `f` maximiza | mutantes | headroom medido | custo do seed |
+| alvo | domínio | `f` maximiza | mutantes | headroom | apto p/ ablação |
 |---|---|---|---|---|---|
-| `etl_agg` | agregação de transações (JSONL → dict) | throughput, geomean de 3 formas de dado | 9 | 3,4× em 3 passos | 3,0s |
-| `csv_normalize` | normalização de cadastro sujo (CSV → canônico) | throughput sob correção exata | 18 | 4,7× em 6 passos | 5,0s |
-| `sql_agg` | consulta analítica sobre SQLite congelado | throughput, frio vs quente | 21 | 4,3× em 7 degraus | 8,0s |
-| `dedupe_match` | record linkage / deduplicação | **F1** sob orçamento de tempo | 13 | 3,6× em 7 versões | 9,3s |
+| `csv_normalize` | normalização de cadastro sujo (CSV → canônico) | throughput sob correção exata | 18 | 5,10× / 6 passos | ✅ |
+| `sql_agg` | consulta analítica sobre SQLite congelado | throughput, frio vs quente | 21 | 4,25× / 7 degraus | ✅ |
+| `dedupe_match` | record linkage / deduplicação | **F1** sob orçamento de tempo | 13 | 3,55× / 7 versões | ✅ |
+| `etl_agg` | agregação de transações (JSONL → dict) | throughput, geomean de 3 formas | 10 | 1,61× / 2 passos | ⚠️ |
+| `sessionize` | sessionização de eventos (corte por intervalo) | throughput, 3 formas de tráfego | 11 | 1,83× / 3 passos | ⚠️ |
 
 O headroom não é estimativa: para cada alvo foram escritas e medidas versões
-progressivamente melhores pelo avaliador de verdade, e no `csv_normalize` a
-escada foi reproduzida de forma independente numa auditoria (4,7× contra os 5,1×
-do autor — a diferença é ruído de máquina, e ambos ficam na faixa). Nenhum
-movimento isolado vale mais de 46% do ganho, que é a propriedade que permite a
-uma ablação distinguir braços. `make verify` confere os quatro.
+progressivamente melhores pelo avaliador de verdade, o número está **declarado
+no `target.yaml`**, e o `avo-lab verify` o cobra. No `csv_normalize` a escada foi
+reproduzida de forma independente numa auditoria (4,7× contra 5,10× do autor — a
+diferença é ruído de máquina, e ambos ficam na faixa).
 
-Os três primeiros maximizam velocidade; o quarto maximiza **qualidade** sob um
+Os dois marcados com ⚠️ são corretos, têm gate e estão dimensionados. Eles só não
+alcançam a barra de 3× em 4 movimentos, e por isso não distinguem braços numa
+ablação. O `verify` os reporta como **aviso, não erro**: tratar como falha de
+build convidaria a afrouxar a barra; tratar como invisível deixaria a barra sem
+efeito.
+
+O caso do `etl_agg` merece nota. Ele era o alvo de referência do laboratório, com
+3,6× de headroom — até a Sessão 2 endurecer o gate e mostrar que boa parte
+daquele ganho vinha de uma suposição sobre a forma do arquivo. Sobrou 1,61×, e a
+ablação teve de mudar de alvo por causa disso.
+
+Quatro maximizam velocidade; o `dedupe_match` maximiza **qualidade** sob um
 orçamento de tempo. Isso é deliberado: a tese central do paper (C14) é que "o
 agente subjacente permanece o mesmo; apenas as ferramentas e a avaliação mudam".
 Um alvo cuja métrica tem forma diferente é o teste dessa tese dentro da própria

@@ -37,9 +37,20 @@ def discover() -> list[Path]:
 
 @dataclass
 class Check:
+    """Resultado de uma checagem.
+
+    `bloqueante=False` marca uma checagem que reprova o alvo para o proposito da
+    bancada sem que ele esteja QUEBRADO. Um alvo abaixo da barra de headroom e
+    correto, tem gate e esta dimensionado — ele so nao consegue distinguir
+    bracos numa ablacao. Tratar isso como erro de build faria o CI vermelho por
+    uma propriedade de projeto, e a resposta seria afrouxar a barra. Tratar como
+    invisivel deixaria a barra sem efeito. Aviso e o meio-termo honesto.
+    """
+
     name: str
     ok: bool
     detail: str = ""
+    bloqueante: bool = True
 
 
 @dataclass
@@ -49,6 +60,12 @@ class TargetReport:
 
     @property
     def ok(self) -> bool:
+        """Sem nada QUEBRADO. Avisos nao derrubam."""
+        return all(c.ok for c in self.checks if c.bloqueante)
+
+    @property
+    def apto_para_ablacao(self) -> bool:
+        """Sem nada quebrado E sem avisos: serve para o experimento."""
         return all(c.ok for c in self.checks)
 
 
@@ -122,6 +139,7 @@ def check_headroom(target: Path) -> Check:
             "headroom declarado",
             False,
             "target.yaml nao declara `lab.headroom_medido` — meça a escada e declare",
+            bloqueante=False,
         )
     h = float(lab.get("headroom_medido") or 0)
     mov = int(lab.get("movimentos") or 0)
@@ -132,13 +150,14 @@ def check_headroom(target: Path) -> Check:
             False,
             f"`lab.valido` diz {lab.get('valido')} mas {h}x em {mov} movimentos "
             f"{'alcanca' if alcanca else 'nao alcanca'} a barra",
-        )
+        )  # este SIM e bloqueante: a declaracao contradiz os proprios numeros
     if not alcanca:
         return Check(
             "headroom declarado",
             False,
             f"{h}x em {mov} movimentos — abaixo da barra (3x em 4). "
             f"{lab.get('nota') or ''}".strip(),
+            bloqueante=False,
         )
     return Check("headroom declarado", True, f"{h}x em {mov} movimentos")
 
@@ -186,13 +205,32 @@ def verify(names: list[str] | None, skip_slow: bool, timeout: float) -> list[Tar
 def render(reports: list[TargetReport]) -> str:
     lines = []
     for report in reports:
-        mark = "ok  " if report.ok else "FALHA"
+        if not report.ok:
+            mark = "QUEBRADO"
+        elif not report.apto_para_ablacao:
+            mark = "aviso   "
+        else:
+            mark = "ok      "
         lines.append(f"{mark} {report.name}")
         for check in report.checks:
-            lines.append(f"       {'ok ' if check.ok else 'ERRO'}  {check.name:28} {check.detail}")
-    good = sum(1 for r in reports if r.ok)
+            if check.ok:
+                estado = "ok  "
+            elif check.bloqueante:
+                estado = "ERRO"
+            else:
+                estado = "aviso"
+            lines.append(f"         {estado}  {check.name:28} {check.detail}")
+    sadios = sum(1 for r in reports if r.ok)
+    aptos = sum(1 for r in reports if r.apto_para_ablacao)
     lines.append("")
-    lines.append(f"{good}/{len(reports)} alvos válidos")
+    lines.append(f"{sadios}/{len(reports)} alvos sadios (nada quebrado)")
+    lines.append(f"{aptos}/{len(reports)} aptos para ablacao (alcancam a barra de headroom)")
+    if aptos < sadios:
+        lines.append("")
+        lines.append(
+            "Um alvo com aviso e correto e utilizavel — ele so nao discrimina bracos "
+            "numa ablacao.\nVer docs/TARGET_DESIGN.md secao 3."
+        )
     return "\n".join(lines)
 
 
