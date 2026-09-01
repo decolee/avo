@@ -58,6 +58,7 @@ o passo dele tem um teto.
 | `greedy_b600` | 600s | gaste o orçamento |
 | `greedy_b1200` | 1200s | gaste o orçamento |
 | `greedy_bmax` | ~2471s, pareado ao `full` | gaste o orçamento |
+| `greedy_cont` | ~2471s, pareado ao `full` | **retomada mecânica** até o orçamento acabar (§3b) |
 
 Os dois perfis de `greedy` existem porque cada um sozinho seria criticável.
 
@@ -79,6 +80,48 @@ mesmo modelo, o mesmo `--effort`.
 
 O que ele **não recebe** — e é exatamente a estrutura do AVO: lineage, gate
 persistente com reversão automática, supervisor, e memória entre passos.
+
+## 3b. Desvio declarado: o braço `greedy_cont` foi adicionado DEPOIS
+
+Este braço não estava no pré-registro. Ele foi acrescentado depois da rodada 0, e
+o commit que o cria é posterior aos dados que o motivaram. Declarar isso é
+obrigatório: um experimento em que braços aparecem depois dos dados é um
+experimento em que o desenho pode ter sido escolhido pelo resultado.
+
+**O que a rodada 0 mostrou.** A instrução de persistir não segura o agente:
+
+| braço | orçamento | gastou de fato |
+|---|---|---|
+| `greedy_b600` | 600 s | 405 s |
+| `greedy_b1200` | 1200 s | 606 s |
+| `greedy_bmax` | 2471 s | **731 s** |
+
+Mandado gastar 2471 segundos, ele para aos 731. `greedy_b1200` e `greedy_bmax`
+não são dois pontos da curva: são o mesmo ponto comprado duas vezes. A curva do
+`greedy` simplesmente não tem ponto acima de ~700s, e sem um a comparação com o
+`full` a 2471s continuaria respondível com "o `full` teve três vezes mais
+compute".
+
+**Por que o desvio é defensável.** A direção dele importa. `greedy_cont` torna o
+controle mais forte, não mais fraco: ele dá ao braço-contra mais compute, mais
+persistência e a instrução explícita de guardar a melhor versão medida. Um desvio
+que fortalece a hipótese nula é o oposto do que a pré-registração existe para
+impedir. Se eu tivesse acrescentado um braço que enfraquece o `greedy`, ou que dá
+mais alguma coisa ao `full`, a leitura correta seria descartar o experimento.
+
+**O que ele não é.** A retomada é mecânica: a mesma conversa continua
+(`--resume`), com uma mensagem de texto fixo que não comenta a trajetória, não
+sugere direção e não diz se o que veio antes foi bom. Ela não é lineage (não há
+histórico de versões com score), não é gate (nada reverte nada), não é supervisor
+(ninguém julga o caminho) e não é memória entre passos (não há passos). É a
+recusa de parar cedo, e só.
+
+**Como ler o resultado dele.** `greedy_cont` é confirmatório de nada: é n=4 num
+braço escolhido depois dos dados. Se ele empatar com o `full`, a afirmação
+honesta é "o controle mais forte que consegui montar empata dentro do MDE"; se
+perder, é "empata até 700s e perde acima disso, num braço acrescentado post hoc".
+Nenhuma das duas vira p-valor confirmatório. Os braços pré-registrados
+(`greedy_nat`, `greedy_b100`, `greedy_b600`) continuam sendo a análise principal.
 
 ## 4. Sementes contemporâneas
 
