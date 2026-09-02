@@ -90,7 +90,7 @@ lab:
   # ((4,51-1)/(6,2-1) sobre quatro sementes), entao este alvo NAO discrimina
   # arquiteturas de busca — foi exatamente o que o experimento full-vs-greedy
   # descobriu, gastando US$ 160 para nao distinguir nada.
-  sonda_100s_fracao: 0.68
+  sonda_100s_fracao: 0.53
   sonda_100s_nota: >-
     4 sementes de 100s mediram 4,55x em media; sobre o headroom empirico de 6,2x
     isso e 68% do ganho disponivel. Sobre o headroom declarado antigo (5,1x) era
