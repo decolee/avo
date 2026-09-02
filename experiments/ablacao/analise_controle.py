@@ -148,11 +148,18 @@ def _resumo(pontos: list[dict], taxa: float = 0.0) -> dict:
     }
 
 
-def _mais_proximo(alvo_s: float, curva: dict[int, dict]) -> int | None:
-    """O passo do `full` cujo compute acumulado mais se aproxima de `alvo_s`."""
+def _mais_proximo(alvo: float, curva: dict[int, dict], eixo: str) -> int | None:
+    """O passo do `full` mais próximo de `alvo` no eixo dado.
+
+    Dois eixos, e eles discordam. `greedy_cont` s0 gastou 2211s contra 2746s do
+    `full` — pareado no relógio — mas custou US$ 18,27 contra US$ 12,05, porque
+    cada retomada reenvia o contexto inteiro. Parear só por segundos esconderia
+    que o braço que está ganhando é 50% mais caro; parear só por dólar esconderia
+    que ele usou menos máquina. O relatório faz os dois.
+    """
     if not curva:
         return None
-    return min(curva, key=lambda k: abs(curva[k]["compute_s"] - alvo_s))
+    return min(curva, key=lambda k: abs(curva[k][eixo] - alvo))
 
 
 def main() -> int:
@@ -216,38 +223,54 @@ def main() -> int:
     # gastou mais ganhou".
     print()
     print("=" * 78)
-    print("COMPARACAO PAREADA POR COMPUTE — full(passo k) menos greedy(orcamento)")
+    print("COMPARACAO PAREADA — full(passo k) menos greedy(orcamento)")
     print("=" * 78)
+    print("Dois pareamentos, porque os eixos discordam: o `greedy_cont` gasta menos")
+    print("relogio e mais dolar que o `full`. Um resultado que so sobrevive num dos")
+    print("dois eixos e um resultado sobre o eixo, nao sobre a arquitetura.\n")
     comparacoes = []
-    for nome, rg in curva_greedy.items():
-        k = _mais_proximo(rg["compute_s"], curva_full)
-        if k is None:
-            continue
-        rf = curva_full[k]
-        dif = rf["ganho"] - rg["ganho"]
-        lo, hi = bootstrap_diferenca(rf["ganhos"], rg["ganhos"])
-        pv = p_permutacao(rf["ganhos"], rg["ganhos"])
-        comparacoes.append(
-            {
-                "greedy": nome,
-                "full_passo": k,
-                "compute_greedy_s": rg["compute_s"],
-                "compute_full_s": rf["compute_s"],
-                "desbalanco": (rf["compute_s"] - rg["compute_s"]) / max(rg["compute_s"], 1.0),
-                "diferenca": dif,
-                "ic": (lo, hi),
-                "p": pv,
-                "mde": max(rf["mde"], rg["mde"]),
-            }
-        )
-    ajustados = holm([(c["greedy"], c["p"]) for c in comparacoes])
+    for eixo, rotulo, fmt in (
+        ("compute_s", "relogio", "{:.0f}s"),
+        ("custo_usd", "dolar", "US$ {:.2f}"),
+    ):
+        for nome, rg in curva_greedy.items():
+            k = _mais_proximo(rg[eixo], curva_full, eixo)
+            if k is None:
+                continue
+            rf = curva_full[k]
+            dif = rf["ganho"] - rg["ganho"]
+            lo, hi = bootstrap_diferenca(rf["ganhos"], rg["ganhos"])
+            pv = p_permutacao(rf["ganhos"], rg["ganhos"])
+            comparacoes.append(
+                {
+                    "eixo": rotulo,
+                    "chave": f"{nome}@{rotulo}",
+                    "greedy": nome,
+                    "full_passo": k,
+                    "greedy_x": rg[eixo],
+                    "full_x": rf[eixo],
+                    "fmt": fmt,
+                    "desbalanco": (rf[eixo] - rg[eixo]) / max(rg[eixo], 1e-9),
+                    "diferenca": dif,
+                    "ic": (lo, hi),
+                    "p": pv,
+                    "mde": max(rf["mde"], rg["mde"]),
+                }
+            )
+
+    ajustados = holm([(c["chave"], c["p"]) for c in comparacoes])
+    comparacoes.sort(key=lambda c: (c["eixo"], c["greedy"]))
+    eixo_atual = ""
     for c in comparacoes:
-        pa, rejeita = ajustados[c["greedy"]]
+        if c["eixo"] != eixo_atual:
+            eixo_atual = c["eixo"]
+            print(f"\n  ——— pareado por {eixo_atual} ———")
+        pa, rejeita = ajustados[c["chave"]]
         marca = "SIM" if rejeita else "nao"
         print(
-            f"\n  {c['greedy']} ({c['compute_greedy_s']:.0f}s) "
-            f"vs full passo {c['full_passo']} ({c['compute_full_s']:.0f}s), "
-            f"desbalanco de compute {c['desbalanco']:+.0%}"
+            f"\n  {c['greedy']} ({c['fmt'].format(c['greedy_x'])}) "
+            f"vs full passo {c['full_passo']} ({c['fmt'].format(c['full_x'])}), "
+            f"desbalanco {c['desbalanco']:+.0%}"
         )
         print(
             f"    diferenca {c['diferenca']:+.3f}x   IC95 [{c['ic'][0]:+.3f}, {c['ic'][1]:+.3f}]"
