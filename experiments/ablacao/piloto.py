@@ -126,11 +126,9 @@ def relatorio(linhas: list[dict]) -> None:
         for pct in (0.05, 0.10, 0.15, 0.20, 0.30):
             delta = media_g * pct
             n = n_necessario(dp, delta)
-            print(
-                f"{pct:>9.0%} {delta:>9.2f}x {n:>12.0f} {2 * n * custo_full:>13,.0f}"
-                if math.isfinite(n)
-                else ""
-            )
+            if not math.isfinite(n):
+                continue
+            print(f"{pct:>9.0%} {delta:>9.2f}x {n:>12.0f} {2 * n * custo_full:>13,.0f}")
         print(f"\n  (custo de um run do `full` neste piloto: US$ {custo_full:.2f})")
 
 
