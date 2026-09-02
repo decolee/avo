@@ -14,6 +14,31 @@ Ele pula o que já está no disco, relança a fase que morrer, e nunca roda duas
 coisas ao mesmo tempo — o `f` deste laboratório é vazão em wall-clock, e dois
 agentes juntos contaminam exatamente o número que o experimento compara.
 
+## Quando o container reiniciar
+
+Aconteceu uma vez às 20h24 do dia 2, com o `full` s1 no quarto de oito passos.
+O que fazer é uma linha:
+
+```bash
+setsid nohup python3 experiments/ablacao/programa.py >> <log> 2>&1 < /dev/null &
+```
+
+Ele pula fase completa, pula semente completa, e **retoma semente pela metade**
+do passo em que parou — `_reaproveita_run` acha o run dir com passos feitos e
+`avo run --resume` continua dali. Sem isso um reinício custava a semente inteira,
+1,3 h de agente. Com isso custa o passo que estava em voo.
+
+Três coisas que valem conferir depois de retomar, nesta ordem:
+
+```bash
+python3 experiments/ablacao/programa.py --plano     # o que falta
+git log --oneline -5                                 # o que sobreviveu
+ps -eo args | grep -c "[p]rograma.py"                # 1 = rodando
+```
+
+O que **não** sobrevive: o processo, e nada mais. Cada semente é commitada assim
+que fecha, então o pior caso é perder o passo em voo.
+
 ## As fases
 
 | # | o que responde | n | relógio | US$ |
