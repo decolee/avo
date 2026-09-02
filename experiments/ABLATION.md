@@ -173,3 +173,40 @@ Uma alternativa mais barata que vale considerar antes: rodar `full` contra
 máquina inteira contra "o mesmo modelo com o mesmo `f` e nenhuma estrutura". Se
 esses dois empatarem, a pergunta sobre componentes individuais fica menos
 interessante, e a resposta sai por um sexto do custo.
+
+---
+
+## 8. O que aconteceu depois: o controle rodou, e ele explica este documento
+
+A alternativa mais barata sugerida no fim da §7 foi executada.
+`experiments/CONTROLE.md` tem o desenho e os números; o resumo é que **`full` e
+`greedy` empataram**, e a razão do empate reescreve a leitura deste relatório.
+
+O resultado é: uma sessão de agente **morta aos 106 segundos**, custando
+**US$ 0,53**, mede **4,55×** no `csv_normalize`. O AVO completo, com 23× mais
+relógio e 22× mais dinheiro, mede 4,92×. Sobre o ganho disponível, a sessão de
+cem segundos captura **68% sozinha**.
+
+**Isto muda o diagnóstico da §5.** Ali eu atribuí o resultado nulo desta ablação
+a n pequeno e a trajetórias rasas — e a §7 receitou mais passos e mais sementes.
+As duas coisas continuam verdadeiras, mas nenhuma delas era a causa raiz. A causa
+raiz é que **o alvo não tinha espaço onde os braços pudessem diferir**. Nenhum
+número de sementes conserta isso: os quatro braços estavam disputando os 30% de
+headroom que sobram depois que qualquer agente pega os 70% fáceis, e o desvio de
+medição é maior que o que restou para disputar.
+
+Isso virou a oitava propriedade de um alvo válido — `docs/TARGET_DESIGN.md` §3e —
+com uma sonda que a mede por US$ 0,50 e uma checagem no `avo-lab verify` que a
+cobra. Com ela ligada, **o `csv_normalize` deixa de ser apto para ablação**, e
+este relatório passa a ser o registro de um experimento rodado num alvo que a
+bancada hoje recusaria.
+
+**A receita da §7, corrigida.** O item 2 estava certo pelo motivo errado. Não
+basta "headroom que não se esgote no passo 1": é preciso **headroom que uma
+sessão única não esgote em cem segundos**. É uma barra muito mais alta, e nenhum
+dos cinco alvos deste repositório a alcança — o que é o achado mais acionável que
+saiu de US$ 343 de experimento.
+
+Os itens 1 e 3 permanecem de pé, e continuam valendo US$ 840. Mas gastá-los antes
+de ter um alvo que passe na §3e seria comprar de novo o mesmo intervalo que
+contém zero.
