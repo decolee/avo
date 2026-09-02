@@ -89,3 +89,10 @@ lab:
   valido: true
   nota: >-
     quatro degraus mensuraveis, tres dentro do ruido
+  # TARGET_DESIGN.md §3e — medido por experiments/ablacao/sonda.py
+  sonda_100s_fracao: 0.49
+  sonda_100s_nota: >-
+    uma sessao de 100s mediu 2,58x (1,678 -> 4,328) contra headroom de 4,25x: 49% do
+    ganho disponivel. UNICO alvo do repositorio que passa em §3e tendo tambem
+    headroom acima da barra — sobra metade do espaco para a busca disputar. E o
+    alvo em que a proxima ablacao tem chance de medir alguma coisa.
