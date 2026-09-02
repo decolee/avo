@@ -27,10 +27,17 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import random
 import statistics
 from pathlib import Path
 
-from analise import bootstrap_diferenca, efeito_minimo, holm, p_permutacao
+from analise import (
+    REAMOSTRAGENS,
+    bootstrap_diferenca,
+    efeito_minimo,
+    holm,
+    p_permutacao,
+)
 
 AQUI = Path(__file__).resolve().parent
 
@@ -148,6 +155,64 @@ def _resumo(pontos: list[dict], taxa: float = 0.0) -> dict:
     }
 
 
+def n_necessario(a: list[float], b: list[float], delta: float) -> float:
+    """Sementes POR BRAÇO para distinguir um efeito do tamanho do observado.
+
+    "Não deu significativo" é a metade inútil da frase. A metade útil é quanto
+    custaria dar: com o desvio combinado destes dados e uma diferença do tamanho
+    da que foi medida, é este o n por braço que o experimento precisaria ter.
+
+    Aproximação de dois grupos a 5% e poder 80%: n ≈ 2·(2,8·s/Δ)². Vale como
+    ordem de grandeza — que é o que se quer aqui, porque a pergunta é "dez ou
+    mil?", não "trinta e sete ou trinta e nove".
+    """
+    if len(a) < 2 or len(b) < 2 or not delta:
+        return float("nan")
+    va, vb = statistics.variance(a), statistics.variance(b)
+    combinado = math.sqrt(((len(a) - 1) * va + (len(b) - 1) * vb) / (len(a) + len(b) - 2))
+    if not combinado:
+        return float("nan")
+    return 2.0 * (2.8 * combinado / abs(delta)) ** 2
+
+
+def dispersao(valores: list[float]) -> float:
+    """Desvio absoluto medio em torno da mediana.
+
+    Preferido ao desvio-padrao aqui porque com n de 2 a 6 um unico ponto extremo
+    domina a soma dos quadrados, e a comparacao de espalhamento viraria uma
+    comparacao de qual braco teve o azar mais espetacular.
+    """
+    if len(valores) < 2:
+        return float("nan")
+    m = statistics.median(valores)
+    return statistics.fmean(abs(v - m) for v in valores)
+
+
+def p_dispersao(a: list[float], b: list[float], semente: int = 13) -> float:
+    """Permutacao para diferenca de ESPALHAMENTO (Brown-Forsythe permutado).
+
+    Centra cada grupo na propria mediana, o que remove a diferenca de nivel, e
+    entao permuta os desvios absolutos entre os grupos. O que sobra e testar se
+    um braco e mais espalhado que o outro, independentemente de qual mede mais
+    alto.
+    """
+    if len(a) < 2 or len(b) < 2:
+        return float("nan")
+    ca = [abs(v - statistics.median(a)) for v in a]
+    cb = [abs(v - statistics.median(b)) for v in b]
+    observada = abs(statistics.fmean(ca) - statistics.fmean(cb))
+    juntos = ca + cb
+    rnd = random.Random(semente)
+    extremos = 0
+    for _ in range(REAMOSTRAGENS):
+        rnd.shuffle(juntos)
+        if abs(statistics.fmean(juntos[: len(ca)]) - statistics.fmean(juntos[len(ca) :])) >= (
+            observada
+        ):
+            extremos += 1
+    return (extremos + 1) / (REAMOSTRAGENS + 1)
+
+
 def _mais_proximo(alvo: float, curva: dict[int, dict], eixo: str) -> int | None:
     """O passo do `full` mais próximo de `alvo` no eixo dado.
 
@@ -255,6 +320,8 @@ def main() -> int:
                     "ic": (lo, hi),
                     "p": pv,
                     "mde": max(rf["mde"], rg["mde"]),
+                    "n_necessario": n_necessario(rf["ganhos"], rg["ganhos"], dif),
+                    "n_atual": min(len(rf["ganhos"]), len(rg["ganhos"])),
                 }
             )
 
@@ -276,12 +343,52 @@ def main() -> int:
             f"    diferenca {c['diferenca']:+.3f}x   IC95 [{c['ic'][0]:+.3f}, {c['ic'][1]:+.3f}]"
             f"   p={c['p']:.3f} (Holm {pa:.3f}) -> distinguivel: {marca}"
         )
-        if not rejeita and abs(c["diferenca"]) < c["mde"]:
-            print(
-                f"    a diferenca ({abs(c['diferenca']):.3f}) esta ABAIXO do efeito minimo "
-                f"detectavel ({c['mde']:.3f}) com este n — o experimento nao tinha"
-            )
-            print("    resolucao para achar um efeito deste tamanho. Nao e evidencia de empate.")
+        if not rejeita:
+            if abs(c["diferenca"]) < c["mde"]:
+                print(
+                    f"    a diferenca ({abs(c['diferenca']):.3f}) esta ABAIXO do efeito minimo "
+                    f"detectavel ({c['mde']:.3f}) com este n — o experimento nao tinha"
+                )
+                print(
+                    "    resolucao para achar um efeito deste tamanho. Nao e evidencia de empate."
+                )
+            n = c["n_necessario"]
+            if math.isfinite(n):
+                print(
+                    f"    para distinguir um efeito deste tamanho seriam precisas ~{n:.0f} "
+                    f"sementes por braco (tem {c['n_atual']})."
+                )
+
+    # ------------------------------------------------------------------
+    # EXPLORATÓRIO. Nada abaixo desta linha estava no pré-registro.
+    # ------------------------------------------------------------------
+    print()
+    print("=" * 78)
+    print("EXPLORATORIO — ESPALHAMENTO (nao pre-registrado; ver CONTROLE.md §7)")
+    print("=" * 78)
+    print("A metrica primaria e a media, e ela nao separa os bracos. O que separa, na")
+    print("inspecao dos dados, e o ESPALHAMENTO: o `full` mede muito mais consistente")
+    print("que qualquer braco do `greedy`. Isso tem mecanismo — a politica 'iguala ou")
+    print("melhora' e literalmente um dispositivo de reducao de variancia, porque")
+    print("trunca a amostra ruim em vez de commita-la.")
+    print()
+    print("Mas esta hipotese nasceu DOS DADOS, entao o p abaixo nao e confirmatorio de")
+    print("nada. Ele diz se vale desenhar um experimento para testa-la, e so.")
+    print()
+    ref = curva_full.get(max(curva_full)) if curva_full else None
+    if ref:
+        base = ref["ganhos"]
+        print(f"  referencia: full passo {max(curva_full)}, n={len(base)}, ")
+        print(f"  dispersao (desvio absoluto medio da mediana) = {dispersao(base):.3f}\n")
+        print(f"{'braco':>13} {'n':>3} {'dispersao':>10} {'razao':>7} {'p':>7}")
+        for nome, rg in curva_greedy.items():
+            alvo = rg["ganhos"]
+            d = dispersao(alvo)
+            razao = d / dispersao(base) if dispersao(base) else float("nan")
+            pv = p_dispersao(alvo, base)
+            print(f"{nome:>13} {len(alvo):>3} {d:>10.3f} {razao:>6.2f}x {pv:>7.3f}")
+        print()
+        print("  razao > 1 quer dizer que o braco do `greedy` espalha mais que o `full`.")
 
     # Deriva da máquina: os seeds são o mesmo código medido em momentos
     # diferentes, então a variação entre eles é ruído do ambiente, puro. Se ela
