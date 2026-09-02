@@ -348,6 +348,29 @@ def main() -> int:
             reg["rodada"] = rodada
             with linha_resultados.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(reg, ensure_ascii=False) + "\n")
+            # Commit por semente. Um run deste braco custa ~US$21 e ~2,4h; um
+            # restart de container ja custou uma corrida inteira deste
+            # laboratorio uma vez, e resultado que nao esta no git nao existe.
+            subprocess.run(
+                ["git", "add", str(linha_resultados)],
+                cwd=str(RAIZ),
+                check=False,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "commit",
+                    "-q",
+                    "--no-verify",
+                    "-m",
+                    f"ablacao {args.alvo}: {braco} s{rodada} "
+                    f"({reg.get('melhoria_relativa', 0):.2f}x)",
+                ],
+                cwd=str(RAIZ),
+                check=False,
+                capture_output=True,
+            )
             print(
                 f"  {braco} s{rodada}: seed={reg.get('primary_seed', 0):.3f} "
                 f"final={reg.get('primary_final', 0):.3f} "
