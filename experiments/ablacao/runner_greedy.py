@@ -93,11 +93,17 @@ BRACOS_GREEDY = {
     "full": {"perfil": None, "orcamento_s": None},
 }
 
-#: O `full` novo tem que ser o MESMO `full` de ontem, ou as sementes não se
-#: somam. Estes dois números vêm de `runner.py --passos 3 --timeout-agente 20m`,
-#: que foi como as sementes 0–3 rodaram.
+#: Configuracao do braco `full`. Sao MUTAVEIS por linha de comando porque cada
+#: experimento fixa a sua, mas dentro de um experimento elas nao mudam: sementes
+#: rodadas com numeros de passos diferentes nao se somam.
+#:
+#: O default 3/20m e o do controle no `csv_normalize`. O experimento no `sql_agg`
+#: usa 8 passos e janela 2 — 8 porque o piloto mostrou o supervisor disparando
+#: pela primeira vez nos passos 7 e 8, e cortar antes disso tiraria do
+#: experimento justamente a peca que nunca foi observada.
 PASSOS_FULL = 3
 TIMEOUT_FULL = "20m"
+JANELA_ESTAGNACAO: int | None = None
 
 #: Onde cada braço escreve. O `full` vai para o arquivo do `runner.py` porque é
 #: literalmente o mesmo braço, com o mesmo esquema de linha — sementes novas do
@@ -121,8 +127,12 @@ SEMENTES = {
     "full": 3,
 }
 
-#: O `full` já usou as sementes 0–3; as novas continuam a numeração.
-PRIMEIRA_SEMENTE = {"full": 4}
+#: Deslocamento da numeração de sementes por braço. Existe porque no
+#: `csv_normalize` o `full` já tinha as sementes 0–3 medidas noutro dia e as
+#: novas precisavam continuar a contagem. Num experimento novo é vazio: começar
+#: em 0 é o certo, e herdar o deslocamento de outro experimento faria as sementes
+#: parecerem uma continuação do que não são.
+PRIMEIRA_SEMENTE: dict[str, int] = {}
 
 
 def tempo_de_agente_do_full(resultados: Path) -> float:
@@ -206,7 +216,16 @@ def roda_um(
 ) -> dict:
     cfg = BRACOS_GREEDY[braco]
     if braco == "full":
-        return R.roda_um("full", semente, alvo, PASSOS_FULL, TIMEOUT_FULL, saida, effort=effort)
+        return R.roda_um(
+            "full",
+            semente,
+            alvo,
+            PASSOS_FULL,
+            TIMEOUT_FULL,
+            saida,
+            effort=effort,
+            janela_estagnacao=JANELA_ESTAGNACAO,
+        )
     run_dir, erro = _cria_run(alvo, saida / "runs" / f"{braco}-s{semente}")
     if run_dir is None:
         return {"braco": braco, "semente": semente, "alvo": alvo, "erro": erro}
@@ -305,23 +324,50 @@ def _feitos(caminho: Path) -> set[tuple[str, int]]:
 
 
 def main() -> int:
+    global PASSOS_FULL, TIMEOUT_FULL, JANELA_ESTAGNACAO
     p = argparse.ArgumentParser(description="Controle honesto: full contra greedy")
     p.add_argument("--alvo", default="csv_normalize")
-    p.add_argument("--rodadas", type=int, default=max(SEMENTES.values()))
+    p.add_argument("--rodadas", type=int, default=None)
     p.add_argument("--effort", default="medium", help="igual ao do `full`, por desenho")
     p.add_argument("--saida", default=str(AQUI / "resultados"))
     p.add_argument("--plano", action="store_true", help="só imprime a fila e o custo estimado")
+    p.add_argument("--bracos", nargs="*", default=None, help="subconjunto de BRACOS_GREEDY")
+    p.add_argument("--n", type=int, default=None, help="sementes por braço, igual em todos")
+    p.add_argument("--passos-full", type=int, default=PASSOS_FULL)
+    p.add_argument("--timeout-agente", default=TIMEOUT_FULL)
+    p.add_argument("--janela-estagnacao", type=int, default=None)
+    p.add_argument("--primeira-semente-full", type=int, default=None)
+    p.add_argument(
+        "--orcamento-pareado-s",
+        type=float,
+        default=None,
+        help="teto do greedy quando ainda nao ha `full` medido neste experimento",
+    )
     args = p.parse_args()
+
+    PASSOS_FULL = args.passos_full
+    TIMEOUT_FULL = args.timeout_agente
+    JANELA_ESTAGNACAO = args.janela_estagnacao
+    if args.bracos:
+        for nome in list(SEMENTES):
+            if nome not in args.bracos:
+                del SEMENTES[nome]
+    if args.n:
+        for nome in SEMENTES:
+            SEMENTES[nome] = args.n
+    if args.primeira_semente_full is not None:
+        PRIMEIRA_SEMENTE["full"] = args.primeira_semente_full
+    rodadas = args.rodadas or max(SEMENTES.values())
 
     saida = Path(args.saida)
     saida.mkdir(parents=True, exist_ok=True)
 
-    pareado = tempo_de_agente_do_full(saida / "results.jsonl")
+    pareado = args.orcamento_pareado_s or tempo_de_agente_do_full(saida / "results.jsonl")
     print(f"orcamento pareado ao `full`: {pareado:.0f}s de agente por semente", flush=True)
 
     if args.plano:
         segundos = 0.0
-        for rodada, trabalhos in enumerate(fila(args.rodadas)):
+        for rodada, trabalhos in enumerate(fila(rodadas)):
             print(f"rodada {rodada}: " + " ".join(f"{b}/s{sm}" for b, sm in trabalhos))
             for braco, _ in trabalhos:
                 segundos += float(BRACOS_GREEDY[braco]["orcamento_s"] or pareado)
@@ -330,7 +376,7 @@ def main() -> int:
 
     feitos = {nome: _feitos(saida / nome) for nome in set(ARQUIVO.values())}
 
-    for rodada, trabalhos in enumerate(fila(args.rodadas)):
+    for rodada, trabalhos in enumerate(fila(rodadas)):
         print(
             f"\n=== rodada {rodada} — ordem: "
             + " ".join(f"{b}/s{sm}" for b, sm in trabalhos)
