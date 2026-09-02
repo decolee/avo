@@ -91,7 +91,7 @@ lab:
   nota: >-
     cinco passos positivos; o v4 e negativo e fica no registro
   # TARGET_DESIGN.md §3e — medido por experiments/ablacao/sonda.py
-  sonda_100s_fracao: 1.11
+  sonda_100s_fracao: 1.09
   sonda_100s_nota: >-
     uma sessao de 100s mediu 3,82x contra headroom declarado de 3,55x — 111% do
     ganho disponivel, ou seja, ela superou sozinha a escada inteira medida a mao.
