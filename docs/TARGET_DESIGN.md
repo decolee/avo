@@ -10,9 +10,9 @@ Quando `f` está errado, o agente não trava — ele fica confiante.
 
 ---
 
-## As oito propriedades de um alvo válido
+## As nove propriedades de um alvo válido
 
-Um alvo precisa das oito. Faltando qualquer uma, ele produz números que
+Um alvo precisa das nove. Faltando qualquer uma, ele produz números que
 parecem resultado e não são.
 
 | # | propriedade | como se verifica |
@@ -23,7 +23,8 @@ parecem resultado e não são.
 | 3b | A medição não é trapaceável | candidato memoizador não pontua; ver §3b |
 | 3c | O gate distingue o que o benchmark não distingue | propriedades compartilhadas por acidente; ver §3c |
 | 3d | O headroom é total **e** distribuído | as duas coisas se opõem; ver §3d |
-| 3e | Uma sessão única **não** esgota o headroom | o teste dos 100 segundos; ver §3e |
+| 3e | A sonda de 100 s não denuncia teto subestimado | `sonda.py`; ver §3e |
+| 3f | O poder foi medido **antes** de rodar | `piloto.py`; ver §3f |
 | 4 | O score é diagnóstico | ≥ 2 regimes que são *formas* de dado diferentes |
 
 Seis saíram de falhas reais desta bancada. Uma saiu do guia de targets do
@@ -399,67 +400,111 @@ arquiteturas podem diferir; se não sobra nada, não há o que comparar.
 
 **A fração certa é sobre o ganho disponível.** Um alvo de 5,1× tem 4,1× de ganho
 para distribuir; uma sonda que mede 1,0× capturou zero por cento dele, não vinte.
-Medida assim, a tabela acima fica muito mais dura:
 
-| | ganho | fração do headroom disponível |
-|---|---|---|
-| sonda de 100 s | 4,51× | **86%** |
-| AVO completo, 3 passos | 4,95× | 96% |
-| sessão retomada até o orçamento | 5,17× | 102% |
-
-Cem segundos pegam 86% de tudo que havia para pegar. Os 2 454 segundos e os
-US$ 11,37 do `full` compram os 10% que sobraram. E a última linha passa de 100%
-porque o headroom declarado (5,1×, medido à mão escrevendo versões melhores)
-estava **subestimado** — a busca achou mais do que quem projetou o alvo achou.
-
-**O teste dos 100 segundos.** Barato o suficiente para não ter desculpa:
+**O teste dos 100 segundos.**
 
 ```bash
 python3 experiments/ablacao/sonda.py --alvo <nome>
 ```
 
-Uma sessão única do modelo, sem estrutura nenhuma, com orçamento de 100s; ela
+Uma sessão única do modelo, sem estrutura nenhuma, com orçamento de 100 s; ela
 mede o seed, roda, reavalia, e compara com o `lab.headroom_medido` declarado.
-Custa ~US$ 0,50 e menos de três minutos, e sai com código 1 se a fração passar de
-metade.
+Custa ~US$ 0,50 e menos de três minutos. Fica fora do `make verify` e do CI de
+propósito — gasta cota e leva minutos.
 
-Ela não entra no `make verify` nem no CI — gasta cota e leva minutos. É um passo
-da checklist de alvo novo, feito uma vez, com o resultado anotado no
-`target.yaml`.
+---
 
-Se a sonda pegar mais de metade do headroom, o alvo pode continuar servindo para
-*otimizar* — ele mede melhora de verdade — mas não serve para *comparar
-arquiteturas*, e a ablação montada em cima dele vai gastar milhares de dólares
-para produzir intervalos que contêm zero.
+### ⚠ A fração é um teste de fumaça, não o critério. Descobri isso medindo.
 
-**Medida nos cinco alvos deste repositório.** US$ 2,50 e vinte minutos ao todo:
+A barra de "metade" acima foi escolhida por mim, sem evidência, a partir de um
+único alvo. Rodada nos cinco alvos com o agente **enxergando** — depois de
+consertar a falha 8, que impedia os agentes de medir — ela produziu isto:
 
-| alvo | headroom | sonda 100 s | §3 | §3e |
-|---|---|---|---|---|
-| `sql_agg` | 4,25× | **49%** | passa | **passa** |
-| `csv_normalize` | 6,2× | 68% | passa | reprova |
-| `etl_agg` | 1,61× | 101% | reprova | reprova |
-| `dedupe_match` | 3,55× | 111% | passa | reprova |
-| `sessionize` | 1,83× | 9% | reprova | passa |
+| alvo | headroom declarado | ganho da sonda | fração |
+|---|---|---|---|
+| `sessionize` | 1,83× | 1,38× | 46% |
+| `csv_normalize` | 6,20× | 3,76× | 53% |
+| `sql_agg` | 4,25× | 3,76× | **85%** |
+| `dedupe_match` | 3,55× | 3,77× | **109%** |
+| `etl_agg` | 1,61× | 2,55× | **254%** |
 
-Duas leituras saem daí. A primeira: **um alvo de cada cinco serve**, e não era o
-que estava sendo usado — a ablação e o controle rodaram no `csv_normalize`, que
-reprova.
+**Três de cinco passam de 100%.** Uma fração acima de 100% não diz que o alvo é
+fácil: diz que o **denominador está errado**. O `lab.headroom_medido` é medido à
+mão, escrevendo versões progressivamente melhores e cronometrando — e a busca
+supera a mão com folga. No `etl_agg`, por duas vezes e meia.
 
-A segunda é estrutural e mais incômoda. Os alvos que sobrevivem à §3e são os de
-headroom pequeno: o `sessionize` deixa 91% do espaço para a busca porque tem só
-1,83× de espaço, e o `dedupe_match` é esgotado numa sessão porque os 3,55× dele
-são fáceis. **Ser difícil por unidade de headroom e ter headroom são requisitos
-que tendem a se opor** — é o mesmo tipo de tensão de §3d, e o `sql_agg` é o único
-alvo aqui que tem os dois. Não por acaso é o que evolui SQL: otimizar uma
-consulta exige medir trade-offs de índice entre regimes frio, quente e largo, e
-isso não se resolve numa tacada como parsing de CSV se resolve.
+Então a fração mistura duas coisas que não se separam nela: quanto o alvo é
+fácil, e quanto eu subestimei o teto dele. Como critério de aceitação, ela
+reprova alvos por eu ter medido mal.
+
+**O que a sonda serve para fazer, e é bastante:**
+
+1. **Denunciar declaração subestimada.** Fração > 100% é prova de que o
+   `headroom_medido` está errado, e isso é uma mentira no repositório que precisa
+   ser corrigida. O `avo-lab verify` trata como erro bloqueante.
+2. **Pegar o alvo que o agente resolve instantaneamente.** Uma sonda que chega
+   perto do melhor conhecido, com o melhor conhecido sendo confiável, continua
+   sendo o sinal barato que era.
+
+**O que decide se um alvo discrimina é §3f, abaixo.** A pergunta não é "que
+fração uma sessão pega", é "a diferença entre os braços que vão rodar é grande
+comparada ao desvio entre sementes" — e isso não se responde por heurística. Se
+responde medindo.
 
 **O que isso não quer dizer.** Não quer dizer que o AVO não funciona. Quer dizer
 que este alvo não o testa. O regime do paper são centenas de iterações num espaço
 que nenhuma sessão esgota; um alvo cujo espaço uma sessão esgota em cem segundos
 está fora desse regime por construção, e um resultado nulo nele é uma afirmação
 sobre o alvo.
+
+---
+
+## 3f. O poder foi medido antes de o experimento rodar
+
+A propriedade que faltava, e a que teria evitado os US$ 343 gastos em dois
+experimentos cujos intervalos continham zero.
+
+**O que aconteceu.** Nos dois, o desenho foi escolhido pelo orçamento — quatro
+braços, quatro sementes, o que cabia — e o poder estatístico foi conferido
+depois. Nos dois, a conferência disse que o n necessário era de 49 a 246
+sementes por braço. Isso é uma coisa que se sabe **antes**, por menos de US$ 60.
+
+**O que é um piloto de potência.** Não é o experimento: nenhuma hipótese é
+testada, e nada que sai dele entra na análise. Ele mede duas coisas e as usa para
+dimensionar:
+
+```bash
+python3 experiments/ablacao/piloto.py --alvo <nome>
+```
+
+- **o desvio entre sementes** do braço barato (5 sessões, ~US$ 8)
+- **a trajetória por passo** de um run do braço caro (1 run), que dá a forma da
+  curva, o custo por passo e se o supervisor chega a disparar
+
+Com os dois, `n ≈ 2·(2,8·s/Δ)²` responde quantas sementes por braço detectam um
+efeito do tamanho observado, a 5% e poder 80%.
+
+**A barra.** Um alvo serve para comparar arquiteturas quando o n necessário para
+distinguir os braços que vão rodar é **pagável**. Não há número universal aqui:
+depende do custo por semente. No `sql_agg`, n=11 a US$ 21 por semente é US$ 250 e
+o alvo serve; no `csv_normalize`, n=246 a US$ 12 seria US$ 3.000 por comparação e
+não serve.
+
+**Por que isto supera §3e.** A fração da sonda é uma proxy de um alvo; o piloto
+mede **os braços que vão rodar de verdade**, com a variância que eles têm de
+verdade. No `sql_agg` a sonda reprova (85%) e o piloto aprova (n=11 detecta os 5%
+observados) — e o piloto é quem tem a informação, porque a diferença que importa
+não é "sonda contra teto", é "`full` contra `greedy`".
+
+**Declare no `target.yaml`**, como o headroom:
+
+```yaml
+lab:
+  piloto_cv: 0.042          # desvio/média do braço barato, entre sementes
+  piloto_n_para_5pct: 11    # sementes por braço para detectar 5%
+  piloto_nota: >-
+    5 sessões de greedy, 4,55x ± 0,193; um full de 8 passos, 4,78x, US$ 21,18
+```
 
 ---
 
@@ -507,7 +552,9 @@ baseline: o seed marca 4,16 e a baseline 6,21, então o agente sabe desde o pass
 [ ] a medição usa caminho novo E módulo novo por execução (anti-memoização)
 [ ] enumerei o que o dataset de gate e o de benchmark compartilham por acidente
 [ ] embaralhar a ordem dos campos / faltar um campo reprova quem depende disso
-[ ] o teste dos 100 segundos: uma sessão única NÃO pega mais de metade do headroom
+[ ] a sonda de 100s roda e a fração NÃO passa de 100% (se passa, o headroom está subestimado)
+[ ] piloto de potência rodado: `lab.piloto_cv` e `lab.piloto_n_para_5pct` declarados
+[ ] o n necessário para distinguir os braços que vão rodar é PAGÁVEL
 [ ] tentei trapacear no meu próprio alvo e não consegui
 ```
 

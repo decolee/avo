@@ -112,6 +112,19 @@ def check_yaml(target: Path) -> Check:
     return Check("target.yaml", True, f"{len(kb_files)} arquivos de KB")
 
 
+def _bloco_lab(target: Path) -> tuple[dict, str]:
+    """Le `lab:` do target.yaml. Devolve `(bloco, erro)`; erro vazio se deu certo."""
+    try:
+        import yaml
+    except ImportError:
+        return {}, ""
+    try:
+        data = yaml.safe_load((target / "target.yaml").read_text(encoding="utf-8")) or {}
+    except Exception as exc:  # noqa: BLE001
+        return {}, f"{type(exc).__name__}: {exc}"
+    return (data.get("lab") or {}), ""
+
+
 def check_headroom(target: Path) -> Check:
     """O alvo declara headroom medido, e ele alcanca a barra?
 
@@ -163,29 +176,26 @@ def check_headroom(target: Path) -> Check:
 
 
 def check_sonda(target: Path) -> Check:
-    """Uma sessao unica esgota o headroom deste alvo? (TARGET_DESIGN §3e)
+    """A sonda de 100s denuncia headroom declarado subestimado (§3e).
 
-    O `check_headroom` cobra que exista escada. Esta cobra que subi-la exija mais
-    de uma sessao — que e outra coisa, e foi a que faltou. O `csv_normalize`
-    declarava 5,1x em 6 movimentos, passava em tudo, e mesmo assim nao separou o
-    AVO completo de uma sessao de agente morta aos cem segundos: a sonda pegou
-    86% do ganho disponivel sozinha, e nao sobrou espaco onde os bracos pudessem
-    diferir.
+    Esta checagem MUDOU depois de ser medida. A versao anterior reprovava um
+    alvo cuja sonda pegasse mais de metade do headroom, com a metade escolhida
+    por mim a partir de um alvo so. Rodada nos cinco alvos com o agente
+    enxergando, a fracao passou de 100% em TRES deles — e uma fracao acima de
+    100% nao diz que o alvo e facil, diz que o denominador esta errado.
 
-    Como o headroom, isto nao e mensuravel de graca — a sonda gasta cota e leva
-    minutos (`experiments/ablacao/sonda.py`). O que a maquina cobra e que o
-    numero esteja DECLARADO, e avisa quando ele reprova a barra de metade.
+    O `headroom_medido` e medido a mao, escrevendo versoes melhores e
+    cronometrando, e a busca supera a mao com folga: no `etl_agg`, por duas vezes
+    e meia. Entao a fracao misturava "o alvo e facil" com "eu subestimei o teto",
+    e reprovava alvo por erro meu de medicao.
+
+    O que sobrou para ela, e e bastante: fracao > 100% e PROVA de declaracao
+    errada, e declaracao errada e uma mentira no repositorio. Isso bloqueia.
+    Quem decide se o alvo discrimina e `check_poder` (§3f).
     """
-    try:
-        import yaml
-    except ImportError:
-        return Check("sonda 100s (§3e)", True, "pulado: pyyaml nao instalado")
-    try:
-        data = yaml.safe_load((target / "target.yaml").read_text(encoding="utf-8")) or {}
-    except Exception as exc:  # noqa: BLE001
-        return Check("sonda 100s (§3e)", False, f"{type(exc).__name__}: {exc}")
-
-    lab = data.get("lab") or {}
+    lab, erro = _bloco_lab(target)
+    if erro:
+        return Check("sonda 100s (§3e)", False, erro)
     if "sonda_100s_fracao" not in lab:
         return Check(
             "sonda 100s (§3e)",
@@ -195,15 +205,57 @@ def check_sonda(target: Path) -> Check:
             bloqueante=False,
         )
     fracao = float(lab.get("sonda_100s_fracao") or 0.0)
-    if fracao > 0.5:
+    if fracao > 1.0:
         return Check(
             "sonda 100s (§3e)",
             False,
-            f"uma sessao unica pega {fracao:.0%} do headroom disponivel em 100s — "
-            "o alvo mede otimizacao, mas nao compara arquiteturas",
+            f"uma sessao de 100s pegou {fracao:.0%} do headroom declarado — o "
+            f"`lab.headroom_medido` ({lab.get('headroom_medido')}x) esta "
+            "SUBESTIMADO. Meça de novo e declare o valor demonstrado.",
+        )  # bloqueante: a declaracao contradiz o que a propria bancada mediu
+    return Check("sonda 100s (§3e)", True, f"sessao de 100s pega {fracao:.0%} do teto declarado")
+
+
+def check_poder(target: Path) -> Check:
+    """O poder foi medido antes de o experimento rodar? (§3f)
+
+    A propriedade que faltava, e a que teria evitado os US$ 343 gastos em dois
+    experimentos cujos intervalos continham zero. Nos dois o desenho foi
+    escolhido pelo orcamento e o poder conferido depois; nos dois a conferencia
+    disse que o n necessario era de 49 a 246 sementes por braco.
+
+    Isso se sabe ANTES, por menos de US$ 60, com `experiments/ablacao/piloto.py`.
+    Como o headroom, a maquina nao mede — cobra que esteja declarado.
+    """
+    lab, erro = _bloco_lab(target)
+    if erro:
+        return Check("poder medido (§3f)", False, erro)
+    if "piloto_cv" not in lab or "piloto_n_para_5pct" not in lab:
+        return Check(
+            "poder medido (§3f)",
+            False,
+            "sem piloto de potencia — rode `python3 experiments/ablacao/piloto.py "
+            f"--alvo {target.name}` e declare `lab.piloto_cv` e "
+            "`lab.piloto_n_para_5pct`",
             bloqueante=False,
         )
-    return Check("sonda 100s (§3e)", True, f"sessao unica pega {fracao:.0%}; sobra espaco")
+    cv = float(lab.get("piloto_cv") or 0.0)
+    n = int(lab.get("piloto_n_para_5pct") or 0)
+    if n <= 0:
+        return Check("poder medido (§3f)", False, "`piloto_n_para_5pct` invalido")
+    # Nao ha barra universal: o que decide e o custo por semente, que e do
+    # experimento e nao do alvo. O aviso marca o que ja se sabe ser caro demais
+    # para esta bancada — acima de ~30 sementes por braco, nenhum experimento
+    # daqui foi pago ate hoje.
+    if n > 30:
+        return Check(
+            "poder medido (§3f)",
+            False,
+            f"CV {cv:.1%}; precisa de {n} sementes por braco para detectar 5% — "
+            "caro demais para esta bancada",
+            bloqueante=False,
+        )
+    return Check("poder medido (§3f)", True, f"CV {cv:.1%}; {n} sementes por braco detectam 5%")
 
 
 def check_lock(target: Path) -> Check:
@@ -239,6 +291,7 @@ def verify(names: list[str] | None, skip_slow: bool, timeout: float) -> list[Tar
         report.checks.append(check_yaml(target))
         report.checks.append(check_headroom(target))
         report.checks.append(check_sonda(target))
+        report.checks.append(check_poder(target))
         report.checks.append(check_lock(target))
         report.checks.append(check_selftest(target, timeout))
         if not skip_slow:
@@ -269,13 +322,16 @@ def render(reports: list[TargetReport]) -> str:
     aptos = sum(1 for r in reports if r.apto_para_ablacao)
     lines.append("")
     lines.append(f"{sadios}/{len(reports)} alvos sadios (nada quebrado)")
-    lines.append(f"{aptos}/{len(reports)} aptos para ablacao (headroom E espaco para a busca)")
+    lines.append(
+        f"{aptos}/{len(reports)} aptos para ablacao (headroom, teto honesto e poder medido)"
+    )
     if aptos < sadios:
         lines.append("")
         lines.append(
-            "Um alvo com aviso e correto e utilizavel — ele so nao discrimina bracos "
-            "numa ablacao,\npor headroom pequeno demais (secao 3) ou por uma sessao unica "
-            "esgota-lo sozinha (secao 3e).\nVer docs/TARGET_DESIGN.md."
+            "Um alvo com aviso e correto e utilizavel — ele so nao serve para COMPARAR "
+            "ARQUITETURAS,\npor headroom abaixo da barra (secao 3), por declaracao de teto "
+            "desmentida pela sonda\n(secao 3e), ou por nao ter piloto de potencia que diga "
+            "quantas sementes o experimento\nprecisa (secao 3f). Ver docs/TARGET_DESIGN.md."
         )
     return "\n".join(lines)
 

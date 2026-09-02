@@ -81,6 +81,11 @@ lab:
   # forte ficou em 5,20x sobre quatro sementes. O numero declarado passa a ser o
   # empirico, e ele continua sendo um PISO — ninguem provou que 6,21x e o teto.
   headroom_medido: 6.2
+  # MELHOR DEMONSTRADO por qualquer meio, nao a escada escrita a mao. A mao
+  # subestima: a sonda de 100s superou a declaracao anterior em tres dos cinco
+  # alvos, e uma fracao de sonda acima de 100% e prova de denominador errado.
+  headroom_fonte: >-
+    melhor semente do controle, 6,21x com correcao verificada
   movimentos: 6
   valido: true
   nota: >-

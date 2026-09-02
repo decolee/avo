@@ -1,0 +1,7 @@
+{
+  "sql_agg": 0.85,
+  "csv_normalize": 0.53,
+  "dedupe_match": 1.09,
+  "etl_agg": 2.54,
+  "sessionize": 0.46
+}

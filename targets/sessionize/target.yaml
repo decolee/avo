@@ -69,6 +69,11 @@ agent:
 # prosa, e prosa nao reprova ninguem.
 lab:
   headroom_medido: 1.83
+  # MELHOR DEMONSTRADO por qualquer meio, nao a escada escrita a mao. A mao
+  # subestima: a sonda de 100s superou a declaracao anterior em tres dos cinco
+  # alvos, e uma fracao de sonda acima de 100% e prova de denominador errado.
+  headroom_fonte: >-
+    escada a mao; a sonda de 100s so chegou a 1,38x
   movimentos: 3
   valido: false
   nota: >-

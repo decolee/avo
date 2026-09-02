@@ -84,13 +84,26 @@ agent:
 # recusar o alvo quando ele nao alcanca a barra. Sem isso a exigencia vive so na
 # prosa, e prosa nao reprova ninguem.
 lab:
-  headroom_medido: 4.25
+  headroom_medido: 4.78
+  # MELHOR DEMONSTRADO por qualquer meio, nao a escada escrita a mao. A mao
+  # subestima: a sonda de 100s superou a declaracao anterior em tres dos cinco
+  # alvos, e uma fracao de sonda acima de 100% e prova de denominador errado.
+  headroom_fonte: >-
+    full de 8 passos no piloto (experiments/FASE2_SQL_AGG.md)
   movimentos: 7
   valido: true
   nota: >-
     quatro degraus mensuraveis, tres dentro do ruido
   # TARGET_DESIGN.md §3e — medido por experiments/ablacao/sonda.py
-  sonda_100s_fracao: 0.85
+  sonda_100s_fracao: 0.73
+  # §3f — medido por experiments/ablacao/piloto.py ANTES do experimento.
+  piloto_cv: 0.042
+  piloto_n_para_5pct: 11
+  piloto_nota: >-
+    5 sessoes de greedy com o avaliador funcionando: 4,55x +/- 0,193, US$ 1,57 e
+    ~350s cada. Um full de 8 passos com janela 2: 4,78x, US$ 21,18, 2,4h, com
+    plato no passo 4 e o supervisor disparando nos passos 7 e 8. A diferenca de
+    5% entre os dois e o efeito que n=11 foi dimensionado para distinguir.
   sonda_100s_nota: >-
     uma sessao de 100s mediu 2,58x (1,678 -> 4,328) contra headroom de 4,25x: 49% do
     ganho disponivel. UNICO alvo do repositorio que passa em §3e tendo tambem
