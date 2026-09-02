@@ -273,14 +273,15 @@ def main() -> int:
     print("=" * 78)
     print(
         f"{'braco':>13} {'n':>3} {'compute':>9} {'US$':>7} {'ganho':>8} "
-        f"{'dp':>7} {'MDE':>7} {'kill':>5} {'imp':>4}"
+        f"{'dp':>7} {'MDE':>7} {'kill':>5} {'imp':>4} {'parou':>6}"
     )
     for nome, r in curva_greedy.items():
         mortos = sum(1 for x in pontos_greedy[nome] if x["morto_por_tempo"])
+        parados = sum(1 for x in pontos_greedy[nome] if x["codigo_mudou"] is False)
         print(
             f"{nome:>13} {r['n']:>3} {r['compute_s']:>8.0f}s {r['custo_usd']:>7.2f} "
             f"{r['ganho']:>7.2f}x {r['ganho_dp']:>7.2f} {r['mde']:>7.2f} {mortos:>5} "
-            f"{r['custo_imputado']:>4}"
+            f"{r['custo_imputado']:>4} {parados:>6}"
         )
 
     # A comparação: cada ponto do greedy contra o passo do full de compute mais
@@ -358,6 +359,41 @@ def main() -> int:
                     f"    para distinguir um efeito deste tamanho seriam precisas ~{n:.0f} "
                     f"sementes por braco (tem {c['n_atual']})."
                 )
+
+    print()
+    print("=" * 78)
+    print("SENSIBILIDADE — e se as sessoes que NAO tocaram no codigo sairem?")
+    print("=" * 78)
+    print("Uma sessao que termina com o arquivo intacto mede o seed, nao o braco. Mas")
+    print("desistir E comportamento do braco: um `greedy` sem estrutura pode simplesmente")
+    print("parar, e o `full` tem um gate que o obriga a tentar de novo. Tirar essas linhas")
+    print("da media melhora o `greedy` justamente onde ele e pior, entao a analise")
+    print("principal as MANTEM, e esta secao mostra o quanto isso muda.\n")
+    print(f"{'braco':>13} {'n':>3} {'com':>8} {'n sem':>6} {'sem':>8} {'delta':>8}")
+    for nome, pontos in sorted(pontos_greedy.items()):
+        com = [x["ganho"] for x in pontos]
+        sem = [x["ganho"] for x in pontos if x["codigo_mudou"] is not False]
+        m_com = statistics.fmean(com)
+        m_sem = statistics.fmean(sem) if sem else float("nan")
+        print(
+            f"{nome:>13} {len(com):>3} {m_com:>7.2f}x {len(sem):>6} {m_sem:>7.2f}x "
+            f"{m_sem - m_com:>+7.2f}"
+        )
+    todos_full = [x["ganho"] for x in passos[max(passos)]] if passos else []
+    parados_full = sum(
+        1
+        for d in full
+        if d.get("braco") == "full"
+        for pa in (d.get("passos") or [])
+        if pa.get("codigo_mudou") is False
+    )
+    if todos_full:
+        print(
+            f"\n  full passo {max(passos)}: n={len(todos_full)}, nenhuma semente terminou "
+            f"sem mudanca de codigo\n  ({parados_full} PASSOS individuais nao mudaram nada, "
+            "mas o gate manteve a melhor versao e o passo seguinte tentou de novo —\n"
+            "  que e exatamente a diferenca estrutural que este experimento compara)."
+        )
 
     # ------------------------------------------------------------------
     # EXPLORATÓRIO. Nada abaixo desta linha estava no pré-registro.
