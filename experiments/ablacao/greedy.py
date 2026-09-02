@@ -162,6 +162,15 @@ def _uma_sessao(argv: list[str], run_dir: Path, timeout_s: float, log: Path) -> 
     return meta
 
 
+#: Mesma lista que o `full` recebe (`runner.FERRAMENTAS`), pelo mesmo motivo.
+#: O desenho deste braco diz, em letras grandes, que ele recebe "o mesmo
+#: avaliador, que ele pode chamar a vontade". Sem esta linha ele nao recebia:
+#: `acceptEdits` sozinho exige aprovacao para Bash, e as 21 sessoes do controle
+#: no `csv_normalize` terminaram todas com "medi ZERO ideias". O braco que eu
+#: escrevi para NAO ser um espantalho era um espantalho.
+FERRAMENTAS = "Bash,Read,Edit,Write,Glob,Grep,MultiEdit,TodoWrite"
+
+
 def _argv(prompt: str, effort: str, retomar: str | None = None) -> list[str]:
     argv = [
         "claude",
@@ -172,6 +181,8 @@ def _argv(prompt: str, effort: str, retomar: str | None = None) -> list[str]:
         "--verbose",
         "--permission-mode",
         "acceptEdits",
+        "--allowed-tools",
+        FERRAMENTAS,
         "--model",
         "claude-opus-5",
         "--effort",

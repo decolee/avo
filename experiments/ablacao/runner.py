@@ -73,6 +73,45 @@ def variante_sem_kb(alvo: str) -> Path:
     return destino
 
 
+#: As ferramentas que o agente recebe, e por que esta lista existe.
+#:
+#: O harness usa `bypassPermissions` por padrao, que mapeia para
+#: `--dangerously-skip-permissions` e e RECUSADO quando o processo roda como
+#: root. Ao esbarrar nisso eu troquei por `acceptEdits` — que libera edicao de
+#: arquivo e **exige aprovacao para Bash**. O efeito foi que nenhum agente, em
+#: nenhum experimento em modo nao supervisionado, conseguiu rodar `./avo-eval`:
+#: todos escreveram codigo no escuro. Os resumos das sessoes dizem isso com
+#: todas as letras ("medi ZERO ideias porque o avaliador foi recusado por
+#: permissao"), e eu so fui ler os resumos depois de dois experimentos.
+#:
+#: `--allowed-tools` e o conserto certo, e e melhor que o `bypassPermissions`
+#: original para o proposito daqui: a concessao fica EXPLICITA e identica em
+#: todos os bracos, em vez de ser "tudo liberado" por omissao.
+FERRAMENTAS = "Bash,Read,Edit,Write,Glob,Grep,MultiEdit,TodoWrite"
+ARGS_AGENTE = ["--allowed-tools", FERRAMENTAS]
+
+
+def _liberar_ferramentas(run_dir: Path, extras: list[str] = ARGS_AGENTE) -> bool:
+    """Injeta `extra_agent_args` no `run.json` recem-criado.
+
+    O harness le a configuracao do run de `run.json` a cada `--resume`
+    (`run.py:from_root`), e `extra_agent_args` e repassado direto para o argv do
+    CLI (`claude_cli.py:build_argv`). Nao ha flag de linha de comando para isso,
+    e escrever no arquivo e melhor que remendar o vendor: o commit fixado em
+    `vendor/avo.lock` continua sendo o que foi auditado.
+    """
+    meta_path = run_dir / "run.json"
+    if not meta_path.is_file():
+        return False
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    cfg = meta.setdefault("config", {})
+    if cfg.get("extra_agent_args") == extras:
+        return True
+    cfg["extra_agent_args"] = list(extras)
+    meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return True
+
+
 def _sh(argv: list[str], timeout: float) -> tuple[int, str]:
     try:
         p = subprocess.run(
@@ -199,6 +238,8 @@ def roda_um(
     if not candidatos:
         return {"braco": braco, "semente": semente, "erro": f"run nao criado: {saida_txt[-400:]}"}
     run_dir = candidatos[-1]
+    if not _liberar_ferramentas(run_dir):
+        return {"braco": braco, "semente": semente, "erro": f"run.json ausente em {run_dir}"}
 
     notas_virgens = (run_dir / "NOTES.md").read_text(encoding="utf-8")
     entrypoint = _entrypoint(alvo)
