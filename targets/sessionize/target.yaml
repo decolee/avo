@@ -74,7 +74,7 @@ lab:
   nota: >-
     ganho bem distribuido (maior fatia 49%) mas total abaixo do minimo
   # TARGET_DESIGN.md §3e — medido por experiments/ablacao/sonda.py
-  sonda_100s_fracao: 0.09
+  sonda_100s_fracao: 0.46
   sonda_100s_nota: >-
     uma sessao de 100s mediu 1,08x contra headroom de 1,83x: 9% do ganho disponivel.
     Passa em §3e com folga — o alvo e dificil por unidade de headroom — mas o
