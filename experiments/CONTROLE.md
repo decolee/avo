@@ -165,3 +165,109 @@ Fixada em `analise_controle.py`, commitada antes dos dados:
 - taxa de agente morto por timeout, por braço
 - `codigo_mudou`: uma sessão que falhou e não escreveu nada pode medir acima do
   seed por ruído; sem essa coluna isso vira "ganho"
+
+---
+
+## 7. Resultados
+
+**24 execuções, ~11 h de relógio, ~US$ 175.** Sete sementes do `full` (quatro de
+outro dia, três contemporâneas) e vinte e uma sessões do `greedy` em cinco
+orçamentos. Alvo: `csv_normalize`. Sequencial do início ao fim.
+
+### A curva
+
+| braço | relógio | US$ | ganho | dp | n |
+|---|---|---|---|---|---|
+| `greedy_b100` | 106 s | 0,53 | 4,55× | 0,38 | 4 |
+| `greedy_b600` | 283 s | 1,53 | 3,80× | 1,89 | 4 |
+| `greedy_nat` | 527 s | 2,62 | 4,32× | 0,57 | 5 |
+| `greedy_b1200` | 595 s | 2,78 | 5,33× | — | 1 |
+| `greedy_bmax` | 634 s | 3,53 | 4,30× | 0,51 | 3 |
+| `full` passo 1 | 1 060 s | 5,23 | 4,43× | 0,27 | 7 |
+| `full` passo 2 | 1 680 s | 8,05 | 4,58× | 0,26 | 7 |
+| **`full` passo 3** | **2 439 s** | **11,44** | **4,92×** | 0,39 | 7 |
+| **`greedy_cont`** | **2 219 s** | **17,92** | **5,20×** | 0,75 | 4 |
+
+### O resultado principal
+
+**Nenhuma comparação é distinguível.** Todos os p ajustados por Holm deram
+1,000. A comparação mais limpa — `greedy_cont` contra `full` no passo 3, com
+apenas **+10% de desbalanço de relógio** — mede uma diferença de **−0,277×** (o
+`greedy` à frente) com IC95 **[−0,983, +0,363]**. O intervalo contém zero com
+folga dos dois lados.
+
+Isso não é "empate". É o experimento dizendo que não tinha resolução:
+
+| comparação | diferença | n por braço necessário |
+|---|---|---|
+| `greedy_cont` vs `full` p3 | −0,277× | ~59 |
+| `greedy_b600` vs `full` p1 | +0,629× | ~49 |
+| `greedy_b100` vs `full` p1 | −0,127× | ~92 |
+| `greedy_bmax` vs `full` p1 | +0,127× | ~113 |
+| `greedy_nat` vs `full` p1 | +0,105× | ~246 |
+
+A ~US$ 15 por semente, resolver a comparação mais barata custaria **US$ 1.770**;
+a mais cara, US$ 7.400. Por comparação.
+
+### O número que explica todos os outros
+
+Uma sessão de agente **morta aos 106 segundos**, custando **US$ 0,53**, mede
+**4,55×**. O AVO completo, com **23× mais relógio** e **22× mais dinheiro**, mede
+4,92×.
+
+Medido sobre o ganho disponível — e não sobre o teto, porque um alvo de 6,2× tem
+5,2× para distribuir — a sonda de cem segundos captura **68%**. Não sobra espaço
+onde as arquiteturas possam diferir. Esta é a §3e de `docs/TARGET_DESIGN.md`, e
+ela nasceu deste experimento.
+
+### O que o `full` fez que o `greedy` não fez
+
+Três coisas mensuráveis, nenhuma delas média:
+
+**Ninguém desistiu.** Sete sementes do `full`, sete com código alterado. Quatro
+passos individuais não mudaram nada — e o gate manteve a melhor versão e o passo
+seguinte tentou de novo. No `greedy_b600`, uma semente em quatro terminou com o
+arquivo intacto (6 avaliações, **0 edições**: o agente mediu e desistiu), e não
+havia nada para obrigá-la a tentar de novo. Ela pontua 1,00×, e isso derruba a
+média do braço de 4,73× para 3,80×.
+
+**O `full` espalha menos.** Desvio de 0,26–0,39 contra 0,38–1,89 dos braços do
+`greedy`. Há mecanismo — "iguala ou melhora" é literalmente um dispositivo de
+redução de variância, porque trunca a amostra ruim em vez de commitá-la. Mas com
+n de 3 a 5 o teste de dispersão não tem poder nenhum (p entre 0,33 e 0,96), e a
+hipótese nasceu dos dados. É exploratória e está marcada como tal no relatório.
+
+**O `greedy` não gasta o orçamento que recebe.** Mandado usar 2 471 s, para aos
+731. Só a retomada mecânica (`greedy_cont`, §3b) o faz trabalhar de verdade: 44 a
+62 avaliações e 20 a 40 edições por sessão, contra 10 a 15 e 2 a 9 dos outros
+braços. Quatro vezes o trabalho empírico comprou 6% a mais de score — o que diz
+mais sobre o teto do alvo do que sobre o agente.
+
+### O preço da retomada
+
+`greedy_cont` gasta **menos relógio e mais dinheiro** que o `full`: 2 219 s
+contra 2 439 s, e US$ 17,92 contra US$ 11,44. Cada retomada reenvia o contexto
+inteiro, então o custo por segundo salta de US$ 0,0047 para US$ 0,0081. Pareado
+no relógio ele mede à frente; pareado no dólar, atrás. Um resultado que só
+sobrevive num dos dois eixos é um resultado sobre o eixo, e o relatório faz os
+dois pareamentos por isso.
+
+### Deriva da máquina
+
+O seed é o mesmo código medido em momentos diferentes, então o que varia nele é
+ambiente puro: 2,365 na janela antiga contra 2,436 na nova, **+3,0%**. O ganho é
+razão contra o seed da própria semente, medido na mesma máquina no mesmo
+instante, então a deriva cancela em primeira ordem. Cancelar em primeira ordem
+não é cancelar, e por isso as três sementes contemporâneas do `full` existem.
+
+### O que este experimento NÃO mostrou
+
+Não mostrou que a estrutura do AVO é inútil. Mostrou que **este alvo não a
+testa**. Um alvo cujo espaço de busca uma sessão esgota em cem segundos está fora
+do regime do paper por construção — lá são centenas de iterações num espaço que
+nenhuma sessão esgota — e um resultado nulo nele é uma afirmação sobre o alvo.
+
+O experimento custou US$ 175 para não distinguir nada. A sonda que teria contado
+isso antes custa **US$ 0,50** e agora existe (`experiments/ablacao/sonda.py`),
+é cobrada pelo `avo-lab verify`, e derrubou o `csv_normalize` de "apto para
+ablação".
