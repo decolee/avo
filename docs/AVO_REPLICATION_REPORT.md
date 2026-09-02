@@ -309,3 +309,38 @@ e a distinção entre as duas coisas é a única razão de este documento existi
 ganha um degrau anterior que ninguém tinha enunciado: **construir um alvo onde a
 pergunta seja mensurável**. É mais difícil que construir a ablação, custa quase
 nada em dinheiro, e é onde o valor está agora.
+
+---
+
+## 11. ERRATA À §10 — os agentes estavam cegos (v0.4)
+
+A §10 conclui que o alvo é o gargalo, e essa conclusão fica de pé. A evidência
+que ela usa, porém, era pior do que eu sabia: nos dois experimentos citados
+(US$ 343), **nenhum agente conseguiu executar o avaliador**. Detalhes em
+`experiments/CONTROLE.md`, no topo, e a falha 8 do README.
+
+Duas consequências, em direções opostas:
+
+**A favor da §10.** O argumento fica mais forte. Se um agente que não pode medir
+nada captura 68% do headroom disponível em cem segundos, o alvo é ainda mais
+trivial do que a §10 afirmou: a knowledge base entrega a resposta, e verificar é
+dispensável. É o caso mais claro possível de um alvo que não discrimina.
+
+**Contra o resto.** Qualquer afirmação sobre a *arquitetura* fica suspensa. O
+loop que rodou não é o do abstract (C2), que descreve o agente consultando
+"lineage, knowledge base e **feedback de execução**" para "propor, reparar,
+**criticar e verificar**". Sem o avaliador, os dois últimos verbos não
+aconteciam dentro do passo. O `full` manteve o feedback entre passos, via
+harness e gate; o que faltou foi o ciclo interno.
+
+**O que isto adiciona ao ledger.** Uma categoria que não estava lá e que vale
+para qualquer reprodução deste paper:
+
+> **VERIFICADO NA EXECUÇÃO** — o que a transcrição do agente prova que ele
+> conseguiu fazer, por oposição ao que a configuração diz que ele podia fazer.
+
+As duas coisas divergiram aqui por dois experimentos inteiros, e a diferença não
+apareceu em nenhuma métrica: os runs terminavam com exit 0, score positivo,
+correção verificada e commits aceitos. Só apareceu no texto que os agentes
+escreveram sobre a própria sessão. Agora é `ABLATION_PROTOCOL.md` §4 e um
+comando que sai com código 1.

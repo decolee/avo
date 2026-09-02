@@ -110,7 +110,7 @@ rejeitar, `--budget` que confirma o dimensionamento, e um hook que bloqueia a
 edição do árbitro. Não é zelo: é o resultado de ter escrito um gate que parecia
 sólido, tentado quebrá-lo de propósito, e conseguido.
 
-## As sete falhas que este repositório existe para não repetir
+## As oito falhas que este repositório existe para não repetir
 
 Todas aconteceram de verdade. Todas viraram verificação automática.
 
@@ -169,14 +169,33 @@ Todas aconteceram de verdade. Todas viraram verificação automática.
    dos cinco alvos deste repositório deixam de ser aptos para ablação** — o
    `csv_normalize` inclusive, que era a referência.
 
-Quatro são especialmente instrutivas. A quarta, porque um ganho de 57,8× parece
+8. **O agente não conseguia medir, e nada acusou.** Achada lendo os resumos das
+   sessões — dois experimentos e US$ 343 tarde demais. O harness usa
+   `bypassPermissions`, que é recusado quando o processo roda como root; ao
+   trocar por `acceptEdits`, o Bash passou a exigir aprovação, e num run não
+   supervisionado a aprovação não vem. **Nenhum agente jamais executou
+   `./avo-eval`.** As 21 sessões do braço de controle tentaram de 5 a 18 vezes
+   cada; 11 foram recusadas em 100% das tentativas. O braço que eu escrevi
+   explicitamente para *não* ser um espantalho — com um docstring dizendo que
+   dar o avaliador a ele era deliberado — era um espantalho.
+   → `--allowed-tools`, que torna a concessão explícita e idêntica em todos os
+   braços. E `destilar_logs.py` correlaciona `tool_use` com `tool_result` por id
+   e **sai com código 1 se qualquer sessão terminar cega** — correlacionar por id
+   é o que importa, porque contar a *intenção* de chamar fazia as sessões cegas
+   parecerem ter medido dezenas de vezes. Virou controle não negociável em
+   `ABLATION_PROTOCOL.md` §4.
+
+Cinco são especialmente instrutivas. A quarta, porque um ganho de 57,8× parece
 um sucesso retumbante do sistema e era o sintoma de um alvo mal projetado. A
 quinta, porque cada correção expôs a seguinte. A sexta, porque o alvo já tinha
 nove mutantes, gate separado e três camadas anti-memoização — e mesmo assim não
 distinguia "extrai por nome" de "extrai por posição", porque nunca tinha visto um
-registro em outra ordem. E a sétima, porque o alvo passava em **todas as outras
+registro em outra ordem. A sétima, porque o alvo passava em **todas as outras
 seis** e ainda assim não servia: headroom graduado diz que existem degraus, não
-que subi-los exija mais de uma sessão.
+que subi-los exija mais de uma sessão. E a oitava, porque não é sobre projetar
+alvos — é sobre **acreditar que um experimento mediu o que o desenho dizia**. As
+sete primeiras foram achadas atacando o alvo; esta só apareceu ao ler o que os
+agentes escreveram sobre a própria sessão.
 
 ## O que a ablação mostrou
 
@@ -220,6 +239,11 @@ estrutura nenhuma**. 24 execuções, ~11 h, ~US$ 175. Documento completo em
 | **AVO completo, 3 passos** | **2 439 s** | **11,44** | **4,92×** |
 | sessão única retomada até o orçamento | 2 219 s | 17,92 | 5,20× |
 
+> **Ressalva que muda a leitura:** por causa da falha 8, o braço `greedy` rodou
+> **cego** — nunca conseguiu executar o avaliador. A comparação medida é "o AVO
+> contra um agente que não pode medir", não "contra o mesmo modelo com o mesmo
+> `f`". Detalhes em `experiments/CONTROLE.md`, no topo.
+
 **Nenhuma comparação é distinguível** — todos os p ajustados por Holm deram
 1,000. A mais limpa (`+10%` de desbalanço de relógio) mede −0,277× com IC95
 [−0,983, +0,363].
@@ -232,9 +256,13 @@ para testá-la); e o `greedy` **não gasta o orçamento que recebe** — mandado
 2 471 s, para aos 731.
 
 Mas a conclusão que importa é sobre o alvo, não sobre a arquitetura: **este alvo
-não testa o AVO.** Foi daí que saiu a falha 7 e a sonda que a pega por US$ 0,50.
-Dos cinco alvos, só o `sql_agg` sobrevive a ela — e é nele que a próxima ablação
-tem chance de medir alguma coisa.
+não testa o AVO.** E ela sobrevive à falha 8 — na verdade fica mais forte, porque
+foi um agente **cego** que capturou 68% do ganho disponível. Um alvo cuja KB
+entrega a resposta sem precisar medir não discrimina arquitetura nenhuma.
+
+Foi daí que saiu a falha 7 e a sonda que a pega por US$ 0,50. Dos cinco alvos, só
+o `sql_agg` sobrevive a ela — e é nele que a próxima ablação tem chance de medir
+alguma coisa, agora com os agentes enxergando.
 
 ## Por que ablação, e não mais um benchmark
 
