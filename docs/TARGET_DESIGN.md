@@ -10,9 +10,9 @@ Quando `f` está errado, o agente não trava — ele fica confiante.
 
 ---
 
-## As sete propriedades de um alvo válido
+## As oito propriedades de um alvo válido
 
-Um alvo precisa das sete. Faltando qualquer uma, ele produz números que
+Um alvo precisa das oito. Faltando qualquer uma, ele produz números que
 parecem resultado e não são.
 
 | # | propriedade | como se verifica |
@@ -23,15 +23,17 @@ parecem resultado e não são.
 | 3b | A medição não é trapaceável | candidato memoizador não pontua; ver §3b |
 | 3c | O gate distingue o que o benchmark não distingue | propriedades compartilhadas por acidente; ver §3c |
 | 3d | O headroom é total **e** distribuído | as duas coisas se opõem; ver §3d |
+| 3e | Uma sessão única **não** esgota o headroom | o teste dos 100 segundos; ver §3e |
 | 4 | O score é diagnóstico | ≥ 2 regimes que são *formas* de dado diferentes |
 
-Cinco saíram de falhas reais desta bancada. A última saiu do guia de targets do
+Seis saíram de falhas reais desta bancada. Uma saiu do guia de targets do
 upstream e é a mais barata de acertar.
 
 Vale notar a ordem em que foram descobertas: 1 e 2 na primeira execução, 3 ao
 corrigir 2, **3b depois de o alvo já ter sido declarado pronto**, e **3c só
-quando alguém rodou a busca de verdade e tentou otimizar até o fim**. Cada
-correção expôs a seguinte. É a razão de a checklist do fim deste documento
+quando alguém rodou a busca de verdade e tentou otimizar até o fim**, e **3e só
+quando o alvo foi usado para aquilo que ele existia para fazer — comparar dois
+braços — e não conseguiu**. Cada correção expôs a seguinte. É a razão de a checklist do fim deste documento
 existir — e a razão de ela não estar terminada.
 
 ---
@@ -356,6 +358,88 @@ do ruído acumulado de uma trajetória inteira.
 
 ---
 
+## 3e. O teto é alcançável numa sessão — e aí o alvo não separa arquiteturas
+
+Descoberto rodando o controle honesto (`experiments/CONTROLE.md`): o `full` do
+AVO contra uma sessão única do mesmo modelo, no `csv_normalize`, que tinha
+passado em todas as propriedades anteriores.
+
+**O que aconteceu.** Com 5,1× de headroom declarado, TODOS os braços pousaram na
+mesma faixa:
+
+| braço | relógio | US$ | ganho |
+|---|---|---|---|
+| sessão única morta aos 100 s | 108 s | 0,53 | 4,51× |
+| sessão única, parada natural | 518 s | 2,60 | 4,23× |
+| **`full`, 3 passos** | 2 454 s | 11,37 | **4,95×** |
+| sessão única retomada até o orçamento | 2 186 s | 18,02 | 5,17× |
+
+Uma sessão morta aos **cem segundos** chega a 4,51×. O AVO completo, com vinte e
+três vezes mais relógio e vinte e uma vezes mais dinheiro, chega a 4,95×. Não há
+diferença para medir porque não há espaço onde ela caiba: o teto do alvo está a
+5,1× e todo mundo encosta nele.
+
+**O número que fecha o caso.** Com o desvio observado, distinguir os braços
+pediria de **121 a 4 250 sementes por braço** — de US$ 3.600 a mais de US$ 50.000
+por comparação. Não é n insuficiente por avareza. É um alvo onde o efeito, se
+existe, foi comprimido contra o teto até ficar menor do que qualquer orçamento
+resolve.
+
+**Por que as propriedades anteriores não pegam isso.** §3 exige headroom
+graduado — 3× a 8× em ≥ 4 movimentos — e o `csv_normalize` tem: 5,1× em 6
+movimentos, medidos à mão, conferidos pelo `verify`. O que §3 não pergunta é
+**quanto desse headroom uma sessão única alcança sozinha**. Headroom graduado diz
+que existem degraus; não diz que subi-los exige mais de uma sessão. Se um agente
+sobe todos numa tacada, os degraus existem para o humano que os projetou e para
+mais ninguém.
+
+**A regra.** Um alvo serve para comparar arquiteturas de busca só se uma sessão
+única alcançar uma **fração** do headroom. A parte que sobra é o espaço onde as
+arquiteturas podem diferir; se não sobra nada, não há o que comparar.
+
+**A fração certa é sobre o ganho disponível.** Um alvo de 5,1× tem 4,1× de ganho
+para distribuir; uma sonda que mede 1,0× capturou zero por cento dele, não vinte.
+Medida assim, a tabela acima fica muito mais dura:
+
+| | ganho | fração do headroom disponível |
+|---|---|---|
+| sonda de 100 s | 4,51× | **86%** |
+| AVO completo, 3 passos | 4,95× | 96% |
+| sessão retomada até o orçamento | 5,17× | 102% |
+
+Cem segundos pegam 86% de tudo que havia para pegar. Os 2 454 segundos e os
+US$ 11,37 do `full` compram os 10% que sobraram. E a última linha passa de 100%
+porque o headroom declarado (5,1×, medido à mão escrevendo versões melhores)
+estava **subestimado** — a busca achou mais do que quem projetou o alvo achou.
+
+**O teste dos 100 segundos.** Barato o suficiente para não ter desculpa:
+
+```bash
+python3 experiments/ablacao/sonda.py --alvo <nome>
+```
+
+Uma sessão única do modelo, sem estrutura nenhuma, com orçamento de 100s; ela
+mede o seed, roda, reavalia, e compara com o `lab.headroom_medido` declarado.
+Custa ~US$ 0,50 e menos de três minutos, e sai com código 1 se a fração passar de
+metade.
+
+Ela não entra no `make verify` nem no CI — gasta cota e leva minutos. É um passo
+da checklist de alvo novo, feito uma vez, com o resultado anotado no
+`target.yaml`.
+
+Se a sonda pegar mais de metade do headroom, o alvo pode continuar servindo para
+*otimizar* — ele mede melhora de verdade — mas não serve para *comparar
+arquiteturas*, e a ablação montada em cima dele vai gastar milhares de dólares
+para produzir intervalos que contêm zero.
+
+**O que isso não quer dizer.** Não quer dizer que o AVO não funciona. Quer dizer
+que este alvo não o testa. O regime do paper são centenas de iterações num espaço
+que nenhuma sessão esgota; um alvo cujo espaço uma sessão esgota em cem segundos
+está fora desse regime por construção, e um resultado nulo nele é uma afirmação
+sobre o alvo.
+
+---
+
 ## 4. O score é diagnóstico
 
 **Regimes são formas de dado, não repetições do mesmo dado.** A versão antiga do
@@ -400,6 +484,7 @@ baseline: o seed marca 4,16 e a baseline 6,21, então o agente sabe desde o pass
 [ ] a medição usa caminho novo E módulo novo por execução (anti-memoização)
 [ ] enumerei o que o dataset de gate e o de benchmark compartilham por acidente
 [ ] embaralhar a ordem dos campos / faltar um campo reprova quem depende disso
+[ ] o teste dos 100 segundos: uma sessão única NÃO pega mais de metade do headroom
 [ ] tentei trapacear no meu próprio alvo e não consegui
 ```
 
