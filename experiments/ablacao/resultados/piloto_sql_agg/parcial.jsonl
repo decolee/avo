@@ -1,0 +1,8 @@
+{"passo": 1, "primary_antes": 1.6451328939772505, "primary_depois": 5.903860124440756, "versao": 0, "codigo_mudou": false, "wall_s": 932.8, "exit": 0, "aceito": true, "agente_ok": true, "custo_usd": 4.501704000000001, "turnos": 48, "dur_agente_s": 927.0671200752258, "erro_agente": null, "morto_por_tempo": false, "supervisor": false, "braco": "full", "semente": 0}
+{"passo": 2, "primary_antes": 5.903860124440756, "primary_depois": 5.903860124440756, "versao": 0, "codigo_mudou": false, "wall_s": 0.1, "exit": 1, "braco": "full", "semente": 0}
+{"passo": 3, "primary_antes": 5.903860124440756, "primary_depois": 5.903860124440756, "versao": 0, "codigo_mudou": false, "wall_s": 0.1, "exit": 1, "braco": "full", "semente": 0}
+{"passo": 4, "primary_antes": 5.903860124440756, "primary_depois": 5.903860124440756, "versao": 0, "codigo_mudou": false, "wall_s": 0.1, "exit": 1, "braco": "full", "semente": 0}
+{"passo": 5, "primary_antes": 5.903860124440756, "primary_depois": 5.903860124440756, "versao": 0, "codigo_mudou": false, "wall_s": 0.1, "exit": 1, "braco": "full", "semente": 0}
+{"passo": 6, "primary_antes": 5.903860124440756, "primary_depois": 5.903860124440756, "versao": 0, "codigo_mudou": false, "wall_s": 0.1, "exit": 1, "braco": "full", "semente": 0}
+{"passo": 7, "primary_antes": 5.903860124440756, "primary_depois": 5.903860124440756, "versao": 0, "codigo_mudou": false, "wall_s": 0.1, "exit": 1, "braco": "full", "semente": 0}
+{"passo": 8, "primary_antes": 5.903860124440756, "primary_depois": 5.903860124440756, "versao": 0, "codigo_mudou": false, "wall_s": 0.1, "exit": 1, "braco": "full", "semente": 0}
