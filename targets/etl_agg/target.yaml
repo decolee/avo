@@ -72,3 +72,11 @@ lab:
   valido: false
   nota: >-
     apos o endurecimento do gate (Sessao 2), o teto defensavel caiu de 3,6x para 1,61x: extracao dirigida correta sobre passe unico
+  # TARGET_DESIGN.md §3e — medido por experiments/ablacao/sonda.py
+  sonda_100s_fracao: 1.01
+  sonda_100s_nota: >-
+    uma sessao de 100s mediu 1,62x contra headroom de 1,61x: 101% do ganho
+    disponivel. Reprova §3e — mas note que este alvo ja reprovava §3 por headroom
+    de 1,61x, e os dois numeros dizem a mesma coisa por caminhos diferentes: o
+    que sobrou depois do endurecimento do gate na Sessao 2 e pouco, e um agente
+    sozinho pega tudo em cem segundos.

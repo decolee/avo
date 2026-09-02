@@ -432,6 +432,29 @@ Se a sonda pegar mais de metade do headroom, o alvo pode continuar servindo para
 arquiteturas*, e a ablação montada em cima dele vai gastar milhares de dólares
 para produzir intervalos que contêm zero.
 
+**Medida nos cinco alvos deste repositório.** US$ 2,50 e vinte minutos ao todo:
+
+| alvo | headroom | sonda 100 s | §3 | §3e |
+|---|---|---|---|---|
+| `sql_agg` | 4,25× | **49%** | passa | **passa** |
+| `csv_normalize` | 6,2× | 68% | passa | reprova |
+| `etl_agg` | 1,61× | 101% | reprova | reprova |
+| `dedupe_match` | 3,55× | 111% | passa | reprova |
+| `sessionize` | 1,83× | 9% | reprova | passa |
+
+Duas leituras saem daí. A primeira: **um alvo de cada cinco serve**, e não era o
+que estava sendo usado — a ablação e o controle rodaram no `csv_normalize`, que
+reprova.
+
+A segunda é estrutural e mais incômoda. Os alvos que sobrevivem à §3e são os de
+headroom pequeno: o `sessionize` deixa 91% do espaço para a busca porque tem só
+1,83× de espaço, e o `dedupe_match` é esgotado numa sessão porque os 3,55× dele
+são fáceis. **Ser difícil por unidade de headroom e ter headroom são requisitos
+que tendem a se opor** — é o mesmo tipo de tensão de §3d, e o `sql_agg` é o único
+alvo aqui que tem os dois. Não por acaso é o que evolui SQL: otimizar uma
+consulta exige medir trade-offs de índice entre regimes frio, quente e largo, e
+isso não se resolve numa tacada como parsing de CSV se resolve.
+
 **O que isso não quer dizer.** Não quer dizer que o AVO não funciona. Quer dizer
 que este alvo não o testa. O regime do paper são centenas de iterações num espaço
 que nenhuma sessão esgota; um alvo cujo espaço uma sessão esgota em cem segundos
