@@ -149,6 +149,39 @@ def _codigo_mudou(work: Path, entrypoint: str, ver_antes: int, ver_depois: int) 
     return any(linha.strip() for linha in saida.splitlines())
 
 
+def _passos_feitos(run_dir: Path) -> int:
+    """Quantos passos deste run ja foram executados, pelo `trajectory.jsonl`.
+
+    Existe porque um restart de container no meio de uma semente custava a
+    semente inteira: o runner criava um run novo e refazia os oito passos. Com
+    isto a perda cai para o passo que estava em voo. Num programa de ~98h de
+    relogio, em que reinicios acontecem, a diferenca e de horas.
+    """
+    caminho = run_dir / "trajectory.jsonl"
+    if not caminho.is_file():
+        return 0
+    ultimo = 0
+    for linha in caminho.read_text(encoding="utf-8").splitlines():
+        if linha.strip():
+            ultimo = max(ultimo, int(json.loads(linha).get("step", 0)))
+    return ultimo
+
+
+def _reaproveita_run(runs_dir: Path) -> Path | None:
+    """Um run desta semente ficou pela metade num restart? Devolve-o.
+
+    So reaproveita run com pelo menos um passo feito: um diretorio criado e
+    abandonado antes do primeiro passo nao tem nada a economizar, e reusa-lo
+    arriscaria herdar uma configuracao antiga do `run.json`.
+    """
+    if not runs_dir.is_dir():
+        return None
+    for candidato in sorted(runs_dir.iterdir(), reverse=True):
+        if candidato.is_dir() and _passos_feitos(candidato) > 0:
+            return candidato
+    return None
+
+
 def _estado(run_dir: Path) -> dict:
     caminho = run_dir / "work" / ".avo" / "scores.jsonl"
     if not caminho.is_file():
@@ -206,6 +239,13 @@ def roda_um(
     runs_dir = saida / "runs" / f"{braco}-s{semente}"
     runs_dir.mkdir(parents=True, exist_ok=True)
 
+    retomado = _reaproveita_run(runs_dir)
+    if retomado is not None:
+        print(
+            f"    retomando {retomado.name}: {_passos_feitos(retomado)} passos ja feitos",
+            flush=True,
+        )
+
     criar = [
         sys.executable,
         "-m",
@@ -233,11 +273,18 @@ def roda_um(
         ),
         *cfg["flags"],
     ]
-    code, saida_txt = _sh(criar, 900)
-    candidatos = sorted(runs_dir.iterdir())
-    if not candidatos:
-        return {"braco": braco, "semente": semente, "erro": f"run nao criado: {saida_txt[-400:]}"}
-    run_dir = candidatos[-1]
+    if retomado is not None:
+        run_dir = retomado
+    else:
+        code, saida_txt = _sh(criar, 900)
+        candidatos = sorted(runs_dir.iterdir())
+        if not candidatos:
+            return {
+                "braco": braco,
+                "semente": semente,
+                "erro": f"run nao criado: {saida_txt[-400:]}",
+            }
+        run_dir = candidatos[-1]
     if not _liberar_ferramentas(run_dir):
         return {"braco": braco, "semente": semente, "erro": f"run.json ausente em {run_dir}"}
 
@@ -253,7 +300,7 @@ def roda_um(
         "passos": [],
     }
 
-    for k in range(1, passos + 1):
+    for k in range(_passos_feitos(run_dir) + 1, passos + 1):
         if cfg["apaga_notas"]:
             (run_dir / "NOTES.md").write_text(notas_virgens, encoding="utf-8")
 
