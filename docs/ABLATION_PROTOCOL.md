@@ -72,6 +72,22 @@ resultado publicável tanto quanto o contrário.
 - **Ordem dos braços aleatorizada** dentro de cada rodada.
 - **Cegamento na análise.** Os resultados são rotulados por identificador opaco
   até a análise estar escrita.
+- **O agente consegue medir — verificado na transcrição, nunca presumido.**
+  Este controle existe porque foi violado em dois experimentos seguidos, US$ 343,
+  sem que nada acusasse. O harness usa `bypassPermissions`, que é recusado quando
+  o processo roda como root; ao trocar por `acceptEdits` o Bash passou a exigir
+  aprovação, e num run não supervisionado a aprovação não vem. Os agentes
+  escreveram código no escuro e o experimento reportou números como se eles
+  tivessem medido.
+
+  A verificação é `python3 experiments/ablacao/destilar_logs.py --logs <dir>`,
+  que correlaciona `tool_use` com `tool_result` por id e **sai com código 1 se
+  qualquer sessão terminar sem uma medição bem-sucedida**. Correlacionar por id é
+  a parte que importa: contar a *intenção* de chamar a ferramenta fazia as
+  sessões cegas parecerem ter medido dezenas de vezes cada.
+
+  Rode-a **antes de analisar**, não depois. Uma sessão cega não é ruído a mais na
+  amostra; é uma sessão que não testa o que o desenho diz testar.
 
 ## 5. Métricas
 

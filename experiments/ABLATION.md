@@ -210,3 +210,30 @@ saiu de US$ 343 de experimento.
 Os itens 1 e 3 permanecem de pé, e continuam valendo US$ 840. Mas gastá-los antes
 de ter um alvo que passe na §3e seria comprar de novo o mesmo intervalo que
 contém zero.
+
+---
+
+## 9. Correção: os agentes deste experimento também estavam cegos
+
+O mesmo defeito de permissão descrito em `CONTROLE.md` afetou esta ablação. Os
+agentes rodaram com `--permission-mode acceptEdits` e sem `--allowed-tools`, e
+não conseguiam executar `./avo-eval` de dentro do passo.
+
+**O que isso muda aqui é menos do que parece, e vale explicar por quê.** O
+`full` não perdeu o feedback: o harness avalia e gateia a cada passo, então o
+laço continuou recebendo o número — o que se perdeu foi a medição DENTRO do
+passo, o "criticar e verificar" do abstract do paper (C2). Cada passo foi
+"proponha no escuro, o harness mede depois, o gate aceita ou rejeita".
+
+Isso vale igualmente para os quatro braços, então a comparação entre eles
+continua sendo entre iguais e o resultado nulo de §1 permanece. O que não
+permanece é a caracterização: este experimento não ablacionou "o AVO", e sim uma
+versão dele em que o operador de variação não pode verificar o próprio trabalho.
+
+E há uma leitura nova que o defeito abre. A §5 registrou que o primeiro passo
+captura ~85% do ganho e que a trajetória depois é rasa. Com agentes cegos, isso
+tem uma explicação mecânica óbvia que não estava disponível antes: sem poder
+medir, o agente aplica o que a KB ensina, e não há como refinar o que não se
+consegue cronometrar. **Um agente que enxerga pode ter trajetória diferente**, e
+saber disso é o motivo de o experimento precisar ser refeito antes de qualquer
+conclusão sobre componentes.

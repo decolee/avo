@@ -1,5 +1,46 @@
 # Controle honesto: `full` contra `greedy`
 
+> ## ⚠ CORREÇÃO — este experimento não mediu o que este documento diz que mediu
+>
+> **O braço `greedy` nunca recebeu o avaliador.** O desenho abaixo afirma, em §3,
+> que ele recebe "o mesmo avaliador (`./avo-eval`), que ele pode chamar à
+> vontade", e chama isso de deliberado porque sem ele o baseline seria um
+> espantalho. Um defeito de configuração de permissão fez exatamente o
+> espantalho.
+>
+> Os agentes rodaram com `--permission-mode acceptEdits` e **sem
+> `--allowed-tools`**. Esse modo libera edição de arquivo e exige aprovação para
+> Bash — aprovação que nunca chega num run não supervisionado. As 21 sessões
+> tentaram chamar `./avo-eval` de 5 a 18 vezes cada:
+>
+> | | sessões | medições bem-sucedidas |
+> |---|---|---|
+> | recusadas em 100% das tentativas | 11 de 21 | 0 |
+> | restantes | 10 de 21 | 1 ou 2 numa sessão inteira |
+>
+> Os resumos das próprias sessões dizem isso com todas as letras — *"medi ZERO
+> ideias porque o avaliador foi recusado por permissão"*. Estão em
+> `resultados/resumos.jsonl`.
+>
+> **O que continua valendo.** Os números são dados reais: 24 execuções, medidas
+> pelo mesmo `eval.py`, com correção verificada. E a conclusão de §7 sobre o
+> ALVO — que uma sessão curta captura quase todo o headroom, e que por isso
+> `csv_normalize` não discrimina arquiteturas — fica **mais forte**, não mais
+> fraca: um agente cego, sem medir nada, chegou a 68% do ganho disponível. Isso é
+> o alvo dizendo que a KB dele já entrega a resposta.
+>
+> **O que NÃO vale.** A frase "o AVO empata com o mesmo modelo sem estrutura".
+> O que foi medido é "o AVO empata com um agente cego". A comparação que este
+> documento se propôs a fazer continua por fazer.
+>
+> **Conserto.** `--allowed-tools`, em `runner.FERRAMENTAS` e `greedy.FERRAMENTAS`
+> — melhor que o `bypassPermissions` original, porque a concessão fica explícita
+> e idêntica em todos os braços. Verificado numa sessão de 240s: 6 tentativas,
+> 5 medições, 0 recusas, 4,13× no `sql_agg`. E `destilar_logs.py` agora sai com
+> código 1 quando qualquer sessão termina cega, correlacionando `tool_use` com
+> `tool_result` por id — contar a *intenção* de chamar era o que fazia as sessões
+> cegas parecerem ter medido dezenas de vezes.
+
 **Estado: rodando.** Este documento foi escrito *antes* dos dados do `greedy`
 existirem, e a análise (`experiments/ablacao/analise_controle.py`) foi commitada
 antes da primeira linha de `resultados/greedy.jsonl`. O histórico do git prova as
@@ -74,9 +115,13 @@ regressão não é desfeita por ninguém, e deixar o `greedy` terminar numa
 regressão que ele mesmo poderia ter desfeito seria construir um espantalho. O
 controle tem que ser a versão mais forte de "sem estrutura", não a mais fraca.
 
-O que o `greedy` **recebe**, igual ao `full`: o mesmo seed, a mesma KB, o mesmo
-avaliador (chamável à vontade), o mesmo objetivo copiado do `target.yaml`, o
-mesmo modelo, o mesmo `--effort`.
+O que o `greedy` **deveria receber**, igual ao `full`: o mesmo seed, a mesma KB,
+o mesmo avaliador (chamável à vontade), o mesmo objetivo copiado do
+`target.yaml`, o mesmo modelo, o mesmo `--effort`.
+
+> **Não foi o que aconteceu.** O avaliador foi recusado por permissão em todas as
+> sessões — veja a correção no topo. O parágrafo acima descreve o desenho, não a
+> execução.
 
 O que ele **não recebe** — e é exatamente a estrutura do AVO: lineage, gate
 persistente com reversão automática, supervisor, e memória entre passos.
