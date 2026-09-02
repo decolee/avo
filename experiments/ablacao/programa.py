@@ -55,19 +55,28 @@ class Fase:
     nome: str
     argv: list[str]
     #: Quantas linhas de resultado a fase precisa produzir para estar completa.
-    #: `None` quer dizer "roda uma vez e pronto" (as sondas).
+    #: `None` quer dizer que a conclusao e decidida por `marcador` — um arquivo
+    #: cuja existencia prova que a fase ja rodou. Sem isso, um reinicio do
+    #: programa refazia as sondas toda vez: ~20 min e US$ 3 por reinicio, e
+    #: churn nas declaracoes de `sonda_100s_fracao`, que mudam um pouco a cada
+    #: medicao e virariam commits sem informacao.
     alvo_linhas: int | None = None
+    marcador: Path | None = None
     arquivo: Path | None = None
     bracos: set[str] = field(default_factory=set)
     #: Horas de relógio esperadas. Só informativo, para o log dizer o que falta.
     horas: float = 0.0
 
     def completa(self) -> bool:
+        if self.marcador is not None:
+            return self.marcador.is_file()
         if self.alvo_linhas is None or self.arquivo is None:
             return False
         return _feitos(self.arquivo, self.bracos) >= self.alvo_linhas
 
     def progresso(self) -> str:
+        if self.marcador is not None:
+            return "feita" if self.marcador.is_file() else "pendente"
         if self.alvo_linhas is None or self.arquivo is None:
             return "—"
         return f"{_feitos(self.arquivo, self.bracos)}/{self.alvo_linhas}"
@@ -94,6 +103,7 @@ def constroi_fases(n: int, passos: int, janela: int, alvo: str, n3: int) -> list
         Fase(
             nome="sondas",
             argv=[sys.executable, str(AQUI / "sondas_todas.py")],
+            marcador=AQUI / "resultados" / "sondas_vendo.json",
             horas=0.3,
         ),
         Fase(
