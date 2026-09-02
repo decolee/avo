@@ -38,6 +38,7 @@ from analise import (
     holm,
     p_permutacao,
 )
+from destilar_logs import exige_visao  # noqa: E402
 
 AQUI = Path(__file__).resolve().parent
 
@@ -232,6 +233,11 @@ def main() -> int:
     p.add_argument("--resultados", default=str(AQUI / "resultados" / "results.jsonl"))
     p.add_argument("--greedy", default=str(AQUI / "resultados" / "greedy.jsonl"))
     p.add_argument("--json", action="store_true")
+    p.add_argument(
+        "--ignorar-cegueira",
+        action="store_true",
+        help="reanalisar dados historicos sabidamente cegos; sai marcado no relatorio",
+    )
     args = p.parse_args()
 
     full = carregar(Path(args.resultados))
@@ -239,6 +245,24 @@ def main() -> int:
     if not full:
         print(f"sem resultados do full em {args.resultados}")
         return 1
+
+    # Portao de §4 do protocolo, antes de qualquer estatistica. Uma media sobre
+    # sessoes cegas parece resultado e nao e; foi assim que dois experimentos
+    # produziram intervalos que continham zero e uma conclusao que nao se
+    # sustentava. `--ignorar-cegueira` existe para reanalisar dados historicos
+    # que se sabe cegos, e diz isso no relatorio.
+    raiz = Path(args.resultados).parent
+    ok, detalhe = exige_visao(raiz)
+    print(f"visao dos agentes: {detalhe}\n")
+    if not ok:
+        if not args.ignorar_cegueira:
+            print(
+                "ANALISE ABORTADA. Estas sessoes nao testam o que o desenho diz testar.\n"
+                "Se a intencao e reanalisar dados historicos sabidamente cegos, passe\n"
+                "--ignorar-cegueira; o relatorio vai dizer que foi o caso."
+            )
+            return 2
+        print("!! RODANDO COM SESSOES CEGAS por --ignorar-cegueira; leia com essa ressalva !!\n")
 
     passos = curva_do_full(full)
     pontos_greedy = curva_do_greedy(greedy)

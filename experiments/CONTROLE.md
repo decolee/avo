@@ -13,14 +13,32 @@
 > Bash — aprovação que nunca chega num run não supervisionado. As 21 sessões
 > tentaram chamar `./avo-eval` de 5 a 18 vezes cada:
 >
-> | | sessões | medições bem-sucedidas |
+Varrendo TODAS as transcrições do diretório — as do `greedy`, spawnadas por este
+> repositório, e as do `full` e dos braços de ablação, spawnadas pelo harness:
+
+> | braço | sessões | cegas |
 > |---|---|---|
-> | recusadas em 100% das tentativas | 11 de 21 | 0 |
-> | restantes | 10 de 21 | 1 ou 2 numa sessão inteira |
+> | `full` | 21 | **15 (71%)** |
+> | `no_supervisor` | 12 | 9 (75%) |
+> | `no_memory` | 15 | 11 (73%) |
+> | `no_kb` | 12 | 8 (67%) |
+> | `greedy_nat` | 5 | 2 (40%) |
+> | `greedy_cont` | 4 | 1 (25%) |
+> | `greedy_bmax` | 3 | **0 (0%)** |
+> | `greedy_b600` | 4 | 3 (75%) |
+> | `greedy_b100` / `b1200` | 5 | 5 (100%) |
+> | **total** | **81** | **54 (67%)** |
 >
 > Os resumos das próprias sessões dizem isso com todas as letras — *"medi ZERO
 > ideias porque o avaliador foi recusado por permissão"*. Estão em
 > `resultados/resumos.jsonl`.
+>
+> **A cegueira foi DIFERENCIAL, e é isso que estraga esta comparação.** Entre os
+> braços do harness ela é quase uniforme (67% a 75%), então a ablação de
+> componentes continua comparando iguais. Mas do lado do `greedy` ela vai de 0%
+> (`greedy_bmax`, três de três mediram) a 100% (`greedy_b100`) — e comparar um
+> braço 71% cego contra outro 0% cego não mede arquitetura, mede quem conseguiu
+> falar com o avaliador.
 >
 > **O que continua valendo.** Os números são dados reais: 24 execuções, medidas
 > pelo mesmo `eval.py`, com correção verificada. E a conclusão de §7 sobre o

@@ -173,14 +173,18 @@ Todas aconteceram de verdade. Todas viraram verificação automática.
    sessões — dois experimentos e US$ 343 tarde demais. O harness usa
    `bypassPermissions`, que é recusado quando o processo roda como root; ao
    trocar por `acceptEdits`, o Bash passou a exigir aprovação, e num run não
-   supervisionado a aprovação não vem. **Nenhum agente jamais executou
-   `./avo-eval`.** As 21 sessões do braço de controle tentaram de 5 a 18 vezes
-   cada; 11 foram recusadas em 100% das tentativas. O braço que eu escrevi
+   supervisionado a aprovação não vem. Varrendo as transcrições dos dois
+   experimentos, **54 de 81 sessões de agente (67%) terminaram sem conseguir
+   medir uma única vez** — inclusive 15 dos 21 passos do braço `full`. E a
+   cegueira foi **diferencial**: entre os braços do harness ela é uniforme
+   (67–75%), mas do lado do `greedy` vai de 0% a 100%, e comparar um braço 71%
+   cego contra outro 0% cego não mede arquitetura. O braço que eu escrevi
    explicitamente para *não* ser um espantalho — com um docstring dizendo que
    dar o avaliador a ele era deliberado — era um espantalho.
    → `--allowed-tools`, que torna a concessão explícita e idêntica em todos os
    braços. E `destilar_logs.py` correlaciona `tool_use` com `tool_result` por id
-   e **sai com código 1 se qualquer sessão terminar cega** — correlacionar por id
+   e **sai com código 1 se qualquer sessão terminar cega**; a análise chama esse
+   portão antes de qualquer estatística e **aborta** se ele não passar — correlacionar por id
    é o que importa, porque contar a *intenção* de chamar fazia as sessões cegas
    parecerem ter medido dezenas de vezes. Virou controle não negociável em
    `ABLATION_PROTOCOL.md` §4.

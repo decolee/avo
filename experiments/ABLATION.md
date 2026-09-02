@@ -219,14 +219,25 @@ O mesmo defeito de permissão descrito em `CONTROLE.md` afetou esta ablação. O
 agentes rodaram com `--permission-mode acceptEdits` e sem `--allowed-tools`, e
 não conseguiam executar `./avo-eval` de dentro do passo.
 
+**Quanto, exatamente.** Varrendo as transcrições passo a passo:
+
+| braço | passos de agente | cegos |
+|---|---|---|
+| `full` | 21 | 15 (71%) |
+| `no_supervisor` | 12 | 9 (75%) |
+| `no_memory` | 15 | 11 (73%) |
+| `no_kb` | 12 | 8 (67%) |
+
 **O que isso muda aqui é menos do que parece, e vale explicar por quê.** O
 `full` não perdeu o feedback: o harness avalia e gateia a cada passo, então o
 laço continuou recebendo o número — o que se perdeu foi a medição DENTRO do
 passo, o "criticar e verificar" do abstract do paper (C2). Cada passo foi
 "proponha no escuro, o harness mede depois, o gate aceita ou rejeita".
 
-Isso vale igualmente para os quatro braços, então a comparação entre eles
-continua sendo entre iguais e o resultado nulo de §1 permanece. O que não
+E a cegueira aqui é quase uniforme — 67% a 75% nos quatro braços — então a
+comparação entre eles continua sendo entre iguais e o resultado nulo de §1
+permanece. (No controle de `CONTROLE.md` não é assim: lá ela varia de 0% a 100%
+entre braços, e é isso que invalida aquela comparação em particular.) O que não
 permanece é a caracterização: este experimento não ablacionou "o AVO", e sim uma
 versão dele em que o operador de variação não pode verificar o próprio trabalho.
 

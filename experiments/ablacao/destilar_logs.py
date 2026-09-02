@@ -100,6 +100,49 @@ def destila(caminho: Path) -> dict:
     }
 
 
+#: Onde as transcricoes de cada braco vivem. Sao dois lugares porque sao dois
+#: caminhos de codigo: o `greedy` e spawnado por este repositorio e escreve em
+#: `logs/<braco>-s<n>.jsonl`; o `full` e spawnado pelo harness, que escreve um
+#: arquivo por passo em `<run_dir>/logs/step-NNNN.log`. Um auditor que olhasse so
+#: o primeiro daria o `full` como verificado sem ter olhado para ele.
+_PADROES = ("logs/*.jsonl", "runs/*/*/logs/step-*.log")
+
+
+def varre_experimento(raiz: Path) -> list[dict]:
+    """Destila TODAS as transcricoes de um diretorio de experimento."""
+    saida = []
+    for padrao in _PADROES:
+        for caminho in sorted(raiz.glob(padrao)):
+            d = destila(caminho)
+            if padrao.startswith("runs/"):
+                # `step-0003` sozinho nao identifica nada; o run dir identifica.
+                d["sessao"] = f"{caminho.parents[2].name}/{caminho.stem}"
+            saida.append(d)
+    return saida
+
+
+def exige_visao(raiz: Path) -> tuple[bool, str]:
+    """Portao: nenhuma sessao pode ter terminado sem medir.
+
+    Chamado pela analise ANTES de qualquer estatistica. Uma sessao cega nao e
+    ruido a mais na amostra — e uma sessao que nao testa o que o desenho diz
+    testar, e a media dela contamina o braco inteiro. Foi assim que dois
+    experimentos e US$ 343 produziram numeros que pareciam resultado.
+    """
+    linhas = varre_experimento(raiz)
+    if not linhas:
+        return False, f"nenhuma transcricao encontrada em {raiz}"
+    cegas = [d for d in linhas if d["cega"]]
+    if cegas:
+        nomes = ", ".join(d["sessao"] for d in cegas[:8])
+        return False, (
+            f"{len(cegas)} de {len(linhas)} sessoes terminaram sem medir NADA: {nomes}"
+            + ("..." if len(cegas) > 8 else "")
+            + ". Veja `runner.FERRAMENTAS` e ABLATION_PROTOCOL.md §4."
+        )
+    return True, f"{len(linhas)} sessoes, todas com pelo menos uma medicao bem-sucedida"
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description="Destila as transcricoes do greedy")
     p.add_argument("--logs", default=str(AQUI / "resultados" / "logs"))
