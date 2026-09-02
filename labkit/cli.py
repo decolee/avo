@@ -162,6 +162,50 @@ def check_headroom(target: Path) -> Check:
     return Check("headroom declarado", True, f"{h}x em {mov} movimentos")
 
 
+def check_sonda(target: Path) -> Check:
+    """Uma sessao unica esgota o headroom deste alvo? (TARGET_DESIGN §3e)
+
+    O `check_headroom` cobra que exista escada. Esta cobra que subi-la exija mais
+    de uma sessao — que e outra coisa, e foi a que faltou. O `csv_normalize`
+    declarava 5,1x em 6 movimentos, passava em tudo, e mesmo assim nao separou o
+    AVO completo de uma sessao de agente morta aos cem segundos: a sonda pegou
+    86% do ganho disponivel sozinha, e nao sobrou espaco onde os bracos pudessem
+    diferir.
+
+    Como o headroom, isto nao e mensuravel de graca — a sonda gasta cota e leva
+    minutos (`experiments/ablacao/sonda.py`). O que a maquina cobra e que o
+    numero esteja DECLARADO, e avisa quando ele reprova a barra de metade.
+    """
+    try:
+        import yaml
+    except ImportError:
+        return Check("sonda 100s (§3e)", True, "pulado: pyyaml nao instalado")
+    try:
+        data = yaml.safe_load((target / "target.yaml").read_text(encoding="utf-8")) or {}
+    except Exception as exc:  # noqa: BLE001
+        return Check("sonda 100s (§3e)", False, f"{type(exc).__name__}: {exc}")
+
+    lab = data.get("lab") or {}
+    if "sonda_100s_fracao" not in lab:
+        return Check(
+            "sonda 100s (§3e)",
+            False,
+            "nao declarada — rode `python3 experiments/ablacao/sonda.py --alvo "
+            f"{target.name}` e declare `lab.sonda_100s_fracao`",
+            bloqueante=False,
+        )
+    fracao = float(lab.get("sonda_100s_fracao") or 0.0)
+    if fracao > 0.5:
+        return Check(
+            "sonda 100s (§3e)",
+            False,
+            f"uma sessao unica pega {fracao:.0%} do headroom disponivel em 100s — "
+            "o alvo mede otimizacao, mas nao compara arquiteturas",
+            bloqueante=False,
+        )
+    return Check("sonda 100s (§3e)", True, f"sessao unica pega {fracao:.0%}; sobra espaco")
+
+
 def check_lock(target: Path) -> Check:
     from labkit import datakit
 
@@ -194,6 +238,7 @@ def verify(names: list[str] | None, skip_slow: bool, timeout: float) -> list[Tar
         report = TargetReport(target.name)
         report.checks.append(check_yaml(target))
         report.checks.append(check_headroom(target))
+        report.checks.append(check_sonda(target))
         report.checks.append(check_lock(target))
         report.checks.append(check_selftest(target, timeout))
         if not skip_slow:
@@ -224,12 +269,13 @@ def render(reports: list[TargetReport]) -> str:
     aptos = sum(1 for r in reports if r.apto_para_ablacao)
     lines.append("")
     lines.append(f"{sadios}/{len(reports)} alvos sadios (nada quebrado)")
-    lines.append(f"{aptos}/{len(reports)} aptos para ablacao (alcancam a barra de headroom)")
+    lines.append(f"{aptos}/{len(reports)} aptos para ablacao (headroom E espaco para a busca)")
     if aptos < sadios:
         lines.append("")
         lines.append(
             "Um alvo com aviso e correto e utilizavel — ele so nao discrimina bracos "
-            "numa ablacao.\nVer docs/TARGET_DESIGN.md secao 3."
+            "numa ablacao,\npor headroom pequeno demais (secao 3) ou por uma sessao unica "
+            "esgota-lo sozinha (secao 3e).\nVer docs/TARGET_DESIGN.md."
         )
     return "\n".join(lines)
 

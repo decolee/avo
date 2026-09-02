@@ -76,8 +76,22 @@ agent:
 # recusar o alvo quando ele nao alcanca a barra. Sem isso a exigencia vive so na
 # prosa, e prosa nao reprova ninguem.
 lab:
-  headroom_medido: 5.1
+  # 5,1x era o que a escada medida a mao alcancava. A busca achou mais: a melhor
+  # versao correta produzida por um agente mediu 6,21x, e a media do braco mais
+  # forte ficou em 5,20x sobre quatro sementes. O numero declarado passa a ser o
+  # empirico, e ele continua sendo um PISO — ninguem provou que 6,21x e o teto.
+  headroom_medido: 6.2
   movimentos: 6
   valido: true
   nota: >-
-    escada medida tres vezes: 4,41x / 4,57x / 5,10x
+    escada a mao: 4,41x / 4,57x / 5,10x. A busca superou os tres: 6,21x na melhor
+    semente do controle (experiments/CONTROLE.md), com correcao verificada.
+  # TARGET_DESIGN.md §3e. Uma sessao unica de 100s pega 86% do ganho disponivel
+  # ((4,51-1)/(6,2-1) sobre quatro sementes), entao este alvo NAO discrimina
+  # arquiteturas de busca — foi exatamente o que o experimento full-vs-greedy
+  # descobriu, gastando US$ 160 para nao distinguir nada.
+  sonda_100s_fracao: 0.68
+  sonda_100s_nota: >-
+    4 sementes de 100s mediram 4,55x em media; sobre o headroom empirico de 6,2x
+    isso e 68% do ganho disponivel. Sobre o headroom declarado antigo (5,1x) era
+    86%. Reprova a barra de metade nos dois casos.
