@@ -110,7 +110,7 @@ rejeitar, `--budget` que confirma o dimensionamento, e um hook que bloqueia a
 edição do árbitro. Não é zelo: é o resultado de ter escrito um gate que parecia
 sólido, tentado quebrá-lo de propósito, e conseguido.
 
-## As seis falhas que este repositório existe para não repetir
+## As sete falhas que este repositório existe para não repetir
 
 Todas aconteceram de verdade. Todas viraram verificação automática.
 
@@ -156,12 +156,27 @@ Todas aconteceram de verdade. Todas viraram verificação automática.
    das cinco versões de um lineage real passaram a reprovar** — cerca de 40% do
    ganho aparente era suposição, não otimização.
 
-Três são especialmente instrutivas. A quarta, porque um ganho de 57,8× parece um
-sucesso retumbante do sistema e era o sintoma de um alvo mal projetado. A quinta,
-porque cada correção expôs a seguinte. E a sexta, porque o alvo já tinha nove
-mutantes, gate separado e três camadas anti-memoização — e mesmo assim não
+7. **O teto do alvo alcançável numa sessão.** Achada usando o alvo para aquilo
+   que ele existia para fazer: comparar o AVO completo contra o mesmo modelo sem
+   estrutura nenhuma (`experiments/CONTROLE.md`). Uma sessão de agente **morta
+   aos 106 segundos**, custando **US$ 0,53**, mediu **4,55×** no
+   `csv_normalize` — 68% de todo o ganho disponível. O AVO completo, com **23×
+   mais relógio e 22× mais dinheiro**, mediu 4,92×. As duas medidas são
+   indistinguíveis, e distinguir um efeito desse tamanho pediria de 49 a 246
+   sementes por braço: de US$ 1.770 a US$ 7.400 por comparação.
+   → A sonda dos 100 segundos (`experiments/ablacao/sonda.py`) mede isso por
+   US$ 0,50, e o `avo-lab verify` passou a cobrá-la. Com ela ligada, **quatro
+   dos cinco alvos deste repositório deixam de ser aptos para ablação** — o
+   `csv_normalize` inclusive, que era a referência.
+
+Quatro são especialmente instrutivas. A quarta, porque um ganho de 57,8× parece
+um sucesso retumbante do sistema e era o sintoma de um alvo mal projetado. A
+quinta, porque cada correção expôs a seguinte. A sexta, porque o alvo já tinha
+nove mutantes, gate separado e três camadas anti-memoização — e mesmo assim não
 distinguia "extrai por nome" de "extrai por posição", porque nunca tinha visto um
-registro em outra ordem.
+registro em outra ordem. E a sétima, porque o alvo passava em **todas as outras
+seis** e ainda assim não servia: headroom graduado diz que existem degraus, não
+que subi-los exija mais de uma sessão.
 
 ## O que a ablação mostrou
 
@@ -191,6 +206,35 @@ passo em que eles são mais parecidos. Três passos não medem arquitetura.
 
 A §7 do documento tem as três correções e o preço de fazer direito: **US$ 840 e
 ~50 h**. Saber o custo antes de prometer a resposta também é resultado.
+
+## O que o controle honesto mostrou
+
+O experimento mais barato da §7 foi executado: `full` contra o **mesmo modelo sem
+estrutura nenhuma**. 24 execuções, ~11 h, ~US$ 175. Documento completo em
+`experiments/CONTROLE.md`.
+
+| braço | relógio | US$ | ganho |
+|---|---|---|---|
+| sessão única morta aos 106 s | 106 s | 0,53 | 4,55× |
+| sessão única, parada natural | 527 s | 2,62 | 4,32× |
+| **AVO completo, 3 passos** | **2 439 s** | **11,44** | **4,92×** |
+| sessão única retomada até o orçamento | 2 219 s | 17,92 | 5,20× |
+
+**Nenhuma comparação é distinguível** — todos os p ajustados por Holm deram
+1,000. A mais limpa (`+10%` de desbalanço de relógio) mede −0,277× com IC95
+[−0,983, +0,363].
+
+O `full` fez três coisas que o `greedy` não fez, e nenhuma delas é média:
+**ninguém desistiu** (7 de 7 sementes alteraram código; no `greedy` uma em quatro
+terminou com o arquivo intacto, 6 avaliações e **0 edições**); ele **espalha
+menos** (desvio 0,26–0,39 contra 0,38–1,89, hipótese exploratória e sem poder
+para testá-la); e o `greedy` **não gasta o orçamento que recebe** — mandado usar
+2 471 s, para aos 731.
+
+Mas a conclusão que importa é sobre o alvo, não sobre a arquitetura: **este alvo
+não testa o AVO.** Foi daí que saiu a falha 7 e a sonda que a pega por US$ 0,50.
+Dos cinco alvos, só o `sql_agg` sobrevive a ela — e é nele que a próxima ablação
+tem chance de medir alguma coisa.
 
 ## Por que ablação, e não mais um benchmark
 
