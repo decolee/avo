@@ -49,6 +49,12 @@ credentials.json
 
 # Resultados brutos da ablacao: runs completos, dezenas de MB por braco.
 # O results.jsonl e a analise vao para o git; os runs nao.
+#
+# O padrao e por NOME de diretorio, nao por caminho fixo, porque cada experimento
+# novo cria a propria pasta de saida (`resultados/piloto_sql_agg/runs/`, e assim
+# por diante). Listar caminho a caminho garante que o proximo experimento entre
+# no git por esquecimento, com dezenas de MB de arvore de trabalho junto.
+experiments/ablacao/resultados/**/runs/
 experiments/ablacao/resultados/runs/
 experiments/ablacao/alvo_*_sem_kb/
 
@@ -60,4 +66,5 @@ experiments/ablacao/alvo_*_sem_kb/
 # O que destas transcricoes merece sobreviver ao container e destilado no fim da
 # corrida (a linha RESUMO de cada sessao e o que o agente disse ter feito), nao a
 # transcricao inteira.
+experiments/ablacao/resultados/**/logs/
 experiments/ablacao/resultados/logs/
