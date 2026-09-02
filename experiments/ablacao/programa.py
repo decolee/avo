@@ -106,10 +106,28 @@ def constroi_fases(n: int, passos: int, janela: int, alvo: str, n3: int) -> list
             marcador=AQUI / "resultados" / "sondas_vendo.json",
             horas=0.3,
         ),
+        # 2A esta partido em dois por uma razao operacional, nao cientifica, e a
+        # razao esta declarada em FASE2_SQL_AGG.md §7. Os containers desta
+        # plataforma passaram a viver de 3 a 16 minutos, e um passo do `full`
+        # leva ~18: ele nunca fecha. Uma sessao do `greedy_nat` leva 5 a 7
+        # minutos e CABE. Rodar primeiro o braco cuja unidade cabe e o que
+        # transforma capacidade instavel em dado commitado.
+        #
+        # O custo e real: a ordem intercalada de §4 do protocolo deixa de valer
+        # entre os dois bracos, e deriva de maquina passa a ser um confundidor
+        # possivel. A analise mede essa deriva pelos seeds e reporta.
         Fase(
-            nome="2A",
-            argv=[*comum, "--bracos", "full", "greedy_nat"],
-            alvo_linhas=2 * n,
+            nome="2A-greedy",
+            argv=[*comum, "--bracos", "greedy_nat"],
+            alvo_linhas=n,
+            arquivo=SAIDA / "greedy.jsonl",
+            bracos={"greedy_nat"},
+            horas=1.5,
+        ),
+        Fase(
+            nome="2A-full",
+            argv=[*comum, "--bracos", "full"],
+            alvo_linhas=n,
             arquivo=SAIDA / "results.jsonl",
             bracos={"full"},
             horas=28.0,
@@ -150,13 +168,6 @@ def constroi_fases(n: int, passos: int, janela: int, alvo: str, n3: int) -> list
             horas=7.2 * n3,
         ),
     ]
-
-
-def _corrige_2a(fases: list[Fase], n: int) -> None:
-    """A fase 2A conta linhas em dois arquivos; ajusta o alvo para o do `full`."""
-    for f in fases:
-        if f.nome == "2A":
-            f.alvo_linhas = n  # `full` vai para results.jsonl; o greedy_nat, para greedy.jsonl
 
 
 def roda_fase(fase: Fase, tentativas: int, log) -> bool:
@@ -200,7 +211,6 @@ def main() -> int:
     args = p.parse_args()
 
     fases = constroi_fases(args.n, args.passos, args.janela, args.alvo, args.n_fase3)
-    _corrige_2a(fases, args.n)
     if args.fases:
         fases = [f for f in fases if f.nome in args.fases]
 

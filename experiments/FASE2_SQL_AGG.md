@@ -110,3 +110,52 @@ fechar essa porta, e **não** está sendo rodada agora: pela taxa de retomada
 observada no `csv_normalize` (US$ 0,008/s), ela custaria ~US$ 69 por semente,
 US$ 760 para n=11. Ela será dimensionada depois de ver 2A, com o efeito real na
 mão em vez de um palpite.
+
+---
+
+## 7. Desvio operacional declarado: os braços deixaram de ser intercalados
+
+`docs/ABLATION_PROTOCOL.md` §4 exige braços **intercalados**, nunca em bloco, para
+que deriva térmica ou de máquina não vire efeito de braço. Este experimento
+quebra essa regra, e a razão é de infraestrutura, não de ciência.
+
+**O que aconteceu.** A partir das 20h24 do dia 2, os containers desta plataforma
+passaram a ser reciclados com frequência crescente:
+
+| container | duração | o que fechou |
+|---|---|---|
+| A | 2,7 h | `full` s0 inteiro (8 passos) |
+| B | 1,5 h | 4 dos 8 passos do `full` s1 |
+| C | 8 min | nada |
+| D | 16 min | nada |
+| E | 3 min | nada |
+
+Um passo do `full` leva ~18 min de agente. Quando o container vive menos que
+isso, **o passo nunca fecha**: cada relançamento recomeça o mesmo passo 5 do
+zero. Três relançamentos seguidos não produziram um único passo novo.
+
+Uma sessão do `greedy_nat` leva 5 a 7 minutos e **cabe**.
+
+**A adaptação.** O programa passa a rodar `greedy_nat` até o fim primeiro, e só
+depois o `full`. Rodar o braço cuja unidade cabe é o que transforma capacidade
+instável em dado commitado; a alternativa era não produzir nada.
+
+**O que isso custa, dito com todas as letras.** Os dois braços passam a ser
+medidos em janelas de tempo diferentes, então deriva de máquina vira um
+confundidor possível — exatamente o que a regra de intercalar existe para
+impedir. Duas coisas limitam o estrago, e nenhuma delas o elimina:
+
+1. O ganho é razão contra o **seed da própria semente**, medido na mesma máquina
+   no mesmo instante. Deriva multiplicativa cancela em primeira ordem.
+2. A análise reporta a deriva medida entre janelas, pelos seeds. Se ela for da
+   ordem da diferença entre braços, a comparação está comprometida e o relatório
+   dirá isso.
+
+Já se sabe que a deriva aqui **não é pequena**: os seeds do `sql_agg` foram
+medidos entre 1,63 e 2,46 no mesmo dia — 47% de variação, provavelmente estado de
+page cache. Isso é grande o bastante para exigir a checagem, não para presumir
+que invalidou.
+
+**O que seria melhor e não está disponível.** Rodar os dois braços intercalados
+numa máquina estável. Se este experimento for repetido em infraestrutura que não
+recicle containers, é assim que deve ser feito, e este parágrafo é a instrução.
