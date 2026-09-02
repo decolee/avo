@@ -104,7 +104,10 @@ def _codigo_mudou(work: Path, entrypoint: str, ver_antes: int, ver_depois: int) 
     )
     if code != 0:
         return None
-    return any(linha.strip().endswith(entrypoint) for linha in saida.splitlines())
+    # Qualquer arquivo versionado conta. O `sql_agg` tem dois — `query.sql` e
+    # `setup.sql` — e um candidato que so cria indice mexe apenas no segundo.
+    # Olhar so o entrypoint marcaria essa mudanca real como "nao mudou nada".
+    return any(linha.strip() for linha in saida.splitlines())
 
 
 def _estado(run_dir: Path) -> dict:
@@ -157,6 +160,7 @@ def roda_um(
     saida: Path,
     effort: str = "medium",
     teto_usd: float = 2.5,
+    janela_estagnacao: int | None = None,
 ) -> dict:
     cfg = BRACOS[braco]
     alvo_ref = alvo if cfg["kb"] else str(variante_sem_kb(alvo))
@@ -180,6 +184,14 @@ def roda_um(
         "claude_cli",
         "--permission-mode",
         "acceptEdits",
+        # Sem isto o supervisor nao existe. Na ablacao da Sessao 3, com janela 3 e
+        # runs de 3 passos, ele nao disparou uma unica vez em 36 passos elegiveis:
+        # o braco `no_supervisor` rodava exatamente o mesmo codigo que o `full`.
+        *(
+            ["--stagnation-window", str(janela_estagnacao)]
+            if janela_estagnacao and not cfg["flags"]
+            else []
+        ),
         *cfg["flags"],
     ]
     code, saida_txt = _sh(criar, 900)
@@ -255,6 +267,7 @@ def main() -> int:
     p.add_argument("--timeout-agente", default="15m")
     p.add_argument("--effort", default="medium", help="igual em todos os bracos, por desenho")
     p.add_argument("--teto-usd", type=float, default=2.5, help="teto por passo, igual em todos")
+    p.add_argument("--janela-estagnacao", type=int, default=None, help="--stagnation-window")
     p.add_argument("--saida", default=str(AQUI / "resultados"))
     p.add_argument("--bracos", nargs="*", default=list(BRACOS))
     args = p.parse_args()
@@ -289,6 +302,7 @@ def main() -> int:
                 saida,
                 effort=args.effort,
                 teto_usd=args.teto_usd,
+                janela_estagnacao=args.janela_estagnacao,
             )
             reg["rodada"] = rodada
             with linha_resultados.open("a", encoding="utf-8") as fh:
