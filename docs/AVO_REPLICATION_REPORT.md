@@ -263,3 +263,49 @@ Dados adicionais do paper úteis para calibrar réplica:
 - Execução dos targets (só rodei os testes unitários).
 - `DRIVING.md`, `TARGETS.md`, `mcp_server.py`, `agents/` em detalhe.
 - Código-fonte oficial NVIDIA: §4.1 confirma que o agente é interno — **provavelmente não existe versão pública**.
+
+---
+
+## 10. O PRÉ-REQUISITO QUE ESTE RELATÓRIO NÃO TINHA (v0.3, medido)
+
+A §6 diz que a contribuição real disponível é a ablação que a NVIDIA não fez, e
+a §7 recomenda executá-la no Estágio 1 com cinco braços e cinco sementes. As duas
+coisas continuam certas. Falta uma condição entre elas, e ela não é barata de
+descobrir: **o alvo precisa ser capaz de distinguir os braços.**
+
+Rodamos os dois experimentos. A ablação de componentes
+(`experiments/ABLATION.md`, US$ 168) não distinguiu nada. O controle honesto
+(`experiments/CONTROLE.md`, US$ 175) também não — e explicou por quê:
+
+> Uma sessão de agente **morta aos 106 segundos**, custando **US$ 0,53**, mediu
+> **4,55×** no alvo de referência. O AVO completo, com 23× mais relógio e 22×
+> mais dinheiro, mediu 4,92×. A sessão de cem segundos capturou **68% de todo o
+> ganho disponível** sozinha.
+
+Não sobrou espaço onde as arquiteturas pudessem diferir. Com o desvio observado,
+distinguir os braços pediria de 49 a 246 sementes por braço — **US$ 1.770 a
+US$ 7.400 por comparação**, e isso num alvo onde a diferença real, se existe, é
+menor que a variação entre sementes.
+
+**Isto vale para o Estágio 1 como recomendado.** O `game2048` do upstream é um
+alvo cujo espaço de busca um agente competente com o avaliador na mão percorre
+numa sessão. Rodar cinco braços × cinco sementes nele produziria exatamente os
+intervalos que contêm zero que nós produzimos, por um custo parecido. O Estágio 1
+não estava errado; estava incompleto.
+
+**O conserto é uma checagem de US$ 0,50.** `docs/TARGET_DESIGN.md` §3e define a
+propriedade — uma sessão única não pode esgotar o headroom —,
+`experiments/ablacao/sonda.py` a mede, e o `avo-lab verify` a cobra. Medida nos
+cinco alvos deste repositório, **só o `sql_agg` sobrevive**: a sonda pega 49% do
+ganho disponível e sobra 51% para a busca disputar.
+
+**O que isso não é.** Não é evidência contra a arquitetura da NVIDIA. O regime
+do paper são centenas de iterações num espaço que nenhuma sessão esgota — kernels
+de atenção em B200 —, e um alvo que uma sessão esgota em cem segundos está fora
+desse regime por construção. Um resultado nulo nele é uma afirmação sobre o alvo,
+e a distinção entre as duas coisas é a única razão de este documento existir.
+
+**O que isso muda no ladder da §6.** O nível 6 — "melhoria", onde estaria tudo —
+ganha um degrau anterior que ninguém tinha enunciado: **construir um alvo onde a
+pergunta seja mensurável**. É mais difícil que construir a ablação, custa quase
+nada em dinheiro, e é onde o valor está agora.
