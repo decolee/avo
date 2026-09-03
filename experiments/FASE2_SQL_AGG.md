@@ -200,3 +200,51 @@ melhor, e que medir os dois seria a pergunta seguinte.
 Não aumento o teto agora por duas razões: mudaria o braço no meio de um
 experimento pré-registrado, e passos mais longos são piores sob a reciclagem de
 container descrita em §7 — um passo de 30 minutos quase nunca fecharia.
+
+---
+
+## 9. Regra de extensão, fixada com o `full` em n=5
+
+Escrita **antes** de o braço fechar, e o commit prova. Existe porque o
+dimensionamento de §4 usou o desvio do `greedy` como estimativa — 0,193 — e o
+desvio do `full` saiu maior.
+
+**O que já se sabe com n=5 do `full` e n=11 do `greedy`:**
+
+| braço | n | média | desvio |
+|---|---|---|---|
+| `greedy_nat` | 11 | 4,574 | 0,158 |
+| `full` | 5 | 4,788 | **0,330** |
+
+Diferença observada: **+0,214** (4,7%), a favor do `full`. Desvio combinado:
+0,221. MDE deste desenho a n=11 por braço: **0,264** — maior que o efeito. O
+experimento pré-registrado **não vai distinguir** a diferença que está medindo,
+e isso já é previsível agora, não depois.
+
+O erro foi assumir que o desvio do braço barato serviria para o caro. §4 até
+disse que isso era "conservador" porque o gate truncaria a amostra ruim — a
+mesma hipótese que o `csv_normalize` sugeriu e que aqui o dado nega: o `full`
+espalha **duas vezes** mais que o `greedy`, não menos.
+
+**A regra, fixada agora:**
+
+1. A Fase 2A vai até n=11 por braço, como pré-registrado. Essa análise é a
+   principal e sai completa, com o MDE e o n necessário.
+2. **Se** o p ajustado por Holm ficar acima de 0,05 **e** a diferença observada
+   ficar abaixo do MDE, os dois braços são estendidos até **n=17** — o n que o
+   desvio combinado observado implica para o efeito observado, por
+   `n ≈ 2·(2,8·s/Δ)²`.
+3. O relatório publica **as duas análises**, n=11 e n=17, com a extensão
+   marcada. A de n=11 é confirmatória; a de n=17 é a mesma pergunta com poder
+   adequado, e o fato de o n ter sido escolhido depois de ver o desvio fica
+   escrito nela.
+4. O critério de parada é o n, nunca o p. Não há "estender até dar
+   significativo": 17 é calculado agora, do desvio de agora, e não se move
+   depois.
+
+**Custo da extensão:** 6 sementes do `full` a ~US$ 40 e 2,4 h cada, mais 6 do
+`greedy` a US$ 2,26 — **~US$ 254 e ~15 h**. Dentro do teto autorizado.
+
+A alternativa era publicar um experimento subdimensionado sabendo que estava
+subdimensionado. Estender com a regra escrita antes é melhor ciência; estender
+depois de olhar o p seria pior que não estender.
