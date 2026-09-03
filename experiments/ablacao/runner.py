@@ -364,6 +364,20 @@ def roda_um(
             json.dumps(registro["passos"][-1] | {"braco": braco, "semente": semente}) + "\n"
         )
 
+    # Num run RETOMADO o laco acima so executou os passos que faltavam, entao
+    # `registro["passos"]` cobriria 5..8 e o custo sairia pela metade. A verdade
+    # completa esta no `trajectory.jsonl`, que o harness escreve desde o passo 1 —
+    # inclusive de invocacoes anteriores. Reconstroi a lista inteira dali.
+    if registro.get("retomado_de"):
+        por_passo = {x["passo"]: x for x in registro["passos"]}
+        completo = []
+        for k in range(1, passos + 1):
+            meta = _meta_do_passo(run_dir, k)
+            if not meta and k not in por_passo:
+                continue
+            completo.append(por_passo.get(k) or ({"passo": k, "reconstruido": True} | meta))
+        registro["passos"] = completo
+
     final = _estado(run_dir)
     registro["primary_final"] = final["primary"]
     registro["versao_final"] = final["versao"]
