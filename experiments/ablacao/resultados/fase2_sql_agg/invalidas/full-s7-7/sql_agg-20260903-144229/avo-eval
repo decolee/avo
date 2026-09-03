@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# f(x): score whatever is currently in work/. Written by AVO; do not edit.
+set -euo pipefail
+export PYTHONPATH="/home/user/avo/vendor/avo/src${PYTHONPATH:+:$PYTHONPATH}"
+exec /usr/local/bin/python3 -m avo.cli eval --run "/home/user/avo/experiments/ablacao/resultados/fase2_sql_agg/runs/full-s7/sql_agg-20260903-144229" "$@"

@@ -1,0 +1,40 @@
+{
+  "baselines": {
+    "referencia_sem_indice": {
+      "frio": 4.42853,
+      "larga": 8.049124,
+      "quente": 4.91969
+    },
+    "seed": {
+      "frio": 1.405925,
+      "larga": 1.851998,
+      "quente": 1.468434
+    }
+  },
+  "config": {
+    "agent_timeout_s": 1200.0,
+    "backend": "claude_cli",
+    "effort": "xhigh",
+    "extra_agent_args": [
+      "--allowed-tools",
+      "Bash,Read,Edit,Write,Glob,Grep,MultiEdit,TodoWrite"
+    ],
+    "max_budget_usd": null,
+    "max_steps": 8,
+    "model": "claude-opus-5",
+    "permission_mode": "acceptEdits",
+    "run_id": "sql_agg-20260903-144229",
+    "runs_dir": "/home/user/avo/experiments/ablacao/resultados/fase2_sql_agg/runs/full-s7",
+    "stagnation_window": 2,
+    "supervisor_backend": null,
+    "supervisor_enabled": true,
+    "supervisor_model": null,
+    "target": "sql_agg",
+    "time_budget_s": null
+  },
+  "created_at": 1788446549.2598062,
+  "description": "Receita por cliente e mes com ranking, em SQLite, sob igualdade exata do result set. O candidato evolui SQL: a consulta e o esquema fisico (indices, views, ANALYZE). Score = media geometrica de tres regimes: frio, quente e janela larga.",
+  "run_id": "sql_agg-20260903-144229",
+  "target": "sql_agg",
+  "target_root": "/home/user/avo/targets/sql_agg"
+}
