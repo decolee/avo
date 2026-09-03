@@ -27,6 +27,7 @@ Ordem, e por quê:
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 import subprocess
@@ -38,6 +39,34 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent.parent
 AQUI = Path(__file__).resolve().parent
 SAIDA = AQUI / "resultados" / "fase2_sql_agg"
+
+
+#: Trava de instancia unica. Sem ela, dois programas rodaram em paralelo por 1,5h
+#: — um `pkill -f` com ancora `^` nao casou o processo antigo, e eu presumi que
+#: tinha matado. O novo mediu onze sessoes de `greedy_nat` enquanto o antigo
+#: rodava passos do `full` na mesma maquina.
+#:
+#: Isso e a contaminacao que o protocolo inteiro existe para evitar: o `f` deste
+#: laboratorio e vazao em wall-clock, e dois agentes disputando CPU medem um
+#: numero que nao e o do candidato. Presumir exclusao mutua nao basta; ela tem
+#: que ser garantida por algo que nao dependa de eu ter matado o processo certo.
+TRAVA = AQUI / "resultados" / ".programa.lock"
+
+
+def trava_exclusiva():
+    """Devolve o descritor travado, ou None se ja houver um programa rodando."""
+    TRAVA.parent.mkdir(parents=True, exist_ok=True)
+    # O descritor tem que sobreviver a esta funcao: o `flock` vale enquanto ele
+    # existir, entao um `with` liberaria a trava justamente ao devolve-la.
+    fh = open(TRAVA, "w", encoding="utf-8")  # noqa: SIM115
+    try:
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        fh.close()
+        return None
+    fh.write(f"{os.getpid()}\n{time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+    fh.flush()
+    return fh
 
 
 def _linhas(caminho: Path) -> list[dict]:
@@ -216,6 +245,15 @@ def main() -> int:
 
     def log(msg: str) -> None:
         print(f"{time.strftime('%H:%M:%S')} {msg}", flush=True)
+
+    if not args.plano:
+        # O `flock` e liberado pelo kernel quando o processo morre, inclusive
+        # por SIGKILL ou reciclagem de container — entao ele nunca deixa uma
+        # trava orfa impedindo o relancamento.
+        fh = trava_exclusiva()
+        if fh is None:
+            log("outro programa ja esta rodando (trava em resultados/.programa.lock)")
+            return 3
 
     if args.plano:
         total = sum(f.horas for f in fases if not f.completa())

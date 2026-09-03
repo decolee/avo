@@ -48,7 +48,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import greedy as G  # noqa: E402
 import runner as R  # noqa: E402
-from runner import _entrypoint, _estado, _sh  # noqa: E402
+from runner import _entrypoint, _estado, _seed_inicial, _sh  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent.parent
 AQUI = Path(__file__).resolve().parent
@@ -231,7 +231,8 @@ def roda_um(
         return {"braco": braco, "semente": semente, "alvo": alvo, "erro": erro}
 
     entrypoint = _entrypoint(alvo)
-    inicial = _estado(run_dir)
+    # Do mesmo jeito que o `full`: a versao 0, nunca o estado atual.
+    inicial = {"primary": _seed_inicial(run_dir) or _estado(run_dir)["primary"]}
 
     t0 = time.time()
     meta = G.roda_greedy(

@@ -182,6 +182,29 @@ def _reaproveita_run(runs_dir: Path) -> Path | None:
     return None
 
 
+def _seed_inicial(run_dir: Path) -> float:
+    """O score do SEED — a versao 0 do `scores.jsonl`, nunca a ultima linha.
+
+    Bug que este laboratorio produziu e mediu: `_estado` devolve a ULTIMA linha,
+    que num run novo e o seed e num run RETOMADO e o melhor score ate ali. Com a
+    retomada parcial ligada, o `full` s1 gravou `primary_seed = 11.073` — o que
+    ele ja tinha conquistado em quatro passos — e o ganho saiu 1.00x. A semente
+    parecia um fracasso total e era um sucesso de 4,47x.
+
+    Um bug que transforma sucesso em fracasso e menos perigoso que o contrario,
+    mas os dois estragam a media do braco do mesmo jeito.
+    """
+    caminho = run_dir / "work" / ".avo" / "scores.jsonl"
+    if not caminho.is_file():
+        return 0.0
+    for linha in caminho.read_text(encoding="utf-8").splitlines():
+        if linha.strip():
+            d = json.loads(linha)
+            if int(d.get("version", 0)) == 0:
+                return float((d.get("score") or {}).get("primary", 0.0))
+    return 0.0
+
+
 def _estado(run_dir: Path) -> dict:
     caminho = run_dir / "work" / ".avo" / "scores.jsonl"
     if not caminho.is_file():
@@ -290,13 +313,15 @@ def roda_um(
 
     notas_virgens = (run_dir / "NOTES.md").read_text(encoding="utf-8")
     entrypoint = _entrypoint(alvo)
-    inicial = _estado(run_dir)
     registro = {
         "braco": braco,
         "semente": semente,
         "alvo": alvo,
         "run_dir": str(run_dir),
-        "primary_seed": inicial["primary"],
+        # Sempre da versao 0, nunca do estado atual: num run retomado o estado
+        # atual e o que ja foi conquistado, e o ganho sairia 1.00x.
+        "primary_seed": _seed_inicial(run_dir),
+        "retomado_de": _passos_feitos(run_dir) if retomado is not None else 0,
         "passos": [],
     }
 

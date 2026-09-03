@@ -68,3 +68,6 @@ experiments/ablacao/alvo_*_sem_kb/
 # transcricao inteira.
 experiments/ablacao/resultados/**/logs/
 experiments/ablacao/resultados/logs/
+
+# Trava de instancia unica do programa (efemera, por processo)
+experiments/ablacao/resultados/.programa.lock
