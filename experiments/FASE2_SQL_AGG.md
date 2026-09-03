@@ -159,3 +159,44 @@ que invalidou.
 **O que seria melhor e não está disponível.** Rodar os dois braços intercalados
 numa máquina estável. Se este experimento for repetido em infraestrutura que não
 recicle containers, é assim que deve ser feito, e este parágrafo é a instrução.
+
+---
+
+## 8. Propriedade observada em execução: metade dos passos do `full` é truncada
+
+Nas três primeiras sementes, **12 dos 24 passos do `full` foram mortos pelo
+timeout de 20 minutos**:
+
+| semente | passos | mortos | aceitos | duração média |
+|---|---|---|---|---|
+| s0 | 8 | 4 | 4 | 1 033 s |
+| s1 | 8 | 2 | 2 | 916 s |
+| s2 | 8 | **6** | 3 | 1 135 s |
+
+O piloto já apontava para isso — os passos usavam ~1 080 s de um teto de 1 200 —
+mas ali nenhum foi morto. Em execução, o agente encosta no teto na metade das
+vezes.
+
+**Duas consequências, e nenhuma invalida a comparação.**
+
+O custo medido **subestima**. Um passo morto não emite o evento `result`, então
+volta sem `total_cost_usd`. O `full` s2 aparece com US$ 7,68 e gastou perto de
+US$ 42 pela taxa observada de US$ 0,0048/s. A análise já imputa isso e marca
+quantos pontos foram imputados; sem a imputação, o braço caro pareceria barato
+exatamente nas sementes em que mais gastou. **A estimativa de custo da Fase 2A
+sobe de ~US$ 233 para ~US$ 440.**
+
+Um passo morto **não é um passo perdido**. O harness avalia a árvore de trabalho
+depois de matar o agente, e o que estiver lá conta: os passos 1 e 3 do s2 foram
+mortos e mesmo assim **aceitos**. O agente escreve enquanto trabalha, e o gate
+julga o que ele deixou.
+
+**O que isto diz sobre o braço.** O `full` desta configuração é "o agente tem 20
+minutos por passo, e metade das vezes isso não basta". É uma escolha de desenho
+declarada, constante entre sementes, e portanto comparável — mas quem repetir
+este experimento deve saber que um teto maior é outro braço, provavelmente
+melhor, e que medir os dois seria a pergunta seguinte.
+
+Não aumento o teto agora por duas razões: mudaria o braço no meio de um
+experimento pré-registrado, e passos mais longos são piores sob a reciclagem de
+container descrita em §7 — um passo de 30 minutos quase nunca fecharia.
