@@ -125,6 +125,14 @@ def constroi_fases(n: int, passos: int, janela: int, alvo: str, n3: int) -> list
         str(janela),
         "--orcamento-pareado-s",
         "8627",
+        # Explicito e igual nos dois bracos. O default do runner e `medium`, o do
+        # harness e `xhigh`, e como o `criar` do runner nao passava `--effort` o
+        # `full` rodou xhigh enquanto o `greedy` rodava medium — o desequilibrio
+        # que §4 do protocolo proibe. Padronizado em `xhigh` porque e o default do
+        # harness e porque refazer o braco barato custa US$ 66 contra US$ 440 de
+        # refazer o caro.
+        "--effort",
+        "xhigh",
         "--saida",
         str(SAIDA),
     ]
@@ -176,6 +184,8 @@ def constroi_fases(n: int, passos: int, janela: int, alvo: str, n3: int) -> list
                 str(AQUI / "runner.py"),
                 "--alvo",
                 alvo,
+                "--effort",
+                "xhigh",
                 "--rodadas",
                 str(n),
                 "--passos",

@@ -322,6 +322,13 @@ def roda_um(
         timeout_agente,
         "--backend",
         "claude_cli",
+        # Sem isto o harness usa o default DELE (`xhigh`, config.py:196) e o
+        # `full` roda com esforco diferente do `greedy`, que passa o seu
+        # explicitamente. Os dois bracos rodaram assim desde o comeco — o
+        # parametro `effort` desta funcao era codigo morto para o braco caro — e
+        # e exatamente o desequilibrio que ABLATION_PROTOCOL.md §4 proibe.
+        "--effort",
+        effort,
         "--permission-mode",
         "acceptEdits",
         # Sem isto o supervisor nao existe. Na ablacao da Sessao 3, com janela 3 e
