@@ -219,6 +219,44 @@ def _estado(run_dir: Path) -> dict:
     }
 
 
+#: Custo abaixo do qual uma sessao de agente nao fez trabalho nenhum. Uma sessao
+#: real neste alvo custa US$ 2 a US$ 5; uma que morre no primeiro turno custa
+#: ~US$ 0,003. O corte e duas ordens de grandeza acima do lixo e duas abaixo do
+#: trabalho, entao nao ha zona cinzenta.
+CUSTO_MINIMO_DE_TRABALHO = 0.05
+
+#: Fracao de passos falhados que condena a semente. Um passo perdido no meio de
+#: oito e ruido que o gate absorve; metade deles significa que o ambiente estava
+#: quebrado durante a semente inteira, e a media dela nao mede arquitetura.
+FRACAO_QUE_CONDENA = 0.5
+
+
+def _semente_invalida(passos: list[dict]) -> str:
+    """A semente foi arruinada pelo ambiente? Devolve o motivo, ou string vazia.
+
+    Existe porque uma janela de `API Error: 529 Overloaded` produziu uma semente
+    de `1.07x` com os oito passos custando US$ 0,003 cada — o agente morria no
+    primeiro turno. A linha entrou no dataset como se fosse resultado e derrubou
+    a media do braco de 4,767 para 4,239, triplicando o desvio.
+    """
+    if not passos:
+        return "nenhum passo executado"
+    quebrados = [
+        p
+        for p in passos
+        if not p.get("morto_por_tempo")
+        and (p.get("custo_usd") is not None)
+        and float(p["custo_usd"]) < CUSTO_MINIMO_DE_TRABALHO
+    ]
+    if len(quebrados) >= max(1, int(len(passos) * FRACAO_QUE_CONDENA)):
+        return (
+            f"{len(quebrados)} de {len(passos)} passos custaram menos de "
+            f"US$ {CUSTO_MINIMO_DE_TRABALHO:.2f} — o agente nao trabalhou "
+            "(tipicamente erro de API do lado do servidor)"
+        )
+    return ""
+
+
 def _meta_do_passo(run_dir: Path, passo: int) -> dict:
     caminho = run_dir / "trajectory.jsonl"
     if not caminho.is_file():
@@ -378,6 +416,10 @@ def roda_um(
             completo.append(por_passo.get(k) or ({"passo": k, "reconstruido": True} | meta))
         registro["passos"] = completo
 
+    motivo = _semente_invalida(registro["passos"])
+    if motivo:
+        registro["invalido"] = motivo
+
     final = _estado(run_dir)
     registro["primary_final"] = final["primary"]
     registro["versao_final"] = final["versao"]
@@ -432,6 +474,21 @@ def main() -> int:
                 janela_estagnacao=args.janela_estagnacao,
             )
             reg["rodada"] = rodada
+            if reg.get("invalido"):
+                # Nao grava: uma semente arruinada pelo ambiente nao e dado, e
+                # gravada ela contaria como feita e nunca seria refeita. O run
+                # dir sai do caminho para a retomada nao reaproveitar os passos
+                # quebrados, e a espera existe porque a causa tipica — servidor
+                # sobrecarregado — passa sozinha.
+                print(f"  {braco} s{rodada}: INVALIDA ({reg['invalido']})", flush=True)
+                alvo_dir = saida / "runs" / f"{braco}-s{rodada}"
+                if alvo_dir.is_dir():
+                    lixo = saida / "invalidas" / f"{braco}-s{rodada}-{int(time.time())}"
+                    lixo.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.move(str(alvo_dir), str(lixo))
+                print("  esperando 10 min antes de tentar de novo", flush=True)
+                time.sleep(600)
+                continue
             with linha_resultados.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(reg, ensure_ascii=False) + "\n")
             # Commit por semente. Um run deste braco custa ~US$21 e ~2,4h; um
