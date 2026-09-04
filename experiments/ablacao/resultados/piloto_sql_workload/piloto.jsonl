@@ -1,0 +1,1 @@
+{"braco": "pil_greedy", "semente": 0, "alvo": "sql_workload", "primary_seed": 1.4339250908821657, "primary_final": 7.286451704582974, "melhoria_relativa": 5.081473049683699, "correct": true, "codigo_mudou": true, "custo_usd": 3.079926, "turnos": 36, "dur_agente_s": 546.4367876052856, "morto_por_tempo": false, "orcamento_s": 900.0}
