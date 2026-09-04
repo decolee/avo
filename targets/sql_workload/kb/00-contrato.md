@@ -49,6 +49,12 @@ se recusa a escrever um que as viole. Voce pode contar com elas.
 3. **Todo dinheiro e INTEGER em centavos.** `SUM` e exato e independente da ordem
    em que o planejador visita as linhas — por isso o gate pode exigir igualdade
    sem reprovar uma otimizacao legitima pelo ultimo bit da mantissa.
+4. **Integridade referencial.** Todo `orders.customer_id` existe em `customers`;
+   todo `order_items.sku` existe em `products`. Nao ha FK declarada no esquema,
+   mas isto e contrato: e o que torna um `INNER JOIN` com essas duas tabelas uma
+   escrita valida em vez de uma aposta. O que NAO vale o contrario — um cliente
+   pode nao ter pedido, um produto pode nao ter venda, e um pedido pode nao ter
+   item.
 
 ### O que NAO e contrato
 

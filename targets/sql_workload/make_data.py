@@ -440,6 +440,32 @@ def _assert_contrato(path: Path, rotulo: str) -> None:
                 "formato, e e essa declaracao que torna `o.order_date >= :d0` uma reescrita "
                 "valida de `strftime('%Y-%m-%d', o.order_date) >= :d0`."
             )
+        # Integridade referencial. Nao ha FK declarada no esquema, entao "todo
+        # pedido tem cliente" e "todo item tem produto" seriam propriedades
+        # compartilhadas por ACIDENTE de geracao entre os dois bancos — e §3c
+        # manda decidir uma a uma: ou vira contrato declarado na KB, ou o gerador
+        # do gate a quebra. Estas duas viraram contrato (kb/00-contrato.md), e e
+        # esta assercao que impede a declaracao de comecar a mentir. Sem ela, uma
+        # consulta que junta `customers` com INNER JOIN estaria certa por sorte.
+        orfaos = conn.execute(
+            "SELECT COUNT(*) FROM orders o WHERE NOT EXISTS "
+            "(SELECT 1 FROM customers c WHERE c.customer_id = o.customer_id)"
+        ).fetchone()[0]
+        if orfaos:
+            raise AssertionError(
+                f"{rotulo}: {orfaos} pedidos sem cliente correspondente. A KB declara que todo "
+                "`orders.customer_id` existe em `customers`, e e essa declaracao que torna um "
+                "INNER JOIN com `customers` uma escrita valida."
+            )
+        orfaos = conn.execute(
+            "SELECT COUNT(*) FROM order_items i WHERE NOT EXISTS "
+            "(SELECT 1 FROM products p WHERE p.sku = i.sku)"
+        ).fetchone()[0]
+        if orfaos:
+            raise AssertionError(
+                f"{rotulo}: {orfaos} itens com SKU fora de `products`. A KB declara que todo "
+                "`order_items.sku` existe em `products`."
+            )
         n = conn.execute(
             "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND tbl_name = 'orders' "
             "AND sql IS NOT NULL"

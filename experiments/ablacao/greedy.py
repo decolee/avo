@@ -73,17 +73,32 @@ ideias mediu, e o ultimo score medido.""",
 }
 
 
+def _artefatos(alvo: str) -> str:
+    """Como nomear, no prompt, o que o agente edita.
+
+    Nao da para usar o `entrypoint` do `target.yaml`: ele nomeia UM arquivo, e ha
+    alvo com nove. No `sql_workload` o entrypoint e `setup.sql`, que e o MENOS
+    importante dos nove — um prompt que manda "otimize work/setup.sql" aponta o
+    braco barato para o lugar errado, enquanto o `full` recebe o prompt do
+    harness, que nao nomeia arquivo nenhum. O vies seria assimetrico, e assimetria
+    entre os bracos e exatamente o que o piloto existe para nao ter.
+
+    A fonte da verdade e o proprio seed: o que esta la e o que o agente edita.
+    """
+    seed = RAIZ / "targets" / alvo / "seed"
+    arquivos = sorted(p.name for p in seed.iterdir() if p.is_file() and not p.name.startswith("."))
+    if len(arquivos) == 1:
+        return f"`work/{arquivos[0]}`"
+    return f"os {len(arquivos)} arquivos de `work/` ({', '.join(arquivos)})"
+
+
 def monta_prompt(alvo: str, run_dir: Path, orcamento_min: int, perfil: str = "natural") -> str:
     goal, notes = _goal_do_alvo(alvo)
-    entrypoint = ""
-    import yaml
-
-    data = yaml.safe_load((RAIZ / "targets" / alvo / "target.yaml").read_text(encoding="utf-8"))
-    entrypoint = str(data.get("entrypoint") or "")
+    entrypoint = _artefatos(alvo)
 
     return f"""Voce esta em {run_dir}.
 
-Otimize `work/{entrypoint}` para maximizar o score. Voce tem ate {orcamento_min}
+Otimize {entrypoint} para maximizar o score. Voce tem ate {orcamento_min}
 minutos.
 
 ## O objetivo
@@ -104,7 +119,7 @@ A knowledge base esta em `kb/`. Leia o que achar util.
 
 ## Como voce sera avaliado
 
-O score do ESTADO FINAL de `work/{entrypoint}`, medido pelo mesmo `./avo-eval`.
+O score do ESTADO FINAL de {entrypoint}, medido pelo mesmo `./avo-eval`.
 Nao ha commit, nao ha versoes, nao ha reversao automatica: o que estiver no
 arquivo quando voce terminar e o que conta. Se voce piorar e nao desfazer, o
 score piora.
@@ -199,7 +214,7 @@ def _argv(prompt: str, effort: str, retomar: str | None = None) -> list[str]:
 #: "sem estrutura AVO" para virar "com metade dela".
 _RETOMADA = (
     "Ainda restam {minutos} minutos do seu orcamento. Continue otimizando "
-    "`work/{entrypoint}`. Meca com `./avo-eval --text`. Guarde a melhor versao "
+    "{entrypoint}. Meca com `./avo-eval --text`. Guarde a melhor versao "
     "que voce mediu."
 )
 
@@ -227,10 +242,7 @@ def roda_greedy(
     isso, sozinho, não é lineage, não é gate, não é supervisor e não é reset de
     memória. É o esteio mais forte que o controle pode ter sem virar AVO.
     """
-    import yaml
-
-    dados = yaml.safe_load((RAIZ / "targets" / alvo / "target.yaml").read_text(encoding="utf-8"))
-    entrypoint = str(dados.get("entrypoint") or "")
+    entrypoint = _artefatos(alvo)
 
     log.parent.mkdir(parents=True, exist_ok=True)
     inicio = time.time()
