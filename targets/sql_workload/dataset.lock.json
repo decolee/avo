@@ -1,0 +1,17 @@
+{
+  "files": {
+    "gate_loja.sqlite": {
+      "bytes": 36864,
+      "purpose": "UNICO banco que decide correcao: bordas de data, empates, fan-out, NULLs, pedido sem item, estorno fora da janela, cliente sem pedido",
+      "rows": 18,
+      "sha256": "8aab7be451e7763805c3fbd4e800f784a2adb324ff4ba7646c0df7323f7856ad"
+    },
+    "perf_loja.sqlite": {
+      "bytes": 38604800,
+      "purpose": "banco de performance: 24 meses, 120k pedidos largos, ~350k itens. So mede tempo.",
+      "rows": 120000,
+      "sha256": "755e1249b3567362f5bc3a69862793b28dbdeda4d78c6fc502ea110dfad14439"
+    }
+  },
+  "version": 1
+}

@@ -1,0 +1,22 @@
+-- DDL executada ANTES das consultas, sobre uma COPIA do banco congelado.
+--
+-- O x_0 nao prepara nada: o seed mede o banco como ele vem, e essa e a linha de
+-- base contra a qual qualquer indice tem que se justificar.
+--
+-- O que este arquivo aceita:
+--     CREATE INDEX / CREATE UNIQUE INDEX
+--     CREATE VIEW
+--     ANALYZE
+--
+-- O que ele recusa, e por que:
+--     CREATE TABLE    materializar um relatorio faz o numero subir sem que
+--                     nenhuma consulta tenha ficado melhor.
+--     CREATE TEMP ... objeto temporario morre com a conexao de setup e nao
+--                     existiria na hora das consultas.
+--     PRAGMA          vale so para a conexao que o executou.
+--     INSERT/UPDATE/DELETE/DROP/ALTER/ATTACH -- alterar dado nao e otimizar.
+--
+-- Cuidado com o preco: o regime `frio` cronometra este arquivo junto com as
+-- oito consultas. Um indice util se paga ali; um indice a mais so aparece como
+-- custo. E indice sobre coluna que a consulta embrulha em funcao nao e usado
+-- por ninguem -- so custa. Meca antes de criar.

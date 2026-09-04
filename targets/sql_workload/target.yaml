@@ -1,0 +1,123 @@
+name: sql_workload
+description: >-
+  O fechamento noturno de uma loja: OITO relatorios independentes sobre um
+  esquema fisico compartilhado, em SQLite, sob igualdade exata do result set.
+  O candidato evolui nove artefatos — as oito consultas e o `setup.sql`. Score =
+  media geometrica de tres regimes: frio (cobra a construcao), quente
+  (seletividade media) e estreito (seletividade alta).
+
+seed: seed
+knowledge_base: kb
+entrypoint: setup.sql
+
+evaluate:
+  command: ["python3", "{target}/eval.py", "--workdir", "{workdir}"]
+  cwd: "."
+  timeout: 10m
+
+baselines:
+  command: ["python3", "{target}/eval.py", "--baselines"]
+
+score:
+  direction: maximize
+
+agent:
+  goal: |
+    Otimize o fechamento noturno inteiro para maximizar o score, mantendo os oito
+    result sets EXATAMENTE iguais ao contrato.
+
+    Voce mexe em SQL, nao em Python. Nove arquivos em work/:
+
+      q1_receita_mensal.sql      os oito relatorios. Cada um e UM unico SELECT
+      q2_top_produtos.sql        (pode abrir com WITH), com os parametros
+      q3_ranking_regiao.sql      nomeados que o contrato daquele relatorio
+      q4_clientes_inativos.sql   declara. Sem DDL, sem DML.
+      q5_canal_ou_pais.sql
+      q6_cesta_por_segmento.sql
+      q7_primeira_compra.sql
+      q8_conciliacao_diaria.sql
+
+      setup.sql                  DDL opcional executada ANTES do lote:
+                                 CREATE INDEX, CREATE VIEW, ANALYZE. Nada que
+                                 altere dados, e nada de CREATE TABLE.
+
+    Os OITO sao exigidos. Apagar um relatorio, esvazia-lo ou devolver menos
+    colunas reprova — o fechamento e o fechamento.
+
+    O avaliador mede tres regimes sobre o mesmo banco congelado:
+
+      frio      setup.sql + o lote trimestral, num banco recem-copiado. Aqui o
+                preco de construir indice aparece.
+      quente    o mesmo lote, com o banco ja preparado. Seletividade ~12%: aqui
+                percorrer indice e varrer custam a mesma ordem de grandeza.
+      estreito  o lote quinzenal, com canal e pais raros. Seletividade abaixo de
+                1%: aqui o indice decide.
+
+    O numero maximizado e a media geometrica dos tres. Uma mudanca que acelera um
+    regime e regride outro perde para uma que melhora os tres modestamente.
+
+    A correcao e decidida num banco separado e adversarial, com as oito consultas
+    rodadas em QUATRO janelas diferentes — inclusive uma que devolve zero linhas.
+    Candidato incorreto vale ZERO, nao "um pouco menos".
+
+  notes: |
+    Antes de comecar:
+
+      - kb/00-contrato.md e a verdade sobre os oito relatorios. Leia inteiro: sao
+        oito contratos, cada um com as suas bordas. A janela e [:d0, :d1) com o
+        fim EXCLUSIVO; o estorno pertence ao PEDIDO e nunca ao dia do estorno;
+        `region` pode ser NULL; pedido entregue pode nao ter item; e o ORDER BY
+        de cada relatorio faz parte do contrato — o gate compara linha a linha,
+        na ordem.
+      - kb/10-sqlite-plano-e-indices.md ensina a ler EXPLAIN QUERY PLAN neste
+        banco e tem o preco medido de construir cada indice. kb/20-medicao.md diz
+        em qual delta acreditar e lista um beco sem saida ja medido.
+      - Este alvo tem NOVE artefatos, nao um. Uma mudanca substancial por passo
+        continua sendo a regra: consertar dois relatorios no mesmo passo impede
+        atribuir qual dos dois pagou.
+      - Os movimentos se destravam. Indice sobre coluna que a consulta embrulha
+        em funcao nao e usado por ninguem — so custa no regime frio. Uma ideia
+        medida como perda pode virar ganho depois de outra mudanca, e vice-versa.
+        Anote no NOTES.md o que mediu E contra o que, e volte a testar o que
+        descartou.
+      - O banco congelado NUNCA e alterado: cada medicao roda sobre uma copia, e
+        as consultas abrem a conexao em modo somente leitura.
+      - Depois do gate, as oito consultas sao conferidas TAMBEM no banco de
+        performance, nas janelas que o relogio cronometra: o result set tem que
+        ser o mesmo la. Consulta que so acerta no banco pequeno — data embutida,
+        predicado sobre o tamanho da tabela, funcao `pragma_*` que le o caminho
+        do arquivo — vale ZERO.
+      - `./avo-eval` de dentro do run dir mede sem tocar no lineage. Uma avaliacao
+        do seed custa ~14 s.
+
+# Declaracao de headroom, medida a mao e conferida pelo `avo-lab verify`.
+#
+# A escada completa, uma versao por movimento, esta em
+# `experiments/HEADROOM_SQL_WORKLOAD.md` com os numeros de cada degrau.
+lab:
+  headroom_medido: 4.73
+  # MELHOR DEMONSTRADO por qualquer meio, nao a escada escrita a mao. A mao
+  # subestima: a sonda de 100s superou a declaracao anterior em tres dos cinco
+  # alvos, e uma fracao de sonda acima de 100% e prova de denominador errado.
+  headroom_fonte: >-
+    medicao pareada (3 pares seed/candidato alternados): 4,726x +/- 0,127 (cv
+    2,7%) para as oito consultas reescritas com q5 mantida no seed, mais o
+    indice (status, order_date, customer_id) e ANALYZE
+  movimentos: 8
+  valido: true
+  nota: >-
+    oito movimentos com ganho medido na escada (v1 1,382x; v2 1,217x; v3 1,107x;
+    v4 1,104x; v5 1,018x; v7 1,030x; v9 ANALYZE 1,401x; v10 indice 1,550x). O
+    maior deles vale 29% do ganho em log — a melhor distribuicao dos seis alvos
+    do repositorio. Dois movimentos plausiveis medem NEGATIVO e sao becos sem
+    saida de verdade: a reescrita de q5 em UNION (0,968x) e os indices parciais
+    de canal e pais (0,941x).
+  # TARGET_DESIGN.md §3e — medido por experiments/ablacao/sonda.py
+  sonda_100s_fracao: null
+  sonda_100s_nota: >-
+    a medir
+  # §3f — medido por experiments/ablacao/piloto.py ANTES do experimento.
+  piloto_cv: null
+  piloto_n_para_5pct: null
+  piloto_nota: >-
+    a medir
