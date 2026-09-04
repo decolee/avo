@@ -95,23 +95,22 @@ agent:
 # A escada completa, uma versao por movimento, esta em
 # `experiments/HEADROOM_SQL_WORKLOAD.md` com os numeros de cada degrau.
 lab:
-  headroom_medido: 4.73
+  headroom_medido: 6.77
   # MELHOR DEMONSTRADO por qualquer meio, nao a escada escrita a mao. A mao
-  # subestima: a sonda de 100s superou a declaracao anterior em tres dos cinco
-  # alvos, e uma fracao de sonda acima de 100% e prova de denominador errado.
+  # subestima, e aqui subestimou por 43%: a escada de dez degraus mediu 4,73x e
+  # um run de 8 passos do `full` chegou a 6,77x.
   headroom_fonte: >-
-    medicao pareada (3 pares seed/candidato alternados): 4,726x +/- 0,127 (cv
-    2,7%) para as oito consultas reescritas com q5 mantida no seed, mais o
-    indice (status, order_date, customer_id) e ANALYZE
+    re-medicao pareada do v6 do `full` do piloto (3 pares seed/candidato
+    alternados): 6,773x +/- 0,248, cv 3,7%. Nao pareado o mesmo candidato marca
+    7,42x — a deriva da maquina inflava 9,6%.
   movimentos: 8
   valido: true
   nota: >-
-    oito movimentos com ganho medido na escada (v1 1,382x; v2 1,217x; v3 1,107x;
-    v4 1,104x; v5 1,018x; v7 1,030x; v9 ANALYZE 1,401x; v10 indice 1,550x). O
-    maior deles vale 29% do ganho em log — a melhor distribuicao dos seis alvos
-    do repositorio. Dois movimentos plausiveis medem NEGATIVO e sao becos sem
-    saida de verdade: a reescrita de q5 em UNION (0,968x) e os indices parciais
-    de canal e pais (0,941x).
+    A escada a mao mediu 4,73x em 8 movimentos, o maior valendo 29% do ganho em
+    log (experiments/HEADROOM_SQL_WORKLOAD.md). O piloto superou isso: o `full`
+    chegou a 6,77x pareado em 8 passos, com 6 aceitos, 2 rejeitados e o
+    supervisor quebrando o plato no passo 8. Dois movimentos que a escada mediu
+    como negativos foram confirmados pelo agente, que os desfez no v6.
   # TARGET_DESIGN.md §3e — medido por experiments/ablacao/sonda.py
   sonda_100s_fracao: 0.0
   sonda_100s_nota: >-
@@ -120,10 +119,16 @@ lab:
     declaracao de teto nao esta subestimada — mas o numero NAO e evidencia de que
     o alvo seja dificil. A sonda tem orcamento fixo de 100 s e aqui UMA avaliacao
     custa 14 s: cem segundos nao cobrem nem a leitura dos tres arquivos de KB
-    (436 linhas) e das nove consultas. Quem decide se este alvo discrimina e o
-    piloto de §3f, que da 900 s por sessao ao braco barato.
+    (436 linhas) e das nove consultas. Quem decide se este alvo discrimina e §3f.
   # §3f — medido por experiments/ablacao/piloto.py ANTES do experimento.
-  piloto_cv: null
-  piloto_n_para_5pct: null
+  piloto_cv: 0.085
+  piloto_n_para_5pct: 45
   piloto_nota: >-
-    a medir
+    5 sessoes de greedy de 900 s: 5,620x +/- 0,478 (cv 8,5%), US$ 2,21 cada. Um
+    `full` de 8 passos: 7,42x, US$ 22,61, 76 min, com plato nos passos 6-7 e o
+    supervisor disparando no 8, que foi aceito. O efeito nao pareado e de +32%; a
+    re-medicao pareada dos tres melhores candidatos poe entre +20% e +29%. Um
+    efeito de 20% precisa de n=3 por braco e de 15% precisa de n=5 — a US$ 25 por
+    semente somados os dois bracos, US$ 125 por comparacao. E o unico alvo do
+    repositorio em que o `full` se separa do `greedy` por uma margem que o
+    orcamento resolve.

@@ -533,7 +533,16 @@ desta pergunta, e os números abaixo são dele.
 
 Dois mecanismos, e o segundo é o que importa.
 
-### Mecanismo 1: Amdahl de propósito
+### Mecanismo 1: Amdahl de propósito — e por que ele NÃO basta
+
+> **Medido depois, e desmentido em parte.** O piloto do `sql_workload` mostrou que
+> este mecanismo sozinho não cria a fricção que ele parece criar. O primeiro passo
+> do `full` reescreveu **as oito consultas de uma vez** e saltou de 1,00× para
+> 5,63×. "Uma mudança substancial por passo" é uma instrução ao agente, não uma
+> restrição do alvo — e um agente com contexto suficiente atravessa a largura toda
+> numa tacada. O que sustentou os sete passos seguintes foi o mecanismo 2. Leia
+> esta seção sabendo disso: ela continua valendo para a DISTRIBUIÇÃO do headroom,
+> que é o requisito de §3, e não para a não-esgotabilidade, que é o de §3e.
 
 Em vez de um artefato para otimizar, **N artefatos de custo comparável no seed**.
 No `sql_workload` são oito consultas SQL independentes mais o esquema físico que
@@ -597,19 +606,45 @@ parciais de canal e país, e 1,06× com eles; criar os parciais mede 0,87× com 
 > que a ordem importa — onde existe pelo menos um movimento cujo valor medido
 > muda de sinal conforme o que já foi feito.
 
+O piloto confirmou a regra pelo lado que importa. Depois que o passo 1 varreu a
+largura inteira, os sete passos seguintes foram todos de interação: o passo 2
+tirou o `WHERE` parcial do índice e acrescentou uma coluna, o que **permitiu**
+reescrever uma das consultas como leitura index-only — índice e consulta mudando
+juntos, com o ganho aparecendo só na combinação. E o passo 6 **desfez** três
+transformações que a referência escrita à mão considerava melhorias, depois de
+medi-las em pares alternados. Nada disso cabe numa passada só.
+
 E o corolário prático, que é o que dá trabalho: **você tem que medir as duas
 ordens.** "O índice destrava depois da reescrita" é uma hipótese plausível e
 estava certa aqui; a versão simétrica ("a reescrita destrava depois do índice")
 também era plausível e estava errada. As duas custam a mesma meia hora de
 medição, e sem elas o alvo tem uma propriedade que você acredita ter.
 
-### O que isto ainda não prova
+### O que o piloto mediu
 
-Que o alvo tenha a propriedade **não prova** que a estrutura do AVO a explore. A
-Fase 2A mostrou o `full` empatando com o `greedy` num alvo que não tinha essa
-propriedade; o que este alvo permite é fazer a mesma pergunta onde ela pode ter
-outra resposta. A resposta continua sendo experimental, e o piloto de §3f é o que
-diz se ela é pagável.
+O piloto de §3f rodou depois desta seção ser escrita, e é o primeiro dado da
+bancada em que o `full` se separa do `greedy`:
+
+| braço | resultado | custo |
+|---|---|---|
+| `greedy`, 5 sementes de 900 s | 5,620× ± 0,478 (cv 8,5%) | US$ 2,21 cada |
+| `full`, 8 passos | **7,42×** (6,77× re-medido em pares) | US$ 22,61 |
+
+O efeito é de **+32% não pareado, +20% a +29% pareado**, contra os 5% que a Fase
+2A tentou detectar no `sql_agg` e não conseguiu. Com cv de 8,5%, um efeito de 20%
+pede n=3 por braço e um de 15% pede n=5 — US$ 128 a US$ 228 por comparação.
+
+Duas coisas apareceram de brinde, e nenhuma prova nada sozinha (n=1):
+
+- O `full` teve dois passos rejeitados seguidos, o supervisor disparou, e o passo
+  seguinte foi aceito e quebrou o platô. É a primeira vez que esta bancada vê o
+  supervisor fazer o que o paper diz que ele faz.
+- Os passos rejeitados custaram mais que os aceitos (US$ 4,63 e US$ 4,22 contra
+  US$ 1,32–3,30). Um platô não é só ausência de ganho: é gasto.
+
+Nada disso prova que a arquitetura do AVO funcione. Prova que **neste alvo a
+pergunta tem uma resposta que o orçamento alcança** — o que nenhum dos cinco
+alvos anteriores conseguiu oferecer.
 
 ---
 

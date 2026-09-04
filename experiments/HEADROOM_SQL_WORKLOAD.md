@@ -155,3 +155,121 @@ alvo futuro passe a interpolar datas no SQL — aí ela desaparece sem aviso.
 `lab.sonda_100s_fracao` (§3e) e `lab.piloto_cv` / `lab.piloto_n_para_5pct` (§3f).
 As duas exigem rodar agentes de verdade e são o que decide se o alvo serve para a
 ablação — a escada acima só diz que ele serve para otimizar.
+
+---
+
+## 6. §3f — o piloto de potência, e o que ele desmentiu
+
+Rodado depois de tudo acima, com o alvo congelado. Cinco sessões de `greedy` de
+900 s e um `full` de 8 passos, US$ 33,64 no total.
+
+### O braço barato
+
+| semente | ganho | |
+|---|---:|---|
+| s0 | 5,08× | |
+| s3 | 5,44× | |
+| s2 | 5,46× | |
+| s4 | 5,75× | |
+| s1 | 6,36× | |
+| **média** | **5,620×** | desvio 0,478, **cv 8,5%**, US$ 2,21 por sessão |
+
+**As cinco passam do headroom que eu havia declarado (4,73×).** Uma sessão única
+de quinze minutos supera a escada de dez degraus escrita à mão — o mesmo padrão
+que §3e já tinha registrado em três dos cinco alvos anteriores, aqui pela quarta
+vez e com a maior margem.
+
+### O braço caro
+
+| passo | ganho | acumulado | veredicto |
+|---|---:|---:|---|
+| 1 | 5,63× | US$ 3,30 | aceito |
+| 2 | 5,88× | US$ 4,94 | aceito |
+| 3 | 6,10× | US$ 6,62 | aceito |
+| 4 | 6,61× | US$ 7,95 | aceito |
+| 5 | 7,21× | US$ 11,07 | aceito |
+| 6 | 7,21× | US$ 15,70 | **rejeitado** |
+| 7 | 7,21× | US$ 19,93 | **rejeitado** |
+| 8 | **7,42×** | US$ 22,61 | aceito, **supervisor disparou** |
+
+Duas observações que valem mais que o número final:
+
+1. **Os passos rejeitados são os mais caros** (US$ 4,63 e US$ 4,22, contra
+   US$ 1,32–3,30 dos aceitos). O agente trabalha mais quando não acha ganho, e
+   isso é custo real de um platô.
+2. **O supervisor quebrou o platô.** Ele disparou uma vez em oito passos,
+   exatamente depois das duas rejeições, e o passo seguinte foi aceito. É o
+   mecanismo que o paper atribui ao supervisor, observado num run só — n=1, mas
+   é a primeira vez que esta bancada o vê acontecer.
+
+### A re-medição pareada, e o que ela corrigiu
+
+Os números acima são do braço medindo o estado final contra uma base tirada até
+quinze minutos antes. Re-medidos em pares alternados seed/candidato:
+
+| candidato | não pareado | **pareado** | inflação |
+|---|---:|---:|---:|
+| `full` s0 (v6) | 7,42× | **6,773× ± 3,7%** | +9,6% |
+| `greedy` s1 | 6,36× | **5,648× ± 6,9%** | +12,6% |
+| `greedy` s4 | 5,75× | **5,262× ± 1,1%** | +9,3% |
+
+A deriva da máquina inflava tudo entre 9% e 13%. É o defeito 9 da Fase 2A pela
+segunda vez, agora antecipado em vez de descoberto depois.
+
+**O headroom declarado passa para 6,77×**, que é o melhor demonstrado por
+qualquer meio — 43% acima da escada à mão.
+
+### O dimensionamento
+
+| efeito | delta | n por braço | US$ (os dois braços) |
+|---|---:|---:|---:|
+| 5% | 0,28× | 45 | 2 054 |
+| 10% | 0,56× | 11 | 514 |
+| 15% | 0,84× | 5 | 228 |
+| 20% | 1,12× | 3 | 128 |
+
+O efeito observado é de **+32% não pareado** e de **+20% a +29% pareado**. Um
+efeito nessa faixa pede **n = 3 a 5 por braço**, isto é, **US$ 128 a US$ 228 por
+comparação**. Pagável.
+
+O `avo-lab verify` emite aviso aqui, e o aviso está tecnicamente certo e
+praticamente errado: ele pergunta quantas sementes detectam **5%**, e 45 é caro
+demais. A pergunta de §3f, no texto do próprio documento, é outra — "a diferença
+entre os braços que vão rodar é grande comparada ao desvio entre sementes" — e a
+diferença que vai rodar é de 20% a 32%, não de 5%. **A limitação é do check, que
+fixa 5% em vez de usar o efeito medido.** Deixei o aviso como está de propósito:
+mudar o árbitro logo depois de ele reprovar o meu próprio alvo é o padrão que a
+regra do laboratório existe para impedir, mesmo quando a mudança tem mérito. A
+correção — aceitar um `lab.piloto_efeito_observado` declarado e dimensionar por
+ele — fica como recomendação para quem revisar.
+
+## 7. O que o piloto desmentiu no projeto do alvo
+
+O mecanismo 1 de §3g — "Amdahl de propósito", oito artefatos de custo comparável
+— **não produziu a fricção que eu projetei**. O passo 1 do `full` reescreveu
+**as oito consultas de uma vez** e saltou de 1,00× para 5,63×. A regra "uma
+mudança substancial por passo" é uma instrução ao agente, não uma restrição do
+alvo, e ele não a seguiu no primeiro passo.
+
+O que produziu os sete passos seguintes foi o mecanismo 2 — os movimentos que se
+destravam. As mudanças aceitas depois do v1 são exatamente do tipo previsto:
+
+- **v2** tirou o `WHERE` parcial do índice e acrescentou `status` como coluna, o
+  que **permitiu** reescrever q8 como duas leituras index-only. Índice e consulta
+  mudando juntos, com o ganho aparecendo só na combinação.
+- **v3 e v5** eliminaram materializações intermediárias em q1, q3 e q8.
+- **v4** passou a agregar por `sku` antes de juntar `products`, trocando ~42 mil
+  buscas por algumas centenas.
+- **v6** consolidou três transformações e, entre elas, **desfez** `ROW_NUMBER` em
+  q7, `UNION` em q5 e a anti-junção de q4 — três das minhas próprias escolhas de
+  referência. A escada já tinha medido a de q5 como negativa (0,968×); o agente
+  chegou às três de forma independente.
+
+Vale registrar que o v6 diz, no resumo do commit, "vence 6 de 6 pares alternados
+de `./avo-eval`". O agente adotou a medição pareada por conta própria, seguindo
+`kb/20-medicao.md`. A KB funcionou.
+
+**A conclusão de projeto, corrigida:** largura em artefatos não cria fricção
+sozinha — um agente com contexto suficiente atravessa todos de uma vez.
+Profundidade em *interações* cria. O `sql_workload` acabou sendo um alvo bom pela
+segunda razão, não pela primeira, e §3g foi reescrito para dizer isso.
