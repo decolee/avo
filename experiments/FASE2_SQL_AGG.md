@@ -248,3 +248,84 @@ espalha **duas vezes** mais que o `greedy`, não menos.
 A alternativa era publicar um experimento subdimensionado sabendo que estava
 subdimensionado. Estender com a regra escrita antes é melhor ciência; estender
 depois de olhar o p seria pior que não estender.
+
+---
+
+## 10. RESULTADO
+
+**n=11 por braço, esforço igualado em `xhigh`, medição pareada.**
+
+| braço | n | ganho | desvio | US$/semente | relógio |
+|---|---|---|---|---|---|
+| `greedy_nat` — uma sessão | 11 | **4,606** | 0,184 | ~6 | 27 min |
+| `full` — 8 passos, gate, lineage, supervisor | 11 | **4,633** | 0,188 | ~40 | 2,4 h |
+
+| | |
+|---|---|
+| diferença | **+0,026× (+0,57%)**, a favor do `full` |
+| IC95 (bootstrap, 10 000) | **[−0,125, +0,170]** — contém zero |
+| p (permutação bilateral) | **0,748** |
+| MDE com n=11 | 0,222 |
+| **n necessário para distinguir** | **786 por braço** (~US$ 36 000) |
+
+**A estrutura do AVO custa 7× mais dinheiro e 5× mais relógio para entregar 0,6%
+a mais — e 0,6% é oito vezes menor que o menor efeito que este desenho consegue
+enxergar.**
+
+### A medição pareada foi o que produziu este número
+
+Os valores brutos diziam outra coisa: `full` 4,955 ± 0,609 contra `greedy`
+4,719 ± 0,178, uma diferença de **+5,0%**. Era artefato.
+
+O ganho é `final / seed`, e os dois são medidos com até 2,4 h de distância. O
+braço `full` rodou ao longo de dois dias, com seeds medidos entre 1,59 e 2,41; o
+`greedy` rodou num bloco, com seeds entre 2,14 e 2,25. As quatro sementes do
+`full` cujo seed caiu ~28% abaixo da mediana produziram os quatro maiores ganhos
+do braço.
+
+`remedir.py` mede o seed e o artefato final de cada run um atrás do outro, na
+mesma máquina, depois que tudo acabou. O efeito:
+
+| | bruto | pareado |
+|---|---|---|
+| `full` | 4,955 ± 0,609 | 4,633 ± **0,188** |
+| `greedy` | 4,719 ± 0,178 | 4,606 ± 0,184 |
+| diferença | +0,235× | **+0,026×** |
+| amplitude dos seeds | 52% | **8,4%** |
+
+O caso mais claro é a semente `full` s8: seed 1,600 → 2,189, ganho **6,68× →
+4,77×**. O melhor resultado do experimento inteiro era deriva de máquina.
+
+E note o desvio: o `full` parecia espalhar 3,3× mais que o `greedy` (0,609
+contra 0,178). Pareado, os dois espalham igual (0,188 e 0,184). **A hipótese de
+que o gate compra confiabilidade — que eu levantei no `csv_normalize` e marquei
+como exploratória — não sobrevive: não havia variância extra para o gate
+reduzir, havia deriva de máquina no meu instrumento.**
+
+### A regra de extensão de §9 fica sem premissa
+
+§9 mandava estender para n=17 se o efeito ficasse abaixo do MDE, e 17 era o n
+implicado por uma diferença de 0,214 com desvio 0,221. A medição pareada mudou a
+diferença para 0,026 e o desvio para 0,186. O n implicado agora é **786**, e n=17
+detectaria 0,178 — ainda sete vezes maior que o efeito real.
+
+Executar a extensão seria gastar US$ 254 para deixar de detectar algo que já se
+sabe indetectável nessa faixa de orçamento. A regra não é abandonada: ela é
+aplicada, e o n que ela produz com os dados corretos é 786. Isso está escrito
+aqui em vez de a extensão ser silenciosamente pulada.
+
+### O que este resultado é, e o que não é
+
+**É:** no `sql_agg`, com esforço igualado e deriva removida, o laço evolutivo
+completo do AVO — lineage, gate com reversão, memória entre passos, supervisor —
+não se distingue de uma única sessão do mesmo modelo com o mesmo avaliador na
+mão. A US$ 40 contra US$ 6.
+
+**Não é:** evidência de que a arquitetura do AVO não funciona. O regime do paper
+são sete dias contínuos e centenas de iterações num espaço que nenhuma sessão
+esgota. Aqui, oito passos num alvo cujo teto uma sessão de 27 minutos alcança.
+Um resultado nulo nesta escala é uma afirmação sobre **esta escala**.
+
+**Também não é** "empate". É uma diferença medida de +0,57% com intervalo
+[−0,125, +0,170]. A afirmação honesta é: *se houver vantagem, ela é menor que
+3,7% do ganho, que é o limite superior do intervalo.*
