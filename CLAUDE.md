@@ -80,8 +80,12 @@ Ser sadio não basta para o alvo servir ao experimento. Ele também precisa
 declarar `lab.headroom_medido` e `lab.movimentos` no `target.yaml` e alcançar a
 barra de **3× em 4 movimentos** (`docs/TARGET_DESIGN.md` §3). Abaixo dela o
 `verify` emite **aviso**, não erro: o alvo funciona, mas não distingue braços
-numa ablação. Dois dos cinco alvos estão nessa situação — inclusive o `etl_agg`,
+numa ablação. Dois dos seis alvos estão nessa situação — inclusive o `etl_agg`,
 que era a referência até o gate ser endurecido.
+
+O alvo mais recente, `sql_workload`, é o único construído de trás para frente a
+partir de §3g: nove artefatos em vez de um, e movimentos que se destravam. A
+escada medida está em `experiments/HEADROOM_SQL_WORKLOAD.md`.
 
 ## Contexto de projeto
 

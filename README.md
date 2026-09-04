@@ -166,7 +166,7 @@ Todas aconteceram de verdade. Todas viraram verificação automática.
    sementes por braço: de US$ 1.770 a US$ 7.400 por comparação.
    → A sonda dos 100 segundos (`experiments/ablacao/sonda.py`) mede isso por
    US$ 0,50, e o `avo-lab verify` passou a cobrá-la. Com ela ligada, **quatro
-   dos cinco alvos deste repositório deixam de ser aptos para ablação** — o
+   dos seis alvos deste repositório deixam de ser aptos para ablação** — o
    `csv_normalize` inclusive, que era a referência.
 
 8. **O agente não conseguia medir, e nada acusou.** Achada lendo os resumos das
@@ -264,7 +264,7 @@ não testa o AVO.** E ela sobrevive à falha 8 — na verdade fica mais forte, p
 foi um agente **cego** que capturou 68% do ganho disponível. Um alvo cuja KB
 entrega a resposta sem precisar medir não discrimina arquitetura nenhuma.
 
-Foi daí que saiu a falha 7 e a sonda que a pega por US$ 0,50. Dos cinco alvos, só
+Foi daí que saiu a falha 7 e a sonda que a pega por US$ 0,50. Dos seis alvos, só
 o `sql_agg` sobrevive a ela — e é nele que a próxima ablação tem chance de medir
 alguma coisa, agora com os agentes enxergando.
 

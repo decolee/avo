@@ -173,7 +173,7 @@ números que não alcançam a barra é erro bloqueante; ficar abaixo da barra e
 declarar honestamente é **aviso**.
 
 Um alvo com aviso continua sendo commitável e utilizável. Ele só não serve para
-o propósito da bancada, que é distinguir braços numa ablação — e dois dos cinco
+o propósito da bancada, que é distinguir braços numa ablação — e dois dos seis
 alvos deste repositório estão nessa situação, incluindo o que era a referência.
 
 **Como medir:** escreva 3–4 versões progressivamente melhores num diretório

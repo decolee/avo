@@ -2,7 +2,7 @@
 
 O harness é a parte fácil e já está resolvida. O que decide se este laboratório
 produz conhecimento ou ruído é o alvo — e especificamente a função `f`. Este
-documento é o que aprendemos construindo os quatro alvos atuais, incluindo os
+documento é o que aprendemos construindo os seis alvos atuais, incluindo os
 erros que cometemos e que agora estão travados por teste.
 
 A regra que resume tudo: **o loop pode rodar sem você; a definição de `f` não.**
@@ -25,6 +25,7 @@ parecem resultado e não são.
 | 3d | O headroom é total **e** distribuído | as duas coisas se opõem; ver §3d |
 | 3e | A sonda de 100 s não denuncia teto subestimado | `sonda.py`; ver §3e |
 | 3f | O poder foi medido **antes** de rodar | `piloto.py`; ver §3f |
+| 3g | O espaço não é esgotável numa sessão — e foi **construído** assim | ver §3g |
 | 4 | O score é diagnóstico | ≥ 2 regimes que são *formas* de dado diferentes |
 
 Seis saíram de falhas reais desta bancada. Uma saiu do guia de targets do
@@ -350,7 +351,12 @@ no seed e no candidato otimizado, então diluem a vitória do que era otimizáve
 aumentar as duas coisas ao mesmo tempo é preciso adicionar trabalho
 **otimizável** — algo que o seed faz mal e um candidato pode fazer bem — e não
 apenas mais contas. Isso é bem mais difícil de projetar do que parece, e é a
-razão de a barra de §3 reprovar dois dos cinco alvos deste repositório.
+razão de a barra de §3 reprovar dois dos seis alvos deste repositório.
+
+O `sql_workload` foi a tentativa de escapar dessa tensão por outro caminho: em
+vez de adicionar trabalho a um alvo, adicionar **artefatos** de custo comparável.
+Funcionou (4,73× em 8 movimentos, o maior valendo 29%), e o preço foi quatro
+rodadas de medição para equilibrar os oito. Ver §3g.
 
 Quando os dois não couberem, prefira o **total**: um alvo com 4× concentrado em
 poucos movimentos ainda separa um braço que acha o movimento de um que não acha.
@@ -411,6 +417,16 @@ Uma sessão única do modelo, sem estrutura nenhuma, com orçamento de 100 s; el
 mede o seed, roda, reavalia, e compara com o `lab.headroom_medido` declarado.
 Custa ~US$ 0,50 e menos de três minutos. Fica fora do `make verify` e do CI de
 propósito — gasta cota e leva minutos.
+
+**O orçamento de 100 s não é livre de escala, e isso limita o que a sonda pode
+dizer.** Ele foi escolhido quando uma avaliação custava dois ou três segundos. No
+`sql_workload` uma avaliação custa 14 s: cem segundos não cobrem nem a leitura da
+KB e dos nove artefatos, e a sonda mediu 0,98× — zero por cento do headroom, com
+a sessão morta por tempo sem ter submetido nada. Isso **passa** em §3e (a
+declaração de teto não está subestimada) e não é evidência de nada além de que a
+sonda ficou curta. Uma fração baixa só significa "alvo difícil" quando o
+orçamento comportava vários ciclos de medição; quando não comportava, ela
+significa "sonda curta". Lendo a fração, olhe antes o custo de uma avaliação.
 
 ---
 
@@ -508,6 +524,95 @@ lab:
 
 ---
 
+## 3g. Como se constrói um alvo que uma sessão não esgota
+
+§3e diagnostica o problema e §3f decide se um alvo específico serve. Nenhuma das
+duas diz **como construir** um alvo que sobreviva às duas. Esta seção é o que
+aprendemos tentando: o `sql_workload` foi projetado de trás para frente a partir
+desta pergunta, e os números abaixo são dele.
+
+Dois mecanismos, e o segundo é o que importa.
+
+### Mecanismo 1: Amdahl de propósito
+
+Em vez de um artefato para otimizar, **N artefatos de custo comparável no seed**.
+No `sql_workload` são oito consultas SQL independentes mais o esquema físico que
+elas compartilham. Consertar uma move o total em torno de 1/N; o ganho cheio
+exige as N.
+
+A distribuição do headroom, que §3 exige e que dois dos alvos anteriores não
+alcançam, passa a ser consequência da construção em vez de sorte. Medido:
+
+| alvo | headroom | movimentos | maior movimento |
+|---|---|---|---|
+| `etl_agg` | 1,61× | 2 | 98% |
+| `sessionize` | 1,83× | 3 | 49% |
+| `sql_agg` | 4,78× | 7 | não medido por movimento |
+| **`sql_workload`** | **4,73×** | **8** | **29%** |
+
+**A parte cara é o balanceamento, e ela não sai de graça.** A primeira versão do
+`sql_workload` tinha uma consulta valendo 75% do ganho e outra valendo 1,4%.
+Equilibrar exigiu quatro rodadas de medição e uma decisão de projeto que não é
+óbvia: **cada relatório roda numa janela diferente** — trimestre, mês, semana —
+escolhida para que os custos no seed fiquem na mesma ordem de grandeza. Isso é
+defensável como domínio (um fechamento real não roda todos os relatórios no mesmo
+período), mas foi a medição que escolheu os números, não o domínio.
+
+### Mecanismo 2: movimentos que se destravam
+
+Este é o que produz o regime do paper, e o mecanismo 1 sozinho não produz.
+
+Oito movimentos independentes dão **largura**: uma sessão faz dois, um lineage
+faz oito. Mas nada nisso exige *memória entre passos* — um agente com contexto
+suficiente faria os oito de uma vez. O que exige memória é um movimento cujo
+**valor muda de sinal** conforme o resto do candidato.
+
+No `sql_workload` isso é literal. O **mesmo** `setup.sql`, aplicado a dois
+candidatos diferentes:
+
+| | consultas do seed | consultas reescritas |
+|---|---:|---:|
+| valor do índice + `ANALYZE` | **1,14×** | **2,10×** |
+| valor do `ANALYZE` sozinho | **0,985×** (perda) | **1,375×** |
+
+A mecânica é banal e é a razão de o alvo ser de SQL: um índice sobre uma coluna
+que a consulta embrulha em função nunca é usado pelo planejador. O custo de
+construir aparece imediatamente no regime frio; o benefício não aparece em lugar
+nenhum até a consulta ser reescrita.
+
+O efeito sobre a busca é o que interessa. Quem cria o índice primeiro mede 1,14×,
+dentro do ruído acumulado de uma trajetória, e tem **todo motivo para descartar a
+ideia**. Recuperá-la exige voltar a testar algo já medido como inútil, depois de
+ter mudado outra coisa — que é exatamente a operação que um lineage com memória
+entre passos permite e uma passada única não.
+
+Há um segundo par no mesmo alvo, e ele é ainda mais nítido porque os dois lados
+são perdas isoladas: reescrever `q5` em `UNION` mede 0,93× sem os índices
+parciais de canal e país, e 1,06× com eles; criar os parciais mede 0,87× com a
+`q5` antiga e 1,00× com a nova. **Nenhum dos dois paga sozinho.**
+
+### A regra
+
+> Largura sozinha mede contexto. O que mede *arquitetura de busca* é um espaço em
+> que a ordem importa — onde existe pelo menos um movimento cujo valor medido
+> muda de sinal conforme o que já foi feito.
+
+E o corolário prático, que é o que dá trabalho: **você tem que medir as duas
+ordens.** "O índice destrava depois da reescrita" é uma hipótese plausível e
+estava certa aqui; a versão simétrica ("a reescrita destrava depois do índice")
+também era plausível e estava errada. As duas custam a mesma meia hora de
+medição, e sem elas o alvo tem uma propriedade que você acredita ter.
+
+### O que isto ainda não prova
+
+Que o alvo tenha a propriedade **não prova** que a estrutura do AVO a explore. A
+Fase 2A mostrou o `full` empatando com o `greedy` num alvo que não tinha essa
+propriedade; o que este alvo permite é fazer a mesma pergunta onde ela pode ter
+outra resposta. A resposta continua sendo experimental, e o piloto de §3f é o que
+diz se ela é pagável.
+
+---
+
 ## 4. O score é diagnóstico
 
 **Regimes são formas de dado, não repetições do mesmo dado.** A versão antiga do
@@ -555,6 +660,8 @@ baseline: o seed marca 4,16 e a baseline 6,21, então o agente sabe desde o pass
 [ ] a sonda de 100s roda e a fração NÃO passa de 100% (se passa, o headroom está subestimado)
 [ ] piloto de potência rodado: `lab.piloto_cv` e `lab.piloto_n_para_5pct` declarados
 [ ] o n necessário para distinguir os braços que vão rodar é PAGÁVEL
+[ ] existe pelo menos um movimento cujo valor medido MUDA DE SINAL conforme o
+    que já foi feito — e eu medi as DUAS ordens (§3g)
 [ ] tentei trapacear no meu próprio alvo e não consegui
 ```
 

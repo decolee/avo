@@ -113,9 +113,15 @@ lab:
     saida de verdade: a reescrita de q5 em UNION (0,968x) e os indices parciais
     de canal e pais (0,941x).
   # TARGET_DESIGN.md §3e — medido por experiments/ablacao/sonda.py
-  sonda_100s_fracao: null
+  sonda_100s_fracao: 0.0
   sonda_100s_nota: >-
-    a medir
+    uma sessao de 100s mediu 0,98x (1,424 -> 1,399): zero por cento do ganho
+    disponivel, e a sessao morreu por tempo sem submeter nada. Passa em §3e — a
+    declaracao de teto nao esta subestimada — mas o numero NAO e evidencia de que
+    o alvo seja dificil. A sonda tem orcamento fixo de 100 s e aqui UMA avaliacao
+    custa 14 s: cem segundos nao cobrem nem a leitura dos tres arquivos de KB
+    (436 linhas) e das nove consultas. Quem decide se este alvo discrimina e o
+    piloto de §3f, que da 900 s por sessao ao braco barato.
   # §3f — medido por experiments/ablacao/piloto.py ANTES do experimento.
   piloto_cv: null
   piloto_n_para_5pct: null
