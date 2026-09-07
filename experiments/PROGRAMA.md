@@ -86,6 +86,17 @@ contraste com sinal — mas o piloto do `sql_workload` mediu +32% e a Fase 2A me
 +4,9% no mesmo contraste. **Os dois discordam por 6×**, e o piloto tinha n=1 no
 `full`. Entrar nela sabendo que pode ser mais um nulo.
 
+### A fase que abriu depois: o eixo do modelo
+
+Conferido em 2026-09-07: **os 51 runs deste laboratório rodaram um único
+modelo**, `claude-opus-5`. O `runner.py` não repassava `--model` e o harness usava
+o default dele (que é o mesmo). O eixo estava invisível, não ausente.
+
+Ele foi aberto (`runner.py --modelo`) e a fase está pré-registrada em
+`FASE_MODELO.md`, com o critério de parada declarado antes do dado: **n>20 no
+piloto e o experimento não roda.** É a única pergunta grande que este laboratório
+ainda não fez, e a infraestrutura para ela já estava pronta.
+
 ## Por que esta é a terceira tentativa
 
 As duas anteriores produziram intervalos que continham zero, por três causas

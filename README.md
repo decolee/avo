@@ -8,6 +8,13 @@ O harness da busca evolutiva é o upstream `gatordevin/avo`, fixado por commit e
 `vendor/avo.lock`. **O que é nosso são os alvos, o gate, a disciplina que os
 verifica e o experimento que eles servem.**
 
+## O que a bancada já disse
+
+**`EXECUTIVE_SUMMARY.md` é o ponto de entrada.** Em uma linha: o loop funciona
+(4–7× em 51 runs, sem trapaça), a arquitetura não se demonstrou (três
+experimentos nulos), e o eixo do modelo nunca foi variado — os 51 runs saíram
+todos em `claude-opus-5`.
+
 ## Começar
 
 ```bash
