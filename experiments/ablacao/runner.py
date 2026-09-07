@@ -40,6 +40,12 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent.parent
 AQUI = Path(__file__).resolve().parent
 
+#: O modelo em que as 51 sementes ja rodadas sairam. E o default do harness
+#: (`vendor/avo/src/avo/config.py:DEFAULT_MODEL`) e o mesmo que o `greedy.py`
+#: crava. Nomeado aqui para que trocar de modelo seja uma decisao explicita e
+#: registrada, e nao um efeito colateral de o default do harness mudar.
+MODELO_PADRAO = "claude-opus-5"
+
 #: Os braços. `flags` vai para o `avo run` na criação do run; `kb` decide se o
 #: alvo usado é o original ou a variante sem knowledge base; `apaga_notas` liga
 #: a ablação de memória entre passos.
@@ -294,6 +300,7 @@ def roda_um(
     effort: str = "medium",
     teto_usd: float = 2.5,
     janela_estagnacao: int | None = None,
+    modelo: str = MODELO_PADRAO,
 ) -> dict:
     cfg = BRACOS[braco]
     alvo_ref = alvo if cfg["kb"] else str(variante_sem_kb(alvo))
@@ -329,6 +336,16 @@ def roda_um(
         # e exatamente o desequilibrio que ABLATION_PROTOCOL.md §4 proibe.
         "--effort",
         effort,
+        # O harness tem default proprio (`config.DEFAULT_MODEL`) e ate agora o
+        # runner nao repassava nada — as 51 sementes ja rodadas sairam todas no
+        # default. Isso nao era um bug enquanto o modelo era constante por
+        # desenho, mas tornava o eixo INVISIVEL: nenhum experimento daqui variou
+        # o modelo, e por isso nenhum deles diz nada sobre capacidade. O
+        # `greedy.py` ja cravava `claude-opus-5` explicitamente (linha 201), que
+        # e o mesmo default — os bracos batiam por coincidencia documentada, nao
+        # por construcao. Agora batem por construcao, e o eixo abre.
+        "--model",
+        modelo,
         "--permission-mode",
         "acceptEdits",
         # Sem isto o supervisor nao existe. Na ablacao da Sessao 3, com janela 3 e
@@ -442,6 +459,12 @@ def main() -> int:
     p.add_argument("--rodadas", type=int, default=3, help="n por braço")
     p.add_argument("--timeout-agente", default="15m")
     p.add_argument("--effort", default="medium", help="igual em todos os bracos, por desenho")
+    p.add_argument(
+        "--modelo",
+        default=MODELO_PADRAO,
+        help="igual em todos os bracos numa ablacao de componentes; e o EIXO "
+        "quando o experimento compara modelos",
+    )
     p.add_argument("--teto-usd", type=float, default=2.5, help="teto por passo, igual em todos")
     p.add_argument("--janela-estagnacao", type=int, default=None, help="--stagnation-window")
     p.add_argument("--saida", default=str(AQUI / "resultados"))
@@ -477,6 +500,7 @@ def main() -> int:
                 args.timeout_agente,
                 saida,
                 effort=args.effort,
+                modelo=args.modelo,
                 teto_usd=args.teto_usd,
                 janela_estagnacao=args.janela_estagnacao,
             )
