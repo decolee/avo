@@ -120,7 +120,8 @@ resultado que não contém nenhuma das duas. Foi o que as três fizeram:
 
 Ou seja: o detector marca como cega exatamente a sessão que mede **melhor** que o
 esperado — a que desconfia do ruído e faz medição pareada, que é o que
-`kb/20-medicao.md` do alvo manda fazer. É defeito de instrumento nº 14.
+`kb/20-medicao.md` do alvo manda fazer. É defeito de instrumento nº 17
+(o 14 já era o container recuperado por ociosidade; ver `DEFEITOS.md`).
 
 Há ainda um segundo motivo, independente, pelo qual essas três não podem
 contaminar a média: **as três tiveram o passo rejeitado.** `codigo_mudou: false`,

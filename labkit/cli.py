@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -247,15 +248,48 @@ def check_poder(target: Path) -> Check:
     # experimento e nao do alvo. O aviso marca o que ja se sabe ser caro demais
     # para esta bancada — acima de ~30 sementes por braco, nenhum experimento
     # daqui foi pago ate hoje.
-    if n > 30:
+    #
+    # O 5% de `piloto_n_para_5pct`, porem, NAO e a barra de nenhum experimento
+    # daqui: e uma constante que sobrou. O `sql_workload` declara n=45 para 5% e
+    # levava aviso por isso, enquanto os contrastes que ele existe para medir sao
+    # de 20-32% — que o mesmo piloto resolve com n=3 a 5. O aviso reprovava o
+    # alvo por nao alcancar uma precisao que nenhum experimento pediu.
+    #
+    # Como n escala com 1/d^2, o n para qualquer efeito sai do mesmo piloto:
+    #
+    #     n(d) = n(5%) * (0,05 / d)^2
+    #
+    # `lab.piloto_efeito_alvo` deixa o alvo declarar o d que ele pretende
+    # discriminar. Sem a declaracao, o comportamento e o de antes (5%), para nao
+    # mudar o veredito de alvo nenhum sem que alguem escreva o numero.
+    efeito = lab.get("piloto_efeito_alvo")
+    if efeito is None:
+        alvo_d, n_alvo, fonte = 0.05, n, "5% (padrao — nao declarado)"
+    else:
+        alvo_d = float(efeito)
+        if not 0.0 < alvo_d <= 0.5:
+            return Check(
+                "poder medido (§3f)",
+                False,
+                f"`piloto_efeito_alvo` = {alvo_d} fora de (0, 0.5] — um alvo que so "
+                "discrimina efeitos acima de 50% nao discrimina nada",
+            )
+        n_alvo = max(1, math.ceil(n * (0.05 / alvo_d) ** 2))
+        fonte = f"{alvo_d:.0%} (declarado)"
+
+    if n_alvo > 30:
         return Check(
             "poder medido (§3f)",
             False,
-            f"CV {cv:.1%}; precisa de {n} sementes por braco para detectar 5% — "
-            "caro demais para esta bancada",
+            f"CV {cv:.1%}; precisa de {n_alvo} sementes por braco para detectar "
+            f"{fonte} — caro demais para esta bancada",
             bloqueante=False,
         )
-    return Check("poder medido (§3f)", True, f"CV {cv:.1%}; {n} sementes por braco detectam 5%")
+    return Check(
+        "poder medido (§3f)",
+        True,
+        f"CV {cv:.1%}; {n_alvo} sementes por braco detectam {fonte}",
+    )
 
 
 def check_lock(target: Path) -> Check:

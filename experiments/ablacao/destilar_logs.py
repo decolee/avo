@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
@@ -21,12 +22,129 @@ AQUI = Path(__file__).resolve().parent
 
 _RECUSA = ("requires approval", "requires permission", "permission to use", "denied")
 
-#: Como se reconhece uma invocacao do avaliador na transcricao.
-_CHAMA_AVALIADOR = ("avo-eval", "eval.py")
+# ---------------------------------------------------------------- o detector
+#
+# A versao original decidia as duas coisas por substring no texto:
+#   TENTOU medir  <- o comando contem "avo-eval" ou "eval.py"
+#   MEDIU         <- o resultado contem "avo_result" ou "medianas:"
+#
+# As duas estavam erradas, em direcoes opostas, e o erro so apareceu quando a
+# ablacao do `sql_workload` reprovou 7 de 160 sessoes-passo (dessas, 6 tinham
+# medido). Contado sobre 300 transcricoes daquele experimento:
+#
+#   * TENTOU: 1293 comandos casavam, dos quais 254 eram `cat`, 227 `sed`,
+#     126 `grep` e 70 `ls`. LER o fonte do avaliador contava como tentar medir.
+#   * MEDIU: um agente que canaliza a saida para um parser
+#     (`./avo-eval | python3 -c "import json..."`) ou que importa `medir()` do
+#     proprio `eval.py` para montar comparacao pareada nao emite nenhuma das
+#     duas strings. 757 comandos tinham saida com cara de medicao e nao eram
+#     reconhecidos.
+#
+# O detector marcava como cega exatamente a sessao que mede MELHOR — a que
+# desconfia do ruido e faz medicao pareada, que e o que `kb/20-medicao.md`
+# manda fazer.
+#
+# O conserto NAO e alargar as strings. E separar as duas perguntas e responder
+# cada uma pelo sinal certo:
+#
+#   1. o comando EXECUTA alguma coisa, ou so LE arquivo?  -> posicao de comando
+#   2. o que voltou tem forma de medicao?                 -> forma do resultado
+#
+# Nenhum dos dois sozinho serve. Aceitar (2) sozinho da 16,9% de falso positivo,
+# porque `cat NOTES.md` e `cat kb/20-medicao.md` estao cheios de "primary = 1.16"
+# e "quente=8.4" em prosa. E a conjuncao que fecha.
 
-#: Como se reconhece que ela DEU CERTO: o avaliador emite `AVO_RESULT:` no
-#: stdout, e o modo `--text` imprime as medianas por regime.
-_SAIDA_DO_AVALIADOR = ("avo_result", "medianas:")
+#: Corpo de heredoc nao e comando: e texto que o agente esta ESCREVENDO (quase
+#: sempre no `NOTES.md`, onde ele cita `./avo-eval` em portugues). Sai antes de
+#: qualquer analise de posicao, senao escrever sobre medir vira medir.
+_HEREDOC = re.compile(r"<<-?\s*'?\"?(\w+)'?\"?.*?^\1\s*$", re.S | re.M)
+
+#: Separadores de comando. Grosseiro de proposito: nao e um parser de shell, e
+#: um particionador que erra para o lado seguro (mais segmentos, cada um
+#: julgado por si).
+_SEP = re.compile(r"\n|;|&&|\|\||\|")
+
+#: O que vem ANTES do executavel sem mudar quem ele e: `cd x && `, `VAR=y `,
+#: `time `, `exec `. Removido para que o primeiro token seja o programa.
+_PREFIXO = re.compile(r"^(?:\w+=\S*\s+|cd\s+\S+\s+|exec\s+|time\s+|env\s+\S+=\S*\s+|sudo\s+)+")
+
+#: Programas que LEEM arquivo. Um comando feito so destes nao mediu nada, nao
+#: importa o que apareca na saida.
+_LEITOR = re.compile(
+    r"^(sed|grep|rg|cat|head|tail|less|wc|awk|ls|find|cp|mv|diff|git|echo|printf"
+    r"|chmod|mkdir|test|\[)\b"
+)
+
+#: Programas que EXECUTAM o avaliador. O `python3` so conta quando o mesmo
+#: segmento nomeia o avaliador — senao `python3 analise.py` viraria medicao.
+_EXECUTA = re.compile(
+    r"^(?:\./avo-eval\b"
+    r"|(?:\S*/)?python3?\b(?=[^\n]*(?:eval\.py|avo\.cli\s+eval|avo-eval))"
+    r"|(?:\S*/)?avo\b\s+eval\b"
+    r"|\S*eval\.py\b)"
+)
+
+#: O avaliador e qualquer harness construido sobre ele imprimem numero com
+#: nome. Cobre o formato padrao (`AVO_RESULT:`, `medianas:`), o parseado
+#: (`primary=8.49`, `correct: ok`) e o por regime (`frio=2.4`, `'quente': 8.7`).
+#: Os nomes de regime sao os dos seis alvos do repositorio.
+_FORMA_DE_MEDICAO = re.compile(
+    r"(avo_result"
+    r"|medianas:"
+    r"|primary\s*[=~:]\s*[0-9]"
+    r"|correct\s*[:=]\s*(ok|true|false)"
+    r"|(frio|quente|estreito|narrow|wide|skew|larga|curto|denso|longo)\s*=\s*[0-9]"
+    r"|['\"](frio|quente|estreito|narrow|wide|skew|larga|curto|denso|longo)['\"]:\s*[0-9])",
+    re.I,
+)
+
+#: Menciona a maquinaria de medicao do alvo — usado so para contar TENTATIVAS,
+#: nunca para creditar uma medicao.
+_MENCIONA = re.compile(r"(avo-eval|eval\.py|\bmedir\(|spec_from_file_location)", re.I)
+
+
+def _segmentos(cmd: str) -> list[str]:
+    """Quebra o comando em segmentos executaveis, sem os corpos de heredoc."""
+    limpo = _HEREDOC.sub(" ", cmd)
+    saida = []
+    for seg in _SEP.split(limpo):
+        seg = _PREFIXO.sub("", seg.strip()).strip()
+        if seg:
+            saida.append(seg)
+    return saida
+
+
+def executa_avaliador(cmd: str) -> bool:
+    """O comando RODA o avaliador (em vez de ler o fonte dele)?"""
+    return any(_EXECUTA.match(seg) for seg in _segmentos(cmd) if not _LEITOR.match(seg))
+
+
+def so_le_arquivo(cmd: str) -> bool:
+    """Todo segmento e um leitor de arquivo? Entao nada foi executado."""
+    segs = _segmentos(cmd)
+    return bool(segs) and all(_LEITOR.match(s) for s in segs)
+
+
+def tentou_medir(cmd: str) -> bool:
+    """Tentativa: rodou o avaliador, ou rodou algo que fala com a maquinaria."""
+    return executa_avaliador(cmd) or (not so_le_arquivo(cmd) and bool(_MENCIONA.search(cmd)))
+
+
+def mediu(cmd: str, resultado: str) -> bool:
+    """Mediu de fato: nao foi so leitura, e o que voltou tem forma de medicao.
+
+    Duas portas, porque ha dois caminhos legitimos e o detector antigo so
+    conhecia meio do primeiro:
+
+    * rodou o arbitro e ele voltou — `./avo-eval`, `python3 eval.py`;
+    * rodou harness proprio sobre `medir()` e ele imprimiu numero com nome.
+
+    A segunda porta exige `not so_le_arquivo` porque `cat NOTES.md` devolve
+    "primary = 1.16" em prosa e nao mediu coisa nenhuma.
+    """
+    if so_le_arquivo(cmd):
+        return False
+    return executa_avaliador(cmd) or bool(_FORMA_DE_MEDICAO.search(resultado))
 
 
 def destila(caminho: Path) -> dict:
@@ -64,10 +182,14 @@ def destila(caminho: Path) -> dict:
                     continue
                 if parte.get("type") == "tool_use":
                     nome = parte.get("name")
-                    entrada = json.dumps(parte.get("input") or {}, ensure_ascii=False).lower()
-                    if nome == "Bash" and any(x in entrada for x in _CHAMA_AVALIADOR):
+                    # O comando CRU, nao o `json.dumps` do input: as regexes de
+                    # posicao dependem de quebra de linha de verdade, e o dump
+                    # escapa `\n` em dois caracteres — o heredoc deixaria de ser
+                    # reconhecido e o corpo dele voltaria a contar como comando.
+                    cmd = str(((parte.get("input") or {}).get("command")) or "")
+                    if nome == "Bash" and tentou_medir(cmd):
                         tentativas += 1
-                        pendentes[str(parte.get("id"))] = True
+                        pendentes[str(parte.get("id"))] = cmd
                     elif nome in ("Edit", "Write", "MultiEdit"):
                         edicoes += 1
                 elif parte.get("type") == "text":
@@ -79,12 +201,13 @@ def destila(caminho: Path) -> dict:
             for parte in (ev.get("message") or {}).get("content") or []:
                 if not isinstance(parte, dict) or parte.get("type") != "tool_result":
                     continue
-                if not pendentes.pop(str(parte.get("tool_use_id")), False):
+                cmd = pendentes.pop(str(parte.get("tool_use_id")), None)
+                if cmd is None:
                     continue  # resultado de outra ferramenta; nao diz nada sobre medicao
-                corpo = json.dumps(parte.get("content") or "", ensure_ascii=False).lower()
-                if parte.get("is_error") or any(x in corpo for x in _RECUSA):
+                corpo = json.dumps(parte.get("content") or "", ensure_ascii=False)
+                if parte.get("is_error") or any(x in corpo.lower() for x in _RECUSA):
                     recusas += 1
-                elif any(x in corpo for x in _SAIDA_DO_AVALIADOR):
+                elif mediu(cmd, corpo):
                     medicoes += 1
 
     return {

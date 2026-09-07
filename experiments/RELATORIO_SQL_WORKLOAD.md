@@ -189,11 +189,19 @@ alvo é o padrão que a regra do laboratório existe para impedir, mesmo quando 
 mudança tem mérito. A correção — aceitar um `lab.piloto_efeito_observado` e
 dimensionar por ele — fica como recomendação para quem revisar.
 
+> **Atualização 2026-09-07.** A correção foi feita, depois de a ablação fechar e
+> ser publicada — não com o experimento em curso. O campo chama-se
+> `lab.piloto_efeito_alvo` e o n sai por `n(d) = n(5%)·(0,05/d)²`; sem a
+> declaração, o comportamento é o de antes, e os outros cinco alvos não mudaram
+> de veredito. O `sql_workload` declara 30% e passa com n=2. O aviso desta seção
+> não existe mais, e a ordem em que isso aconteceu é o ponto.
+
 ---
 
 ## 7. Defeitos do instrumento encontrados nesta sessão
 
-Somam-se aos doze do `RELATORIO_FINAL.md`.
+Somam-se aos doze do `RELATORIO_FINAL.md` — que **não está no repositório**, de modo que a numeração 1–12 não é auditável. O registro consolidado, com o
+defeito 17 (o detector de sessão cega), está em `DEFEITOS.md`.
 
 **13. O prompt do braço barato nomeava só o `entrypoint`.** Dizia "Otimize
 `work/setup.sql`" — o menos importante dos nove arquivos. O braço `full` recebe o

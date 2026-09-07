@@ -53,6 +53,39 @@ O recurso escasso aqui é relógio, não dinheiro — é por isso que a Fase 3 r
 n=6 (detecta ~7%) em vez de 11 (detecta 5%), e por isso ela **reusa as sementes
 do `full` de 2A** como braço de referência, economizando 26 h.
 
+## Estado em 2026-09-07: a Fase 3 rodou, e o que ela decide
+
+A Fase 3 foi executada no `sql_workload` (não no `sql_agg`), com 4 braços × n=5,
+US$ 475 e 29 h — `ABLACAO_RESULTADO.md`. **Resultado nulo nos três contrastes**,
+com efeito mínimo detectável de 0,41× sobre uma base de 7,4× (5,5%).
+
+Somando as três execuções pagas, o placar da arquitetura é:
+
+| fase | contraste | efeito | distinguível? |
+|---|---|---|---|
+| ablação 1 | componentes (`sql_agg`) | −3,5% a −4,5% | não |
+| 2A | `full` × `greedy` (`sql_agg`, n=11) | +4,9% | não |
+| 3 | componentes (`sql_workload`, n=5) | −5,5% a +5,7% | não |
+
+**A recomendação que fecha esta fase: não comprar mais ablação de componentes.**
+Separar o `no_supervisor` do ruído exigiria n≈41 por braço — US$ 1.889 e ~119 h
+para **um** par. E não há poder barato disponível: com os dados da Fase 3 na mão,
+duas formas de baixar a variância foram testadas e as duas falharam.
+
+- **Parear por índice de semente:** r médio **+0,14** entre braços. O índice não
+  carrega sinal comum; parear chega a piorar a variância da diferença em 39% no
+  `no_supervisor`.
+- **Fixar o denominador** (a `primary_seed` varia cv 13,8%, max/min 1,44×): piora
+  em 3 dos 4 braços. A razão com denominador próprio já cancela a deriva de
+  máquina — o desenho atual estava certo.
+
+A variância é estocasticidade do agente, e comprá-la é linear no n.
+
+A Fase 2B (`full` × `greedy` com compute equiparado) continua sendo o único
+contraste com sinal — mas o piloto do `sql_workload` mediu +32% e a Fase 2A mediu
++4,9% no mesmo contraste. **Os dois discordam por 6×**, e o piloto tinha n=1 no
+`full`. Entrar nela sabendo que pode ser mais um nulo.
+
 ## Por que esta é a terceira tentativa
 
 As duas anteriores produziram intervalos que continham zero, por três causas

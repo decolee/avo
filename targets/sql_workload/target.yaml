@@ -123,6 +123,13 @@ lab:
   # §3f — medido por experiments/ablacao/piloto.py ANTES do experimento.
   piloto_cv: 0.085
   piloto_n_para_5pct: 45
+  # O efeito que este alvo existe para discriminar. Nao e 5%: o contraste
+  # `full` x `greedy` que o piloto mediu aqui foi de 20-32%, e a ablacao de
+  # componentes de 2026-09-06 mediu o efeito minimo detectavel em 0,41x sobre
+  # uma base de 7,4x — 5,5%. Declarar 5% cravado reprovava o alvo por nao
+  # alcancar uma precisao que nenhum experimento daqui pediu nem pagou.
+  # n(30%) = 45 * (0,05/0,30)^2 = 1,25 -> 2 sementes por braco.
+  piloto_efeito_alvo: 0.30
   piloto_nota: >-
     5 sessoes de greedy de 900 s: 5,620x +/- 0,478 (cv 8,5%), US$ 2,21 cada. Um
     `full` de 8 passos: 7,42x, US$ 22,61, 76 min, com plato nos passos 6-7 e o

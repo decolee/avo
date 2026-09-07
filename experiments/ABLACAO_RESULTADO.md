@@ -131,16 +131,28 @@ achado. Com n=5 a dispersão é ainda menos estimável que a média.
 
 ## O que fica para o repositório
 
-**Recomendação 1 — consertar `destilar_logs._SAIDA_DO_AVALIADOR`.** O detector
-reconhece medição por `avo_result` e `medianas:` no resultado da ferramenta, que
-são as strings do stdout *padrão*. Agente que canaliza para um parser ou importa
-`medir()` direto lê como cego. Marcou 6 falsos positivos em 160 aqui, todos em
-sessões que mediram **melhor** que a média. O conserto certo não é alargar as
-strings — é correlacionar pelo `tool_use_id` e aceitar como medição qualquer
-chamada ao avaliador que retorne sem erro e sem recusa de permissão. **Não fiz o
-conserto nesta sessão**, pelo motivo registrado no ADENDO: alterar um detector
-logo depois de ele reprovar runs do próprio braço de referência é o movimento que
-a disciplina daqui existe para impedir, mesmo estando certo.
+**Recomendação 1 — consertar o detector de sessão cega. FEITA (2026-09-07),
+depois de este relatório ser publicado.** O detector errava nos dois sentidos: ler
+o fonte do avaliador contava como tentativa de medir (254 `cat`, 227 `sed`, 126
+`grep` em 300 transcrições), e saída parseada não contava como medição. O conserto
+separa "executa ou só lê?" de "o que voltou tem forma de medição?" e exige as
+duas — a forma do resultado sozinha dá 16,9% de falso positivo, porque
+`cat NOTES.md` devolve `primary = 1.16` em prosa. Registro completo e validação
+em `DEFEITOS.md` §17.
+
+**O conserto não muda nada aqui.** Com o portão corrigido a sensibilidade mantém
+**19 das 20 sementes** (só a `no_kb-s4` sai, a única com uma sessão de 0
+tentativas), e os três contrastes seguem nulos:
+
+| braço | n | Δ vs `full` | IC 95% | p Holm |
+|---|---|---|---|---|
+| `no_kb` | 4 | −0,106 | [−0,660, +0,458] | 1,000 |
+| `no_memory` | 5 | +0,433 | [−0,362, +1,579] | 1,000 |
+| `no_supervisor` | 5 | −0,396 | [−1,161, +0,243] | 1,000 |
+
+O detector corrigido também **não absolve** a Fase 2A: lá ele ainda marca 13 de
+100 sessões como genuinamente cegas (antes 19), todas do braço `full` — o defeito
+de permissão era real.
 
 **Recomendação 2 — a próxima fase é `full` × `greedy`, não mais componentes.**
 Este experimento gastou US$ 475 para medir contrastes que o próprio pré-registro
@@ -149,8 +161,15 @@ ser pagável é o de arquitetura contra modelo. Repetir a ablação de component
 n=41 custaria US$ 1.889 e ~119 h para **um** par de braços, respondendo uma
 pergunta mais fina que a que ainda não foi respondida.
 
-**Recomendação 3 — `labkit/cli.py:check_poder` continua com 5% cravado.** Já
-registrado no relatório do alvo; nada aqui muda essa recomendação.
+**Recomendação 3 — `check_poder` com 5% cravado. FEITA (2026-09-07).** O
+comentário do próprio check dizia *"não há barra universal: o que decide é o custo
+por semente, que é do experimento e não do alvo"*, e o código logo abaixo cravava
+uma barra universal de 5%. O `sql_workload` levava aviso por precisar de n=45 para
+5% — uma precisão que nenhum experimento daqui pediu nem pagou. Agora o alvo pode
+declarar `lab.piloto_efeito_alvo`, e o n sai do mesmo piloto por
+`n(d) = n(5%)·(0,05/d)²`. Sem a declaração o comportamento é o de antes, para não
+mudar o veredito de alvo nenhum em silêncio. O `sql_workload` declara 30% — a
+ordem do contraste que esta bancada persegue — e passa com n=2.
 
 ## Reprodução
 
