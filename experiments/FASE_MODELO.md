@@ -87,3 +87,33 @@ interessante sobre generalidade **não** pode ser feita. Ver `CLAUDE.md`,
 Idêntica à da Fase 3: bootstrap com 10.000 reamostragens para o intervalo de cada
 diferença, Holm-Bonferroni sobre as comparações, `destilar_logs` rodado antes,
 efeito e intervalo sempre reportados.
+
+---
+
+## ADENDO 2026-09-07 — o piloto rodou e mudou o desenho
+
+Resultado completo em `PILOTO_MODELO_RESULTADO.md`. Em uma linha: o eixo do
+modelo move **27,5%**, cinco vezes mais que o maior contraste de andaime já
+medido nesta bancada, e o critério de parada (`n ≤ 8`) deu **0,2** — pagável.
+
+**Mas o desenho pré-registrado não é mais o certo, e o motivo estava no desvio 3.**
+
+Pelos mesmos 8 passos o Opus gastou US$ 25,18 e o Sonnet US$ 5,53 — 4,6× mais
+dinheiro. O efeito de 27,5% está confundido com orçamento, exatamente como
+declarado antes do dado. Rodar 3 modelos × n=5 a 8 passos mediria o mesmo
+contraste confundido com mais precisão.
+
+**O desenho passa a ser:** igualar por dólar, não por passos. O Sonnet recebe ~36
+passos contra os 8 do Opus (US$ 3,15/passo contra US$ 0,69), n=3, ~US$ 75 e ~7 h,
+com o braço do Opus já pago. A pergunta vira decidível: *com orçamento igual, o
+Sonnet alcança os 7,4×?*
+
+Risco declarado agora, antes de rodar: o alvo tem 8 movimentos medidos e 36 passos
+podem esgotá-lo. Se o Sonnet platôa, é preciso distinguir platô por falta de alvo
+de platô por falta de capacidade — o passo do platô será comparado com o do Opus.
+
+Mudar o desenho depois do piloto é o que o piloto existe para permitir (desvio 1:
+"ele só dimensiona"). O que não pode mudar depois do **experimento** é a análise,
+e ela segue fixada: bootstrap 10.000, Holm-Bonferroni, `destilar_logs` antes.
+
+**Não rodado nesta sessão.** A decisão de gastar é de quem paga.

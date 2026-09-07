@@ -59,10 +59,24 @@ existe `f` objetivo. **Esta bancada exclui por desenho a classe de problema em
 que a pergunta sobre generalidade é interessante.** O que ela mede bem é
 competência estreita e verificável.
 
-O eixo foi aberto em 2026-09-07 (`runner.py --modelo`) e pré-registrado em
-`FASE_MODELO.md`, com critério de parada declarado: se o piloto disser n>20, o
-experimento **não roda** e fica registrado que o eixo do modelo também está
-abaixo da resolução desta bancada.
+O eixo foi aberto em 2026-09-07 (`runner.py --modelo`), pré-registrado em
+`FASE_MODELO.md` com critério de parada declarado, e **pilotado**
+(`PILOTO_MODELO_RESULTADO.md`, US$ 16,60):
+
+| modelo | n | média | US$/run | × por US$ |
+|---|---|---|---|---|
+| `claude-opus-5` | 5 | **7,396** | 25,18 | 0,294 |
+| `claude-sonnet-5` | 3 | **5,363** | 5,53 | **0,969** |
+
+**Δ = 27,5%, IC95 [+1,767, +2,323] — cinco vezes maior que o maior contraste de
+andaime já medido aqui, e o intervalo não chega perto do zero.** O eixo do modelo
+é o que move esta bancada; o andaime não é.
+
+Com uma ressalva que estava declarada antes do dado (desvio 3): pelos mesmos 8
+passos o Opus gastou 4,6× mais dinheiro. **Parte dos 27,5% é orçamento, não
+capacidade, e estes dados não separam as duas.** Por dólar, o Sonnet é 3,3× mais
+eficiente. O experimento que decide — igualar por dólar e ver se o Sonnet alcança
+os 7,4× — custa ~US$ 75 e está pré-registrado e não rodado.
 
 ## 4. O produto reutilizável: o método
 
