@@ -9,9 +9,9 @@
 | `index.html` + `AVO-o-andaime-nao-paga.pdf` | a versão curta, 11 seções, 4 figuras | 9 | leitura rápida |
 | `promo.html` | resumo executivo de uma página | — | quem decide onde investir esforço |
 
-- Relatório completo: https://claude.ai/code/artifact/4d4db8de-647c-4bad-9ae7-ff1cb78a8087
-- Versão curta: https://claude.ai/code/artifact/b698a839-c782-40c3-9542-7fb7f3795e01
-- Resumo executivo: https://claude.ai/code/artifact/79f547c1-77d6-4e3b-be92-04971998e874
+Os quatro arquivos são autossuficientes: abra o `.html` no navegador ou o `.pdf`
+direto. Não há dependência externa — as figuras são SVG inline e as fontes têm
+fallback declarado.
 
 ## As treze figuras, e de onde cada uma sai
 
