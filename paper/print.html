@@ -1,0 +1,474 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<title>O andaime não paga</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+@page { size: A4; margin: 20mm 18mm 22mm 18mm; }
+@page :first { margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; background:#fff; color:#12151a; }
+body {
+  font-family: Spectral, "Iowan Old Style", Georgia, serif;
+  font-size: 10.2pt; line-height: 1.58;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.cover {
+  page-break-after: always; height: 297mm; padding: 46mm 24mm 24mm;
+  display: flex; flex-direction: column; position: relative;
+}
+.cover::before {
+  content:""; position:absolute; left:0; top:0; width:100%; height:9mm; background:#2a78d6;
+}
+.cover .kicker {
+  font-family:"IBM Plex Mono",monospace; font-size:8.5pt; letter-spacing:.16em;
+  text-transform:uppercase; color:#7a828c; margin-bottom:14mm;
+}
+.cover h1 {
+  font-family: Spectral, Georgia, serif; font-weight:600; font-size:40pt; line-height:1.03;
+  letter-spacing:-.02em; margin:0 0 8mm; max-width:15ch;
+}
+.cover .sub { font-size:13pt; line-height:1.45; color:#3d444d; max-width:44ch; margin:0 0 auto; }
+.cover .meta {
+  border-top:1px solid #d7dce2; padding-top:6mm; font-family:"IBM Plex Sans",sans-serif;
+  font-size:8.8pt; color:#4b525c; display:grid; grid-template-columns:repeat(2,1fr); gap:3mm 10mm;
+}
+.cover .meta b { font-family:"IBM Plex Mono",monospace; color:#12151a; font-weight:500; }
+.cover .note {
+  margin-top:6mm; font-family:"IBM Plex Sans",sans-serif; font-size:8.2pt; color:#7a828c;
+  line-height:1.5; max-width:52ch;
+}
+h2.sec {
+  font-family: Spectral, Georgia, serif; font-weight:600; font-size:17pt; letter-spacing:-.01em;
+  margin:11mm 0 3mm; page-break-after:avoid; border-bottom:1px solid #d7dce2; padding-bottom:2mm;
+}
+h2.sec .num { font-family:"IBM Plex Mono",monospace; font-size:9pt; color:#7a828c; font-weight:400; margin-right:4mm; }
+h3 { font-family:"IBM Plex Sans",sans-serif; font-weight:600; font-size:10.8pt; margin:6mm 0 2mm; page-break-after:avoid; }
+p { margin:0 0 3.2mm; orphans:3; widows:3; }
+ul { margin:0 0 3.2mm; padding-left:6mm; }
+li { margin-bottom:1.6mm; }
+code { font-family:"IBM Plex Mono",monospace; font-size:.86em; background:#f2f4f7; padding:.5pt 2pt; border-radius:2px; }
+strong { font-weight:600; }
+.abstract { background:#f7f9fb; border:1px solid #d7dce2; padding:7mm 8mm; margin:0 0 4mm; page-break-inside:avoid; }
+.abstract h2 { font-family:"IBM Plex Mono",monospace; font-size:8.5pt; letter-spacing:.14em; text-transform:uppercase; color:#7a828c; font-weight:500; margin:0 0 3mm; }
+.abstract p:last-child { margin-bottom:0; }
+figure { margin:6mm 0 7mm; page-break-inside:avoid; }
+figure svg { width:100%; height:auto; border:1px solid #d7dce2; background:#fff; }
+figcaption { font-family:"IBM Plex Sans",sans-serif; font-size:8.4pt; line-height:1.5; color:#4b525c; margin-top:2.5mm; }
+figcaption b { font-family:"IBM Plex Mono",monospace; font-size:7.6pt; letter-spacing:.08em; text-transform:uppercase; color:#7a828c; margin-right:2mm; }
+table { border-collapse:collapse; width:100%; font-family:"IBM Plex Sans",sans-serif; font-size:8.8pt; margin:4mm 0 5mm; page-break-inside:avoid; }
+th { font-family:"IBM Plex Mono",monospace; font-size:7.4pt; letter-spacing:.09em; text-transform:uppercase; color:#7a828c; font-weight:500; text-align:left; padding:2.5mm 3mm; border-bottom:1px solid #d7dce2; }
+td { padding:2.2mm 3mm; border-bottom:1px solid #e9edf1; vertical-align:top; }
+td.n, th.n { text-align:right; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; white-space:nowrap; }
+tr.hl td { background:#eef4fb; font-weight:600; }
+.finding { border-left:2.5pt solid #2a78d6; background:#f7f9fb; padding:4.5mm 6mm; margin:5mm 0; page-break-inside:avoid; }
+.finding.null { border-left-color:#8b929b; }
+.finding p { margin:0; }
+.finding .tag { font-family:"IBM Plex Mono",monospace; font-size:7.4pt; letter-spacing:.11em; text-transform:uppercase; color:#7a828c; display:block; margin-bottom:1.8mm; }
+.tiles { display:grid; grid-template-columns:repeat(5,1fr); gap:0; border:1px solid #d7dce2; margin:5mm 0; page-break-inside:avoid; }
+.tile { padding:4mm; border-right:1px solid #e9edf1; }
+.tile:last-child { border-right:none; }
+.tile .v { font-family:"IBM Plex Mono",monospace; font-size:16pt; font-weight:500; display:block; line-height:1.1; }
+.tile .k { font-family:"IBM Plex Sans",sans-serif; font-size:7.6pt; color:#7a828c; display:block; margin-top:1mm; line-height:1.3; }
+.refs { font-family:"IBM Plex Sans",sans-serif; font-size:8.6pt; color:#4b525c; }
+</style></head><body>
+<div class="cover">
+  <p class="kicker">Reprodução aberta · arXiv:2603.24517 · Setembro de 2026</p>
+  <h1>O andaime não paga</h1>
+  <p class="sub">Quatro experimentos controlados sobre a contribuição dos componentes de
+  operadores de variação agênticos em engenharia de dados.</p>
+  <div class="meta">
+    <div>Compute total<br><b>US$ 1.304,06</b></div>
+    <div>Runs de experimento<br><b>132 · 553 passos de agente</b></div>
+    <div>Alvos<br><b>6 sadios · 27 mutantes no mais novo</b></div>
+    <div>Resultado principal<br><b>Negativo, e medido</b></div>
+  </div>
+  <p class="note">Este relatório reporta um resultado majoritariamente negativo. Três experimentos e
+  US$ 976 não distinguiram nenhum componente do AVO do ruído da bancada; um quarto, de US$ 82,
+  achou 28,7 % no eixo que os três primeiros mantiveram fixo. A potência da bancada está declarada
+  em cada seção e o preço da resposta que não foi comprada está calculado.</p>
+</div>
+
+<div class="abstract">
+  <h2>Resumo</h2>
+  <p>A NVIDIA descreve o AVO — <em>Agentic Variation Operators</em> — como uma busca evolutiva em que
+  um coding agent é o operador de variação, formalizada como <code>Vary(P_t) = Agent(P_t, K, f)</code>.
+  O sistema completo marcou 100 % no ARC-AGI-3. <strong>Nenhuma comparação controlada da contribuição
+  dos componentes do AVO foi publicada</strong>, e o corpo do próprio post da NVIDIA afirma que seus
+  números «não devem ser interpretados como medida direta da contribuição de performance do AVO».</p>
+  <p>Construímos uma bancada independente em engenharia de dados — seis alvos com função objetiva
+  verificável — e rodamos essa comparação. <strong>Em três experimentos e US$ 976, remover a knowledge
+  base, a memória entre passos ou o supervisor não produziu diferença distinguível do ruído, e trocar o
+  AVO completo por um agente sem estrutura também não.</strong> Um quarto experimento, de US$ 82, mediu
+  o eixo que os três primeiros mantiveram fixo — o modelo — e achou <strong>28,7 % (IC 95 %
+  [22,9 %, 33,4 %], p = 0,016)</strong>. Dar 4,5 × mais orçamento ao modelo menor comprou −0,4 %
+  (p = 0,90).</p>
+  <p>Reportamos também dois defeitos de instrumento que só apareceram sob a disciplina de pré-registro,
+  e o preço da resposta que não compramos: separar o efeito do supervisor do ruído exigiria n ≈ 41 por
+  braço, US$ 1.889 e 119 h de relógio.</p>
+</div>
+
+<h2 class="sec"><span class="num">01</span>A pergunta</h2>
+<p>O AVO monta uma busca evolutiva sobre programas: um <em>incumbente</em> <code>P_t</code>, um agente
+que propõe variações consultando uma base de conhecimento <code>K</code>, e uma função objetiva
+<code>f</code> que arbitra. Em volta disso o harness acrescenta lineage versionado, um gate de correção,
+memória entre passos e um supervisor que detecta estagnação.</p>
+<p>A pergunta desta reprodução é a mais simples possível e não estava respondida em lugar nenhum:
+<strong>quanto cada uma dessas peças contribui?</strong></p>
+<p>Um benchmark saturado não responde. Quando o ARC-AGI-3 lançou, humanos marcavam 100 % e IA de
+fronteira 0,51 %; até o fim de agosto de 2026 <strong>três harnesses independentes</strong> — Tycho,
+VISTA e AVO — já tinham chegado ao score perfeito no public set. Reproduzir 100 % ali é entrar num clube
+de três, não medir o que fez o trabalho.</p>
+
+<h2 class="sec"><span class="num">02</span>A bancada</h2>
+<p>Seis alvos de engenharia de dados. Cada um é um quarteto: um <em>seed</em> correto e obviamente
+subótimo, uma função <code>f</code> que emite um score, uma knowledge base que descreve o domínio mas
+nunca a solução, e datasets determinísticos com hash fixado. A métrica primária é
+<code>primary_final / primary_seed</code> — quanto o artefato final melhorou sobre o ponto de partida do
+próprio run.</p>
+<h3>O que impede a bancada de medir a coisa errada</h3>
+<p>Um candidato que memoiza a saída devolve o resultado certo instantaneamente e <em>passa em qualquer
+gate de correção</em>. Medido no alvo <code>etl_agg</code> antes das defesas: <strong>4.672.896 ×</strong>
+contra 4,16 × do seed. Sem três camadas anti-memoização, qualquer ablação mediria cache em vez de
+arquitetura. Cada <code>eval.py</code> carrega ao menos cinco mutantes semânticos — atalhos plausíveis
+que um otimizador tentaria — e o alvo só entra no experimento com todos rejeitados.</p>
+<div class="tiles">
+  <div class="tile"><span class="v">6</span><span class="k">alvos sadios</span></div>
+  <div class="tile"><span class="v">132</span><span class="k">runs</span></div>
+  <div class="tile"><span class="v">553</span><span class="k">passos de agente</span></div>
+  <div class="tile"><span class="v">159</span><span class="k">testes verdes</span></div>
+  <div class="tile"><span class="v">0</span><span class="k">trapaças aceitas</span></div>
+</div>
+
+<h2 class="sec"><span class="num">03</span>O que o loop entrega</h2>
+<p>Antes de perguntar se a arquitetura importa, vale registrar que o loop funciona. Em 51 runs de
+ablação, <strong>nenhum ficou abaixo de 4,22 ×</strong>, e o gate segurou: 24 % dos passos foram
+rejeitados e em nenhum deles um candidato pior substituiu o incumbente.</p>
+<table>
+  <thead><tr><th>Experimento</th><th>Alvo</th><th class="n">n</th><th class="n">Melhoria sobre o seed</th></tr></thead>
+  <tbody>
+    <tr><td>Ablação 1</td><td><code>sql_agg</code></td><td class="n">20</td><td class="n">5,06 ×</td></tr>
+    <tr><td>Fase 2A</td><td><code>sql_agg</code></td><td class="n">11</td><td class="n">4,95 ×</td></tr>
+    <tr><td>Ablação 2</td><td><code>sql_workload</code></td><td class="n">20</td><td class="n">7,38 ×</td></tr>
+  </tbody>
+</table>
+<div class="finding"><span class="tag">Achado 1 · positivo</span>
+<p>Um agente com incumbente, função objetiva e gate melhora artefatos de engenharia de dados em
+<strong>4–7 ×</strong> de forma repetível, sem reward hacking. Isso é o loop — não a arquitetura
+específica do AVO.</p></div>
+
+<h2 class="sec"><span class="num">04</span>Os quatro contrastes</h2>
+<p>Cada experimento comparou braços que diferem em <em>uma</em> coisa, com o mesmo modelo, o mesmo
+<code>f</code> e o mesmo número de passos. A análise foi fixada antes do primeiro dado: bootstrap de
+10.000 reamostragens para o intervalo, permutação para o p, Holm-Bonferroni sobre as comparações
+múltiplas.</p>
+<figure>
+    <svg viewBox="0 0 720 452" role="img" aria-label="Gráfico de floresta: efeito de cada manipulação, em porcentagem do braço de referência, com intervalo de 95 por cento. Oito de nove intervalos cruzam o zero; só a troca de modelo não cruza.">
+      <!-- eixo -->
+      <line x1="240" y1="56" x2="690" y2="56" stroke="#d7dce2" stroke-width="1"/>
+      <text x="277.5" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#7a828c">−30%</text>
+      <text x="352.5" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#7a828c">−20%</text>
+      <text x="427.5" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#7a828c">−10%</text>
+      <text x="502.5" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#4b525c">0</text>
+      <text x="577.5" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#7a828c">+10%</text>
+      <text x="652.5" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#7a828c">+20%</text>
+      <line x1="502.5" y1="56" x2="502.5" y2="390" stroke="#7a828c" stroke-width="1" stroke-dasharray="3 3"/>
+
+      <!-- grupo 1 -->
+      <text x="16" y="80" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.1" fill="#7a828c">ABLAÇÃO 1 · SQL_AGG · N=4–7</text>
+      <line x1="240" y1="88" x2="700" y2="88" stroke="#e9edf1" stroke-width="1"/>
+      <text x="228" y="107" text-anchor="end" font-size="13" fill="#12151a">remover a KB</text>
+      <line x1="429.4" y1="103" x2="613.8" y2="103" stroke="#8b929b" stroke-width="2"/>
+      <circle cx="529.5" cy="103" r="5" fill="#8b929b" stroke="#ffffff" stroke-width="2"/>
+      <text x="228" y="139" text-anchor="end" font-size="13" fill="#12151a">remover a memória</text>
+      <line x1="478.6" y1="135" x2="591.3" y2="135" stroke="#8b929b" stroke-width="2"/>
+      <circle cx="537.2" cy="135" r="5" fill="#8b929b" stroke="#ffffff" stroke-width="2"/>
+      <text x="228" y="171" text-anchor="end" font-size="13" fill="#12151a">remover o supervisor</text>
+      <line x1="484.6" y1="167" x2="589.4" y2="167" stroke="#8b929b" stroke-width="2"/>
+      <circle cx="537.9" cy="167" r="5" fill="#8b929b" stroke="#ffffff" stroke-width="2"/>
+
+      <!-- grupo 2 -->
+      <text x="16" y="203" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.1" fill="#7a828c">FASE 2A · SQL_AGG · N=11</text>
+      <line x1="240" y1="211" x2="700" y2="211" stroke="#e9edf1" stroke-width="1"/>
+      <text x="228" y="230" text-anchor="end" font-size="13" fill="#12151a">trocar AVO por agente simples</text>
+      <line x1="404.4" y1="226" x2="511.4" y2="226" stroke="#8b929b" stroke-width="2"/>
+      <circle cx="466.9" cy="226" r="5" fill="#8b929b" stroke="#ffffff" stroke-width="2"/>
+
+      <!-- grupo 3 -->
+      <text x="16" y="262" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.1" fill="#7a828c">ABLAÇÃO 2 · SQL_WORKLOAD · N=5</text>
+      <line x1="240" y1="270" x2="700" y2="270" stroke="#e9edf1" stroke-width="1"/>
+      <text x="228" y="289" text-anchor="end" font-size="13" fill="#12151a">remover a KB</text>
+      <line x1="444.2" y1="285" x2="539.7" y2="285" stroke="#8b929b" stroke-width="2"/>
+      <circle cx="491.3" cy="285" r="5" fill="#8b929b" stroke="#ffffff" stroke-width="2"/>
+      <text x="228" y="321" text-anchor="end" font-size="13" fill="#12151a">remover a memória</text>
+      <line x1="465.8" y1="317" x2="662.6" y2="317" stroke="#8b929b" stroke-width="2"/>
+      <circle cx="546.5" cy="317" r="5" fill="#8b929b" stroke="#ffffff" stroke-width="2"/>
+      <text x="228" y="353" text-anchor="end" font-size="13" fill="#12151a">remover o supervisor</text>
+      <line x1="384.8" y1="349" x2="527.2" y2="349" stroke="#8b929b" stroke-width="2"/>
+      <circle cx="462.3" cy="349" r="5" fill="#8b929b" stroke="#ffffff" stroke-width="2"/>
+
+      <!-- grupo 4 -->
+      <text x="16" y="385" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.1" fill="#2a78d6">EIXO DO MODELO · SQL_WORKLOAD · N=3–5</text>
+      <line x1="240" y1="393" x2="700" y2="393" stroke="#e9edf1" stroke-width="1"/>
+      <text x="228" y="412" text-anchor="end" font-size="13" font-weight="600" fill="#12151a">trocar Opus por Sonnet (mesmo US$)</text>
+      <line x1="252.0" y1="408" x2="330.8" y2="408" stroke="#2a78d6" stroke-width="3"/>
+      <circle cx="287.0" cy="408" r="6" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/>
+      <text x="342" y="412" font-family="IBM Plex Mono, monospace" font-size="11.5" font-weight="500" fill="#2a78d6">−28,7%  p=0,016</text>
+      <text x="228" y="440" text-anchor="end" font-size="13" fill="#12151a">dar 4,5× mais orçamento ao Sonnet</text>
+      <line x1="475.3" y1="436" x2="529.7" y2="436" stroke="#8b929b" stroke-width="2"/>
+      <circle cx="499.8" cy="436" r="5" fill="#8b929b" stroke="#ffffff" stroke-width="2"/>
+    </svg>
+    <figcaption><b>Fig. 1</b> Efeito de cada manipulação, em porcentagem do braço de referência, com
+    intervalo de 95 % por bootstrap. <strong>Oito dos nove intervalos cruzam o zero.</strong> O único
+    que não cruza é a troca de modelo — e o contraste de orçamento, logo abaixo dele, cruza. Marcas em
+    cinza: não distinguível do ruído. Em azul: distinguível.</figcaption>
+  </figure>
+<div class="finding null"><span class="tag">Achado 2 · nulo</span>
+<p>Nenhum componente do AVO — KB, memória, supervisor — nem a arquitetura inteira contra um agente sem
+estrutura, produziu diferença distinguível do ruído. <strong>Três experimentos, US$ 976.</strong> Na
+Ablação 1 os braços mutilados pontuaram <em>acima</em> do completo.</p></div>
+
+<h2 class="sec"><span class="num">05</span>O eixo que os três primeiros mantiveram fixo</h2>
+<p>Ao auditar a bancada percebemos que <strong>todos os runs dos três primeiros experimentos rodaram um
+único modelo</strong>, <code>claude-opus-5</code>. O runner não repassava <code>--model</code> e o harness
+usava o default dele. O eixo não estava ausente — estava invisível.</p>
+<p>Um piloto de US$ 16,60 mediu 27,5 % de diferença entre Opus e Sonnet, mas igualando por
+<em>passos</em>: pelos mesmos oito passos o Opus gastou 4,6 × mais dinheiro. O experimento decisivo
+igualou por <strong>dólar</strong> — 36 passos de Sonnet contra 8 de Opus, os mesmos US$ 25,18 por run.</p>
+<figure>
+    <svg viewBox="0 0 720 300" role="img" aria-label="Barras horizontais: Opus com 8 passos atinge 6,62; Sonnet com 8 passos 4,74; Sonnet com 36 passos 4,72. Quadruplicar o orçamento do Sonnet não move o resultado.">
+      <line x1="215" y1="46" x2="215" y2="232" stroke="#d7dce2" stroke-width="1"/>
+      <line x1="215" y1="232" x2="690" y2="232" stroke="#d7dce2" stroke-width="1"/>
+      <g font-family="IBM Plex Mono, monospace" font-size="11" fill="#7a828c" text-anchor="middle">
+        <text x="215" y="252">0</text><text x="333.75" y="252">2</text>
+        <text x="452.5" y="252">4</text><text x="571.25" y="252">6</text><text x="690" y="252">8</text>
+      </g>
+      <text x="452" y="278" text-anchor="middle" font-size="12" fill="#4b525c">melhoria sobre o seed (razão re-medida, máquina ociosa)</text>
+
+      <!-- Opus -->
+      <text x="203" y="76" text-anchor="end" font-size="13" fill="#12151a">Opus · 8 passos</text>
+      <text x="203" y="92" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#7a828c">US$ 25,18</text>
+      <rect x="215" y="58" width="392.7" height="34" rx="4" fill="#2a78d6"/>
+      <line x1="581.8" y1="75" x2="633.6" y2="75" stroke="#4b525c" stroke-width="1.5"/>
+      <line x1="581.8" y1="69" x2="581.8" y2="81" stroke="#4b525c" stroke-width="1.5"/>
+      <line x1="633.6" y1="69" x2="633.6" y2="81" stroke="#4b525c" stroke-width="1.5"/>
+      <text x="646" y="80" font-family="IBM Plex Mono, monospace" font-size="14" font-weight="500" fill="#12151a">6,62</text>
+
+      <!-- Sonnet 8p -->
+      <text x="203" y="134" text-anchor="end" font-size="13" fill="#12151a">Sonnet · 8 passos</text>
+      <text x="203" y="150" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#7a828c">US$ 5,53</text>
+      <rect x="215" y="116" width="281.1" height="34" rx="4" fill="#d1541f"/>
+      <line x1="484.7" y1="133" x2="507.5" y2="133" stroke="#4b525c" stroke-width="1.5"/>
+      <line x1="484.7" y1="127" x2="484.7" y2="139" stroke="#4b525c" stroke-width="1.5"/>
+      <line x1="507.5" y1="127" x2="507.5" y2="139" stroke="#4b525c" stroke-width="1.5"/>
+      <text x="520" y="138" font-family="IBM Plex Mono, monospace" font-size="14" font-weight="500" fill="#12151a">4,74</text>
+
+      <!-- Sonnet 36p -->
+      <text x="203" y="192" text-anchor="end" font-size="13" font-weight="600" fill="#12151a">Sonnet · 36 passos</text>
+      <text x="203" y="208" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#7a828c">US$ 24,90 · mesmo dólar</text>
+      <rect x="215" y="174" width="280.1" height="34" rx="4" fill="#d1541f"/>
+      <line x1="491.6" y1="191" x2="499.0" y2="191" stroke="#4b525c" stroke-width="1.5"/>
+      <line x1="491.6" y1="185" x2="491.6" y2="197" stroke="#4b525c" stroke-width="1.5"/>
+      <line x1="499.0" y1="185" x2="499.0" y2="197" stroke="#4b525c" stroke-width="1.5"/>
+      <text x="512" y="196" font-family="IBM Plex Mono, monospace" font-size="14" font-weight="500" fill="#12151a">4,72</text>
+
+      <!-- chave -->
+      <path d="M 572 116 L 588 116 L 588 208 L 572 208" fill="none" stroke="#7a828c" stroke-width="1"/>
+      <text x="596" y="158" font-size="12" fill="#4b525c">4,5× o orçamento</text>
+      <text x="596" y="174" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="#12151a">−0,4% (p=0,90)</text>
+    </svg>
+    <figcaption><b>Fig. 2</b> Com orçamento igualado por dólar, o Sonnet fica 28,7 % abaixo do Opus.
+    Quadruplicar seu orçamento em passos não move o resultado — 4,74 → 4,72. Barras de erro: ± 1 desvio.
+    Valores da re‑medição pareada (§ 07).</figcaption>
+  </figure>
+<div class="finding"><span class="tag">Achado 3 · positivo</span>
+<p>A diferença entre modelos é <strong>capacidade, não orçamento</strong>. Com o mesmo dólar, o Opus
+entrega +28,7 % (IC 95 % [22,9 %, 33,4 %], p = 0,016); dar 4,5 × mais orçamento ao Sonnet entrega −0,4 %
+(IC 95 % [−3,6 %, +3,6 %], p = 0,90). <strong>US$ 82 mediram isso; US$ 976 medindo andaime não acharam
+nada.</strong></p></div>
+<h3>O alvo não esgotou</h3>
+<p>Um platô do Sonnet poderia significar que 36 passos exaurem o alvo. Pré-registramos esse risco e ele
+não se materializou: em duas das três sementes o Sonnet parou de achar melhorias com um a dois terços do
+orçamento por gastar (último aceite nos passos 12, 19 e 30 de 36). E a refutação decisiva dispensa isso —
+<strong>o Opus alcança 6,62 × no mesmo alvo</strong>, então existe headroom bem acima dos 4,72 × onde o
+Sonnet estaciona.</p>
+<figure>
+    <svg viewBox="0 0 720 320" role="img" aria-label="Curvas de trajetória: o Opus sobe até 7,4 em 8 passos e ainda está subindo; o Sonnet estabiliza perto de 5,0 a partir do passo 12 e não se move até o 36.">
+      <line x1="70" y1="40" x2="70" y2="250" stroke="#d7dce2" stroke-width="1"/>
+      <line x1="70" y1="250" x2="676" y2="250" stroke="#d7dce2" stroke-width="1"/>
+      <g stroke="#e9edf1" stroke-width="1">
+        <line x1="70" y1="197.5" x2="676" y2="197.5"/><line x1="70" y1="145" x2="676" y2="145"/><line x1="70" y1="92.5" x2="676" y2="92.5"/>
+      </g>
+      <g font-family="IBM Plex Mono, monospace" font-size="11" fill="#7a828c" text-anchor="end">
+        <text x="60" y="254">0</text><text x="60" y="201.5">2</text><text x="60" y="149">4</text><text x="60" y="96.5">6</text><text x="60" y="44">8</text>
+      </g>
+      <g font-family="IBM Plex Mono, monospace" font-size="11" fill="#7a828c" text-anchor="middle">
+        <text x="70" y="270">0</text><text x="238" y="270">8</text><text x="406" y="270">16</text><text x="574" y="270">24</text><text x="676" y="270">32</text>
+      </g>
+      <text x="373" y="296" text-anchor="middle" font-size="12" fill="#4b525c">passos de agente</text>
+
+      <!-- Sonnet 36 passos -->
+      <polyline fill="none" stroke="#d1541f" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"
+        points="91,197.3 112,190.5 154,172.6 196,139.4 238,131.6 322,123.5 406,122.2 490,119.5 574,119.5 616,117.2 658,114.1 676,114.1"/>
+      <circle cx="676" cy="114.1" r="4.5" fill="#d1541f" stroke="#ffffff" stroke-width="2"/>
+      <text x="668" y="102" text-anchor="end" font-size="12.5" font-weight="600" fill="#12151a">Sonnet · 36 passos</text>
+
+      <!-- Opus 8 passos -->
+      <polyline fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"
+        points="91,96.6 112,89.2 133,86.6 154,76.5 175,72.7 196,69.8 217,59.3 238,55.8"/>
+      <circle cx="238" cy="55.8" r="4.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/>
+      <text x="250" y="52" font-size="12.5" font-weight="600" fill="#12151a">Opus · 8 passos</text>
+      <text x="250" y="68" font-size="11.5" fill="#4b525c">ainda subindo quando o orçamento acabou</text>
+
+      <text x="70" y="30" font-size="11.5" fill="#4b525c">melhoria dentro do run</text>
+    </svg>
+    <figcaption><b>Fig. 3</b> A forma da busca. O Sonnet estabiliza a partir do passo ~12 e os 24 passos
+    seguintes não movem nada; o Opus ainda subia no passo 8. <strong>Os níveis não são comparáveis entre
+    braços nesta figura</strong> — a razão medida dentro do run carrega a deriva descrita em § 07. Os
+    níveis corrigidos estão na Fig. 2; aqui o que importa é o formato.</figcaption>
+  </figure>
+
+<h2 class="sec"><span class="num">06</span>O preço da resposta que não compramos</h2>
+<p><strong>«Não distinguível» não é «não existe».</strong> A resolução desta bancada é de ~5,5 % no melhor
+experimento. Andaime que valha menos que isso é invisível aqui, e nada no que medimos exclui essa
+possibilidade.</p>
+<p>O que podemos fazer é dizer quanto custaria enxergar. Para o contraste mais promissor entre os nulos —
+o supervisor, Δ = −0,396 com desvio combinado 0,636 — a fórmula <code>n ≈ 2·(2,8·s/Δ)²</code> dá
+<strong>n ≈ 41 por braço</strong>: US$ 1.889 e ~119 h para <em>um</em> par de braços.</p>
+<p>E não há poder barato. Com os dados na mão testamos duas formas de reduzir a variância, e as duas
+falharam: parear por índice de semente (correlação média entre braços <strong>r = +0,14</strong>; chega a
+piorar a variância da diferença em 39 % num braço) e fixar o denominador da razão (piora em três dos
+quatro braços — a razão com denominador próprio já cancela a deriva dentro do run).</p>
+<table>
+  <thead><tr><th>Experimento</th><th>Mediu</th><th class="n">US$</th><th class="n">Relógio</th><th>Achou</th></tr></thead>
+  <tbody>
+    <tr><td>Ablação 1</td><td>componentes</td><td class="n">210</td><td class="n">15,0 h</td><td>nada</td></tr>
+    <tr><td>Fase 2A</td><td>AVO × agente simples</td><td class="n">291</td><td class="n">31,9 h</td><td>nada</td></tr>
+    <tr><td>Ablação 2</td><td>componentes</td><td class="n">475</td><td class="n">29,0 h</td><td>nada</td></tr>
+    <tr class="hl"><td>Eixo do modelo</td><td>Opus × Sonnet, mesmo US$</td><td class="n">82</td><td class="n">10,3 h</td><td>+28,7 %</td></tr>
+  </tbody>
+</table>
+
+<h2 class="sec"><span class="num">07</span>Dois defeitos de instrumento</h2>
+<p>Um defeito de instrumento é um erro na bancada que faz o experimento medir outra coisa que não a que
+diz medir. Achar um vale mais que um resultado. O repositório cataloga 18; dois apareceram nesta rodada e
+ambos teriam mudado o que reportamos.</p>
+<h3>Defeito 17 — o detector de sessão cega errava nos dois sentidos</h3>
+<p>Uma sessão que escreve código sem nunca medir não testa o que o desenho diz testar. O portão que
+detectava isso decidia por substring, e errava em ambas as direções. Contado sobre 300 transcrições:
+<strong>1.293 comandos casavam como «tentou medir», dos quais 254 eram <code>cat</code>, 227
+<code>sed</code> e 126 <code>grep</code></strong> — ler o fonte do avaliador contava como medir. Na outra
+ponta, um agente que canaliza a saída para um parser ou importa <code>medir()</code> para comparação
+pareada não emitia as strings procuradas: <strong>757 comandos com saída de medição não eram
+reconhecidos.</strong> O detector marcava como cega exatamente a sessão que mede melhor. Falsos positivos
+após o conserto: 7 → 1, com o controle negativo ainda reprovando 6 de 6.</p>
+<h3>Defeito 18 — o denominador da métrica deriva por bloco de execução</h3>
+<p>A métrica é <code>primary_final / primary_seed</code>, e o denominador é medido uma vez, no início do
+run, sobre um artefato de seed <strong>idêntico</strong> em todos eles. Ao longo dos 11 runs do eixo do
+modelo ele variou <strong>1,68 ×</strong>.</p>
+<figure>
+    <svg viewBox="0 0 720 300" role="img" aria-label="Gráfico de inclinação: à esquerda, o seed medido dentro de cada run espalha-se de 0,91 a 1,54; à direita, re-medido em bloco com a máquina ociosa, converge para a faixa 1,46 a 1,70.">
+      <line x1="200" y1="52" x2="200" y2="238" stroke="#d7dce2" stroke-width="1"/>
+      <line x1="520" y1="52" x2="520" y2="238" stroke="#d7dce2" stroke-width="1"/>
+      <g font-family="IBM Plex Mono, monospace" font-size="11" fill="#7a828c" text-anchor="end">
+        <text x="188" y="242">0,9</text><text x="188" y="195.5">1,1</text><text x="188" y="149">1,3</text><text x="188" y="102.5">1,5</text><text x="188" y="56">1,7</text>
+      </g>
+      <text x="200" y="32" text-anchor="middle" font-size="12.5" font-weight="600" fill="#12151a">medido no run</text>
+      <text x="200" y="266" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="#4b525c">cv 19,6% · máx/mín 1,68×</text>
+      <text x="520" y="32" text-anchor="middle" font-size="12.5" font-weight="600" fill="#12151a">re-medido em bloco</text>
+      <text x="520" y="266" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="#4b525c">cv 4,4% · máx/mín 1,17×</text>
+
+      <g stroke="#7a828c" stroke-width="1.25" opacity="0.55">
+        <line x1="200" y1="235.7" x2="520" y2="97.6"/>
+        <line x1="200" y1="143.1" x2="520" y2="108.5"/>
+        <line x1="200" y1="144.2" x2="520" y2="85.0"/>
+        <line x1="200" y1="152.8" x2="520" y2="95.5"/>
+        <line x1="200" y1="151.6" x2="520" y2="92.7"/>
+        <line x1="200" y1="226.7" x2="520" y2="101.1"/>
+        <line x1="200" y1="229.0" x2="520" y2="52.6"/>
+        <line x1="200" y1="229.3" x2="520" y2="95.0"/>
+        <line x1="200" y1="93.6" x2="520" y2="110.6"/>
+        <line x1="200" y1="111.5" x2="520" y2="100.2"/>
+        <line x1="200" y1="104.8" x2="520" y2="105.8"/>
+      </g>
+      <g fill="#d1541f" stroke="#ffffff" stroke-width="1.5">
+        <circle cx="200" cy="235.7" r="5"/><circle cx="200" cy="143.1" r="5"/><circle cx="200" cy="144.2" r="5"/>
+        <circle cx="200" cy="152.8" r="5"/><circle cx="200" cy="151.6" r="5"/><circle cx="200" cy="226.7" r="5"/>
+        <circle cx="200" cy="229.0" r="5"/><circle cx="200" cy="229.3" r="5"/><circle cx="200" cy="93.6" r="5"/>
+        <circle cx="200" cy="111.5" r="5"/><circle cx="200" cy="104.8" r="5"/>
+      </g>
+      <g fill="#2a78d6" stroke="#ffffff" stroke-width="1.5">
+        <circle cx="520" cy="97.6" r="5"/><circle cx="520" cy="108.5" r="5"/><circle cx="520" cy="85.0" r="5"/>
+        <circle cx="520" cy="95.5" r="5"/><circle cx="520" cy="92.7" r="5"/><circle cx="520" cy="101.1" r="5"/>
+        <circle cx="520" cy="52.6" r="5"/><circle cx="520" cy="95.0" r="5"/><circle cx="520" cy="110.6" r="5"/>
+        <circle cx="520" cy="100.2" r="5"/><circle cx="520" cy="105.8" r="5"/>
+      </g>
+      <text x="556" y="150" font-size="12.5" fill="#4b525c">11 runs · o mesmo</text>
+      <text x="556" y="167" font-size="12.5" fill="#4b525c">artefato de seed,</text>
+      <text x="556" y="184" font-size="12.5" fill="#4b525c">medido duas vezes</text>
+    </svg>
+    <figcaption><b>Fig. 4</b> O mesmo artefato de seed, medido dentro de cada run (esquerda) e re‑medido
+    em sequência imediata com a máquina ociosa (direita). A dispersão de 1,68 × colapsa para 1,17 ×.
+    Não é ruído branco: é deriva por <em>bloco</em> de execução.</figcaption>
+  </figure>
+<p>A nuance é o que importa. Numa ablação de braços <strong>intercalados</strong>, o ruído do seed é comum
+a todos e a razão o cancela — testamos, e fixar o denominador <em>piorava</em> o cv em três dos quatro
+braços. Entre <strong>experimentos</strong> de dias e durações diferentes não há nada em comum para
+cancelar, e a razão passa a medir o estado da máquina. Comparação entre experimentos exige re-medição
+pareada; custa quatro minutos e sem ela o resultado da seção 05 não seria legível.</p>
+
+<h2 class="sec"><span class="num">08</span>Limitações</h2>
+<p>Esta seção é a mais importante do relatório, porque o resultado principal é negativo.</p>
+<ul>
+  <li><strong>Potência.</strong> n = 3–11 por braço; a diferença mínima detectável fica entre 5,5 % e 30 %
+  conforme o experimento. Efeitos menores existem e seriam invisíveis aqui.</li>
+  <li><strong>Orçamento igualado por passos, não por tokens</strong>, nos três experimentos de andaime.
+  Isso favorece sistematicamente o braço com supervisor, que gasta mais por passo — ou seja, inclina o
+  desenho <em>a favor</em> do AVO completo, e mesmo assim o efeito não apareceu.</li>
+  <li><strong>Um componente não foi ablacionado.</strong> O <code>no_lineage</code> exigiria um invólucro
+  que não existe no runner; fica declarado como ausente, não como feito.</li>
+  <li><strong>Domínio estreito.</strong> Otimização com <code>f</code> objetiva e verificável. Onde não se
+  consegue escrever <code>f</code>, nada disto foi testado — e é justamente a classe de problema em que a
+  pergunta sobre generalidade é interessante.</li>
+  <li><strong>Dois modelos no total.</strong> A escala não está fechada.</li>
+  <li><strong>O seed já funciona.</strong> Nossos alvos partem de código correto e lento. Onde o modelo
+  sozinho vai mal — como no ARC-AGI-3, com 0,51 % de baseline — o andaime plausivelmente tem muito mais
+  espaço para aparecer. <em>Isso é hipótese, não algo que medimos.</em></li>
+</ul>
+
+<h2 class="sec"><span class="num">09</span>Disciplina</h2>
+<p>Três decisões foram tomadas contra o interesse de quem as tomou, e estão registradas com data:</p>
+<ul>
+  <li>O <strong>adendo ao pré-registro</strong> foi escrito com 12 dos 20 runs prontos e nenhuma
+  estatística rodada. Custou a exclusão de duas sementes do braço de referência e foi registrado antes de
+  se saber que não mudaria a conclusão — não mudou.</li>
+  <li>O <strong>detector de cegueira não foi consertado durante o experimento</strong>, embora a evidência
+  do conserto já estivesse na mão. Alterar um instrumento logo depois de ele reprovar runs do próprio
+  braço de referência é o movimento que a disciplina existe para impedir, mesmo estando certo.</li>
+  <li>A hipótese <em>«o braço completo é mais consistente»</em> (cv 4,4 % contra 6,9 / 12,0 / 15,9 %) foi
+  testada por permutação antes de virar frase — <strong>p entre 0,38 e 0,60, não se sustenta</strong> — e
+  está registrada como testada e descartada.</li>
+</ul>
+
+<h2 class="sec"><span class="num">10</span>Conclusão</h2>
+<p>O loop evolutivo com função objetiva entrega 4–7 × de forma repetível e sem trapaça. Isso é real e é o
+que vale adotar: <strong>um incumbente, um número para maximizar, e um gate que você tentou quebrar de
+propósito.</strong></p>
+<p>A arquitetura em volta dele — knowledge base, memória entre passos, supervisor de estagnação, e o
+conjunto contra um agente sem estrutura — <strong>não se distinguiu do ruído em três experimentos
+independentes e US$ 976</strong>. Não provamos que essas peças são inúteis; provamos que, ao preço que
+esta bancada consegue pagar, elas não aparecem. E dissemos quanto custaria enxergar.</p>
+<p>O eixo que os três primeiros experimentos mantiveram fixo — o modelo — foi o que moveu o resultado:
+<strong>+28,7 % com o mesmo dólar</strong>, e orçamento extra no modelo menor não compra a diferença. Para
+quem decide onde investir esforço de engenharia, essa é a frase operacional do trabalho: <strong>meça se o
+andaime paga antes de construí-lo, e considere que trocar o modelo pode ser o experimento mais barato que
+você tem.</strong></p>
+
+<h2 class="sec"><span class="num">11</span>Reprodutibilidade</h2>
+<p class="refs">Dados brutos, pré-registros com os desvios declarados, os 18 defeitos de instrumento e os
+scripts de análise estão no repositório. Todos os números deste relatório saem de
+<code>results.jsonl</code> e <code>remedido_modelo.jsonl</code> e reproduzem com os comandos documentados
+em cada relatório. Harness da busca: <code>gatordevin/avo</code>, fixado por commit em
+<code>vendor/avo.lock</code>. O que é da NVIDIA e o que é escolha desta reprodução está separado linha a
+linha em <code>docs/AVO_REPLICATION_REPORT.md</code>. Relatórios longos por experimento:
+<code>experiments/ABLACAO_RESULTADO.md</code>, <code>experiments/EIXO_MODELO_RESULTADO.md</code>,
+<code>experiments/DEFEITOS.md</code>.</p>
+</body></html>

@@ -4,7 +4,19 @@
 contribuição dos componentes do AVO em engenharia de dados, com as figuras
 desenhadas na escala dos dados.
 
-Publicado como artifact: https://claude.ai/code/artifact/b698a839-c782-40c3-9542-7fb7f3795e01
+## As três peças
+
+| arquivo | o que é | para quem |
+|---|---|---|
+| `index.html` | o artigo completo, 11 seções, 4 figuras | quem vai checar o trabalho |
+| `AVO-o-andaime-nao-paga.pdf` | o mesmo artigo, 9 páginas A4 com capa e numeração | apresentação, anexo de e-mail, impressão |
+| `promo.html` | resumo executivo de uma página | quem decide onde investir esforço |
+
+- Artigo: https://claude.ai/code/artifact/b698a839-c782-40c3-9542-7fb7f3795e01
+- Resumo executivo: https://claude.ai/code/artifact/79f547c1-77d6-4e3b-be92-04971998e874
+
+O PDF é gerado de `print.html` (mesma substância, CSS de impressão) com
+`python3 /tmp/topdf.py` — Chromium via Playwright, A4, rodapé com numeração.
 
 ## De onde sai cada número
 
