@@ -1,0 +1,1453 @@
+<title>O Andaime Não Paga</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --ground:#fafbfc; --panel:#ffffff; --sunk:#f2f4f7; --tint:#eef4fb;
+  --ink:#12151a; --ink-2:#4b525c; --ink-3:#858c96;
+  --rule:#dfe3e8; --rule-2:#eef1f4;
+  --s1:#2a78d6; --s2:#eb6834; --null:#858c96;
+  --shadow:0 1px 2px rgba(18,21,26,.06),0 8px 24px -16px rgba(18,21,26,.26);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --ground:#14161a; --panel:#1b1e23; --sunk:#22262c; --tint:#1c2733;
+  --ink:#f2f4f7; --ink-2:#b3bac4; --ink-3:#7d848e;
+  --rule:#2e333a; --rule-2:#23272d;
+  --s1:#3987e5; --s2:#d95926; --null:#7d848e;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -16px rgba(0,0,0,.7);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#14161a; --panel:#1b1e23; --sunk:#22262c; --tint:#1c2733;
+  --ink:#f2f4f7; --ink-2:#b3bac4; --ink-3:#7d848e;
+  --rule:#2e333a; --rule-2:#23272d;
+  --s1:#3987e5; --s2:#d95926; --null:#7d848e;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -16px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);margin:0;
+  font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.65;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px 100px}
+.measure{max-width:668px}
+
+header.hd{padding:66px 0 40px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 20px}
+h1{font-family:Spectral,Georgia,serif;font-weight:600;font-size:clamp(34px,5.4vw,56px);
+  line-height:1.06;letter-spacing:-.018em;margin:0 0 18px;text-wrap:balance;max-width:17ch}
+.dek{font-size:19.5px;line-height:1.58;color:var(--ink-2);max-width:60ch;margin:0 0 28px}
+.byline{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-3);
+  display:flex;flex-wrap:wrap;gap:8px 20px;margin:0}
+
+nav.toc{background:var(--panel);border:1px solid var(--rule);border-radius:3px;
+  padding:24px 28px;margin:36px 0 0;box-shadow:var(--shadow)}
+nav.toc h2{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:500;margin:0 0 16px}
+nav.toc ol{list-style:none;margin:0;padding:0;columns:2;column-gap:44px}
+nav.toc li{margin-bottom:7px;break-inside:avoid;font-size:14.5px}
+nav.toc a{color:var(--ink);text-decoration:none;border-bottom:1px solid transparent}
+nav.toc a:hover{border-bottom-color:var(--s1);color:var(--s1)}
+nav.toc .pt{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--s1);margin:16px 0 8px;display:block}
+nav.toc li:first-child .pt{margin-top:0}
+
+.abstract{background:var(--panel);border:1px solid var(--rule);border-radius:3px;
+  padding:28px 32px;margin:32px 0 8px;box-shadow:var(--shadow)}
+.abstract h2{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:500;margin:0 0 14px}
+.abstract p{margin:0 0 13px;max-width:74ch}.abstract p:last-child{margin-bottom:0}
+
+.part{margin:76px 0 0;padding-top:26px;border-top:2px solid var(--ink);}
+.part .pn{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--s1);display:block;margin-bottom:8px}
+.part h2{font-family:Spectral,Georgia,serif;font-weight:600;font-size:32px;margin:0 0 6px;
+  letter-spacing:-.015em;text-wrap:balance}
+.part p{color:var(--ink-2);max-width:66ch;margin:0}
+
+section{padding-top:44px;scroll-margin-top:20px}
+h3.sec{font-family:Spectral,Georgia,serif;font-weight:600;font-size:25px;letter-spacing:-.01em;
+  margin:0 0 8px;text-wrap:balance;display:flex;gap:13px;align-items:baseline}
+h3.sec .num{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-3);
+  font-weight:400;flex:none;padding-top:2px}
+h4{font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:16.5px;margin:30px 0 8px;
+  letter-spacing:-.004em}
+p{margin:0 0 15px}
+strong{font-weight:600}
+code{font-family:"IBM Plex Mono",monospace;font-size:.87em;background:var(--sunk);
+  padding:1px 5px;border-radius:3px;color:var(--ink-2)}
+a{color:var(--s1)}
+ul,ol.body{margin:0 0 15px;padding-left:22px}
+li{margin-bottom:7px}
+
+.tw{overflow-x:auto;margin:22px 0 26px;border:1px solid var(--rule);border-radius:3px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:540px}
+th{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;text-align:left;padding:12px 16px;border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:11px 16px;border-bottom:1px solid var(--rule-2);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+td.n,th.n{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.hl td{background:var(--tint);font-weight:500}
+tr.dim td{color:var(--ink-3)}
+
+figure{margin:34px 0 40px}
+figure svg{display:block;width:100%;height:auto;background:var(--panel);
+  border:1px solid var(--rule);border-radius:3px}
+figcaption{font-size:13.5px;line-height:1.58;color:var(--ink-2);margin-top:12px;max-width:74ch}
+figcaption b{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:500;margin-right:8px}
+figcaption code{font-size:.9em}
+
+.finding{border-left:3px solid var(--s1);background:var(--panel);padding:20px 24px;
+  margin:26px 0;border-radius:0 3px 3px 0}
+.finding.null{border-left-color:var(--null)}
+.finding.warn{border-left-color:var(--s2)}
+.finding p{margin:0;max-width:70ch}
+.finding .tag{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:7px}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);border-radius:3px;margin:26px 0 30px}
+.tile{background:var(--panel);padding:18px 20px}
+.tile .v{font-family:"IBM Plex Mono",monospace;font-size:24px;font-weight:500;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;display:block;line-height:1.2}
+.tile .k{font-size:12.5px;color:var(--ink-3);margin-top:4px;display:block;line-height:1.4}
+
+.guide{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin:28px 0}
+.g{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:22px 24px}
+.g.yes{border-left:3px solid var(--s1)}
+.g.no{border-left:3px solid var(--null)}
+.g h4{margin:0 0 8px;font-size:15.5px}
+.g p{font-size:14.5px;color:var(--ink-2);margin:0 0 10px}
+.g p:last-child{margin-bottom:0}
+.g .ev{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3);display:block;margin-top:10px}
+
+footer{margin-top:70px;padding-top:28px;border-top:1px solid var(--rule);
+  font-size:13.5px;color:var(--ink-3);max-width:74ch}
+</style>
+<div class="wrap">
+
+<header class="hd">
+  <p class="eyebrow">Reprodução aberta · arXiv:2603.24517 · Setembro de 2026</p>
+  <h1>O andaime não paga</h1>
+  <p class="dek">Quatro experimentos controlados sobre operadores de variação agênticos em engenharia de
+  dados. O loop entrega 4–7×; a arquitetura em volta dele não se distingue do ruído em três medições
+  independentes; o modelo, sim — e orçamento não substitui capacidade.</p>
+  <p class="byline">
+    <span>AVO Data Lab</span><span>·</span>
+    <span>US$ 1.304 em compute</span><span>·</span>
+    <span>132 runs · 553 passos</span><span>·</span>
+    <span>13 figuras</span><span>·</span>
+    <span>417 commits</span>
+  </p>
+</header>
+
+
+<div class="abstract">
+  <h2>Resumo</h2>
+  <p>A NVIDIA descreve o AVO — <em>Agentic Variation Operators</em> — como uma busca evolutiva em que um
+  coding agent é o operador de variação, formalizada como <code>Vary(P_t) = Agent(P_t, K, f)</code>. O
+  sistema completo marcou 100 % no ARC-AGI-3. <strong>Nenhuma comparação controlada da contribuição dos
+  componentes do AVO foi publicada</strong>, e o corpo do próprio post da NVIDIA afirma que seus números
+  «não devem ser interpretados como medida direta da contribuição de performance do AVO».</p>
+  <p>Construímos uma bancada independente em engenharia de dados — seis alvos com função objetiva
+  verificável, nove propriedades de validade, e uma bateria de nove candidatos trapaceiros — e rodamos essa
+  comparação. <strong>Em três experimentos, dois alvos e US$ 976, remover a knowledge base, a memória entre
+  passos ou o supervisor não produziu diferença distinguível do ruído, e trocar o AVO completo por um agente
+  sem estrutura também não.</strong> Um quarto experimento, de US$ 82, mediu o eixo que os três primeiros
+  mantiveram fixo sem perceber — o modelo — e achou <strong>+28,7 % (IC 95 % [22,9 %, 33,4 %],
+  p = 0,016)</strong>. Dar 4,5× mais orçamento ao modelo menor comprou <strong>−0,4 %</strong> (p = 0,902).</p>
+  <p>O loop em si funciona: <strong>4–7× de melhoria em 51 runs</strong>, em três domínios — throughput em
+  Python, plano de consulta em SQL e qualidade de record linkage sob orçamento — sem que uma única trapaça
+  tenha sido aceita. A caracterização da dinâmica oferece a explicação mecânica mais provável para os nulos:
+  <strong>o primeiro passo entrega 439,6 % e o oitavo entrega 3,9 %</strong>, de modo que componentes que
+  atuam sobre a continuação da busca disputam uma fatia da mesma ordem que o ruído.</p>
+  <p>Reportamos dois defeitos de instrumento que só apareceram sob a disciplina de pré-registro — um
+  detector que marcava como cega justamente a sessão que media melhor, e um denominador que variava 1,68×
+  sobre um artefato idêntico — e o preço da resposta que não compramos: <strong>n ≈ 41 por braço,
+  US$ 1.889 e 119 h</strong> para um único par de braços.</p>
+</div>
+
+
+<div class="tiles">
+  <div class="tile"><span class="v">4–7×</span><span class="k">melhoria do loop, 51 runs</span></div>
+  <div class="tile"><span class="v">+28,7 %</span><span class="k">efeito do modelo, p=0,016</span></div>
+  <div class="tile"><span class="v">−0,4 %</span><span class="k">4,5× mais orçamento</span></div>
+  <div class="tile"><span class="v">US$ 976</span><span class="k">medindo andaime, sem achado</span></div>
+  <div class="tile"><span class="v">18</span><span class="k">defeitos de instrumento</span></div>
+  <div class="tile"><span class="v">0</span><span class="k">trapaças aceitas</span></div>
+</div>
+
+<nav class="toc"><h2>Índice</h2><ol>
+<li><span class="pt">Parte I — O problema e a bancada</span></li>
+<li><a href="#s01"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">01</span>A pergunta que ninguém respondeu</a></li>
+<li><a href="#s02"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">02</span>O AVO, mecanicamente</a></li>
+<li><a href="#s03"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">03</span>As nove propriedades de um alvo válido</a></li>
+<li><a href="#s04"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">04</span>Os seis alvos</a></li>
+<li><a href="#s05"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">05</span>A bateria anti-trapaça</a></li>
+<li><a href="#s06"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">06</span>A métrica, e o que ela cancela</a></li>
+<li><span class="pt">Parte II — O que o loop faz</span></li>
+<li><a href="#s07"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">07</span>Generalidade: o mesmo harness em três domínios</a></li>
+<li><a href="#s08"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">08</span>A dinâmica de uma busca</a></li>
+<li><a href="#s09"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">09</span>A distribuição dos 51 runs</a></li>
+<li><a href="#s10"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">10</span>A escada de headroom</a></li>
+<li><a href="#s11"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">11</span>A propriedade de destravamento</a></li>
+<li><span class="pt">Parte III — Os quatro contrastes</span></li>
+<li><a href="#s12"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">12</span>Desenho e análise pré-registrada</a></li>
+<li><a href="#s13"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">13</span>Resultado: oito de nove cruzam o zero</a></li>
+<li><a href="#s14"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">14</span>O eixo que ficou invisível</a></li>
+<li><a href="#s15"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">15</span>Capacidade não se compra com orçamento</a></li>
+<li><a href="#s16"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">16</span>Eficiência por dólar</a></li>
+<li><span class="pt">Parte IV — O instrumento</span></li>
+<li><a href="#s17"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">17</span>Dezoito defeitos, dois desta rodada</a></li>
+<li><a href="#s18"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">18</span>A disciplina que os expôs</a></li>
+<li><span class="pt">Parte V — O que usar e quando</span></li>
+<li><a href="#s19"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">19</span>A matriz de decisão</a></li>
+<li><a href="#s20"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">20</span>O preço de cada pergunta</a></li>
+<li><a href="#s21"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">21</span>Limitações</a></li>
+<li><a href="#s22"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">22</span>Conclusão</a></li>
+<li><a href="#s23"><span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink-3);margin-right:8px">23</span>Reprodutibilidade</a></li>
+</ol></nav>
+
+<div class="part"><span class="pn">Parte I</span><h2>O problema e a bancada</h2>
+<p>Antes de medir o que quer que seja, é preciso um instrumento que não minta. Metade do custo deste
+trabalho foi construir esse instrumento, e três das nove propriedades que ele exige saíram de alvos que
+se perderam por não tê-las.</p></div>
+
+<section id="s01"><h3 class="sec"><span class="num">01</span>A pergunta que ninguém respondeu</h3>
+<div class="measure">
+<p>A NVIDIA descreve o AVO — <em>Agentic Variation Operators</em> — como uma busca evolutiva sobre
+programas em que um coding agent é o operador de variação. A formalização é
+<code>Vary(P_t) = Agent(P_t, K, f)</code>: um incumbente <code>P_t</code>, uma base de conhecimento
+<code>K</code>, e uma função objetiva <code>f</code> que arbitra. Em volta disso o harness acrescenta
+lineage versionado com gate de correção, memória entre passos e um supervisor que detecta estagnação.</p>
+<p>O sistema completo marcou 100 % no ARC-AGI-3, e a imprensa reportou como «de 30 % para 100 %». O corpo
+do próprio post da NVIDIA diz o contrário:</p>
+<blockquote style="border-left:3px solid var(--rule);margin:18px 0;padding:2px 0 2px 20px;color:var(--ink-2);font-style:italic">
+Nossa execução usou a mesma família de modelo sob uma configuração de reasoning diferente e um sistema de
+agente e setup de avaliação substancialmente diferentes. Esses números portanto não devem ser interpretados
+como medida direta da contribuição de performance do AVO.</blockquote>
+<p>Ou seja: <strong>o número mais citado sobre o AVO não é uma medida do AVO</strong>, e quem escreveu o
+paper diz isso. O que falta é a comparação controlada — mesmo modelo, mesma tarefa, mesmo orçamento,
+mudando uma peça de cada vez.</p>
+<h4>Por que um benchmark saturado não responde</h4>
+<p>Quando o ARC-AGI-3 lançou em março de 2026, humanos marcavam 100 % e sistemas de IA de fronteira
+0,51 %. Até o fim de agosto, <strong>três harnesses independentes</strong> — Tycho, VISTA e AVO — já tinham
+alcançado o score perfeito no public set. Reproduzir 100 % ali entrou num clube de três; não diz qual peça
+fez o trabalho, e com o teto atingido não pode dizer.</p>
+<p>Esta reprodução escolheu o caminho oposto: um domínio onde a função objetiva é contínua e verificável —
+engenharia de dados — e onde a pergunta «quanto cada peça contribui?» é decidível por medição.</p>
+</div>
+</section>
+
+<section id="s02"><h3 class="sec"><span class="num">02</span>O AVO, mecanicamente</h3>
+<div class="measure">
+<p>O laço tem cinco peças, e quatro delas foram testadas por remoção. A quinta — a função objetiva —
+não pode ser removida sem que o experimento deixe de existir, e por isso ela nunca aparece nos contrastes;
+ela é a condição de possibilidade de todos eles.</p>
+</div>
+<figure>
+<svg viewBox="0 0 800 340" role="img" aria-label="Diagrama do loop AVO com as quatro peças ablacionadas e o efeito medido de cada remoção">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-3)"/></marker></defs>
+<rect x="40" y="120" width="120" height="58" rx="4" fill="var(--sunk)" stroke="var(--rule)" stroke-width="1.5"/>
+<text x="100.0" y="143.0" text-anchor="middle" font-size="13" font-weight="600" fill="var(--ink)" dominant-baseline="middle">incumbente</text>
+<text x="100.0" y="161.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">P_t</text>
+<rect x="240" y="120" width="150" height="58" rx="4" fill="var(--panel)" stroke="var(--s1)" stroke-width="1.5"/>
+<text x="315.0" y="143.0" text-anchor="middle" font-size="13" font-weight="500" fill="var(--ink)" dominant-baseline="middle">agente</text>
+<text x="315.0" y="161.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">Vary(P_t, K, f)</text>
+<rect x="470" y="120" width="120" height="58" rx="4" fill="var(--panel)" stroke="var(--rule)" stroke-width="1.5"/>
+<text x="530.0" y="143.0" text-anchor="middle" font-size="13" font-weight="500" fill="var(--ink)" dominant-baseline="middle">candidato</text>
+<text x="530.0" y="161.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">P′</text>
+<rect x="470" y="236" width="120" height="58" rx="4" fill="var(--panel)" stroke="var(--s2)" stroke-width="1.5"/>
+<text x="530.0" y="259.0" text-anchor="middle" font-size="13" font-weight="500" fill="var(--ink)" dominant-baseline="middle">avaliador</text>
+<text x="530.0" y="277.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">f — o árbitro</text>
+<rect x="240" y="236" width="150" height="58" rx="4" fill="var(--panel)" stroke="var(--rule)" stroke-width="1.5"/>
+<text x="315.0" y="259.0" text-anchor="middle" font-size="13" font-weight="500" fill="var(--ink)" dominant-baseline="middle">gate + lineage</text>
+<text x="315.0" y="277.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">iguala-ou-melhora</text>
+<rect x="40" y="236" width="120" height="58" rx="4" fill="var(--panel)" stroke="var(--rule)" stroke-width="1.5"/>
+<text x="100.0" y="259.0" text-anchor="middle" font-size="13" font-weight="500" fill="var(--ink)" dominant-baseline="middle">knowledge base</text>
+<text x="100.0" y="277.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">K</text>
+<line x1="160" y1="149" x2="238" y2="149" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ah)"/>
+<line x1="390" y1="149" x2="468" y2="149" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ah)"/>
+<line x1="530" y1="178" x2="530" y2="234" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ah)"/>
+<line x1="468" y1="265" x2="392" y2="265" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="430.0" y="258.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)">score</text>
+<line x1="238" y1="265" x2="162" y2="265" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="200.0" y="258.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)">aceita</text>
+<path d="M 100 236 L 100 206 L 315 206 L 315 180" fill="none" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah)"/>
+<text x="315" y="42" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)">O que o AVO acrescenta a «um agente com um avaliador»</text>
+<text x="315" y="64" text-anchor="middle" font-size="12" fill="var(--ink-2)">as quatro peças testadas: knowledge base, memória entre passos, supervisor, lineage com gate</text>
+<rect x="620" y="120" width="150" height="174" rx="4" fill="var(--sunk)" stroke="var(--rule)" stroke-width="1"/>
+<text x="695" y="142" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1" fill="var(--ink-3)">ABLACIONADOS</text>
+<text x="634" y="166" font-size="11.5" fill="var(--ink)">knowledge base</text>
+<text x="756" y="166" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--null)">−1,5 %</text>
+<text x="634" y="196" font-size="11.5" fill="var(--ink)">memória</text>
+<text x="756" y="196" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--null)">+5,9 %</text>
+<text x="634" y="226" font-size="11.5" fill="var(--ink)">supervisor</text>
+<text x="756" y="226" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--null)">−5,4 %</text>
+<text x="634" y="256" font-size="11.5" fill="var(--ink)">tudo × agente</text>
+<text x="756" y="256" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--null)">+4,7 %</text>
+<text x="695" y="286" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--null)">nenhum distinguível</text>
+<text x="115" y="322" font-size="11.5" fill="var(--ink-3)">O lineage guarda a melhor versão: 24 % dos passos foram rejeitados e nenhum candidato pior substituiu o incumbente.</text>
+</svg>
+<figcaption><b>Fig. 1</b> O loop, e o que foi ablacionado. O incumbente entra no agente, que consulta a base de conhecimento e a função objetiva; o candidato é medido, e o gate só o promove se ele igualar ou melhorar. As quatro peças testadas aparecem à direita com o efeito medido de cada remoção.</figcaption>
+</figure>
+<div class="measure">
+<p>A política de aceite é <strong>iguala-ou-melhora</strong>: um candidato que empata com o incumbente é
+promovido. Isso é deliberado no paper original — permite um refactor neutro que abre caminho para o ganho
+seguinte — e tem consequência medível, que aparece na §08.</p>
+</div>
+</section>
+
+<section id="s03"><h3 class="sec"><span class="num">03</span>As nove propriedades de um alvo válido</h3>
+<div class="measure">
+<p>Um alvo é o quarteto <em>seed</em> + <code>f</code> + knowledge base + datasets. Ele precisa das nove
+propriedades abaixo; faltando qualquer uma, produz números que parecem resultado e não são.</p>
+</div>
+<div class="tw"><table>
+<thead><tr><th>#</th><th>propriedade</th><th>como se verifica</th><th>de onde veio</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td>O gate tem mordida</td><td><code>--selftest</code> verde, ≥ 5 mutantes rejeitados</td><td>falha real</td></tr>
+<tr><td class="n">2</td><td>O custo está dimensionado</td><td><code>--budget</code> verde</td><td>falha real</td></tr>
+<tr><td class="n">3</td><td>O headroom é graduado</td><td>medido à mão, versão a versão</td><td>falha real</td></tr>
+<tr><td class="n">3b</td><td>A medição não é trapaceável</td><td>candidato memoizador não pontua</td><td>falha real</td></tr>
+<tr><td class="n">3c</td><td>O gate distingue o que o benchmark não distingue</td><td>propriedades compartilhadas por acidente</td><td>falha real</td></tr>
+<tr><td class="n">3d</td><td>O headroom é total <strong>e</strong> distribuído</td><td>nenhum movimento vale &gt; 70 %</td><td>upstream</td></tr>
+<tr><td class="n">3e</td><td>A sonda de 100 s não denuncia teto subestimado</td><td><code>sonda.py</code></td><td>falha real</td></tr>
+<tr><td class="n">3f</td><td>O poder foi medido <strong>antes</strong> de rodar</td><td><code>piloto.py</code></td><td>falha real</td></tr>
+<tr><td class="n">3g</td><td>O espaço não é esgotável numa sessão</td><td>movimentos que se destravam; ver §11</td><td>falha real</td></tr>
+<tr><td class="n">4</td><td>O score é diagnóstico</td><td>≥ 2 regimes que são <em>formas</em> de dado diferentes</td><td>upstream</td></tr>
+</tbody></table></div>
+<div class="measure">
+<p>A ordem em que foram descobertas importa mais que a lista. A 1 e a 2 apareceram na primeira execução;
+a 3 ao corrigir a 2; a <strong>3b só depois de o alvo já ter sido declarado pronto</strong>; a 3c só quando
+alguém rodou a busca de verdade e tentou otimizar até o fim; e a <strong>3e só quando o alvo foi usado para
+aquilo que existia para fazer — comparar dois braços — e não conseguiu</strong>. Cada correção expôs a
+seguinte.</p>
+<p>Duas das nove vieram do guia de targets do upstream e são as mais baratas de acertar. As outras sete
+custaram alvos inteiros.</p>
+</div>
+</section>
+
+<section id="s04"><h3 class="sec"><span class="num">04</span>Os seis alvos</h3>
+<div class="measure">
+<p>Seis alvos passam no <code>verify</code>. Quatro alcançam a barra de §3 — <strong>3× de headroom em ao
+menos quatro movimentos independentes</strong> — e apenas esses podem ser usados numa ablação: abaixo dessa
+barra, o alvo funciona mas não distingue braços.</p>
+</div>
+<figure>
+<svg viewBox="0 0 720 304" role="img" aria-label="Barras horizontais do headroom de cada alvo, com a barra de corte em 3 vezes">
+<line x1="200" y1="46" x2="200" y2="250" stroke="var(--rule)" stroke-width="1"/>
+<line x1="200" y1="46" x2="200" y2="250" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="200" y="268" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">0×</text>
+<line x1="332" y1="46" x2="332" y2="250" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="332" y="268" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">2×</text>
+<line x1="464" y1="46" x2="464" y2="250" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="464" y="268" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">4×</text>
+<line x1="596" y1="46" x2="596" y2="250" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="596" y="268" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">6×</text>
+<line x1="398" y1="40" x2="398" y2="250" stroke="var(--s2)" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="405" y="38" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--s2)">barra de §3: 3× em 4 movimentos</text>
+<text x="188" y="71" text-anchor="end" font-size="12.5" font-weight="600" fill="var(--ink)">sql_workload</text>
+<rect x="200" y="58" width="446.8" height="20" rx="3" fill="var(--s1)"/>
+<text x="655.8" y="73" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">6,77×</text>
+<text x="698.8" y="73" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">8 mov</text>
+<text x="188" y="105" text-anchor="end" font-size="12.5" font-weight="600" fill="var(--ink)">csv_normalize</text>
+<rect x="200" y="92" width="409.2" height="20" rx="3" fill="var(--s1)"/>
+<text x="618.2" y="107" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">6,2×</text>
+<text x="661.2" y="107" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">6 mov</text>
+<text x="188" y="139" text-anchor="end" font-size="12.5" font-weight="600" fill="var(--ink)">sql_agg</text>
+<rect x="200" y="126" width="315.5" height="20" rx="3" fill="var(--s1)"/>
+<text x="524.5" y="141" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">4,78×</text>
+<text x="567.5" y="141" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">7 mov</text>
+<text x="188" y="173" text-anchor="end" font-size="12.5" font-weight="600" fill="var(--ink)">dedupe_match</text>
+<rect x="200" y="160" width="250.8" height="20" rx="3" fill="var(--s1)"/>
+<text x="459.8" y="175" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">3,8×</text>
+<text x="502.8" y="175" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">7 mov</text>
+<text x="188" y="207" text-anchor="end" font-size="12.5" font-weight="400" fill="var(--ink)">etl_agg</text>
+<rect x="200" y="194" width="171.6" height="20" rx="3" fill="var(--null)"/>
+<text x="380.6" y="209" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">2,6×</text>
+<text x="423.6" y="209" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">2 mov</text>
+<text x="483.6" y="209" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--null)">não separa braços</text>
+<text x="188" y="241" text-anchor="end" font-size="12.5" font-weight="400" fill="var(--ink)">sessionize</text>
+<rect x="200" y="228" width="120.8" height="20" rx="3" fill="var(--null)"/>
+<text x="329.8" y="243" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">1,83×</text>
+<text x="372.8" y="243" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">3 mov</text>
+<text x="432.8" y="243" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--null)">não separa braços</text>
+<text x="200" y="290" font-size="11.5" fill="var(--ink-3)">Headroom medido à mão, versão a versão, antes de qualquer agente rodar. «Movimentos» é o número de melhorias independentes que compõem o teto.</text>
+</svg>
+<figcaption><b>Fig. 3</b> Os seis alvos, com o headroom medido à mão. Quatro passam a barra de §3 (3× em ao menos 4 movimentos independentes); dois não — funcionam, mas não distinguem braços numa ablação, e por isso não entraram nos experimentos.</figcaption>
+</figure>
+<div class="tw"><table>
+<thead><tr><th>alvo</th><th>o que evolui</th><th><code>f</code> maximiza</th><th class="n">headroom</th><th class="n">mov.</th><th class="n">mutantes</th><th>apto a ablação</th></tr></thead>
+<tbody>
+<tr class="hl"><td><code>sql_workload</code></td><td>9 artefatos SQL</td><td>throughput em 3 regimes</td><td class="n">6,77×</td><td class="n">8</td><td class="n">27</td><td>sim</td></tr>
+<tr><td><code>csv_normalize</code></td><td>módulo Python</td><td>throughput</td><td class="n">6,20×</td><td class="n">6</td><td class="n">18</td><td>sim</td></tr>
+<tr><td><code>sql_agg</code></td><td><code>query.sql</code> + <code>setup.sql</code></td><td>throughput</td><td class="n">4,78×</td><td class="n">7</td><td class="n">21</td><td>sim</td></tr>
+<tr><td><code>dedupe_match</code></td><td>módulo Python</td><td><strong>F1</strong> sob orçamento de tempo</td><td class="n">3,80×</td><td class="n">7</td><td class="n">13</td><td>sim</td></tr>
+<tr class="dim"><td><code>etl_agg</code></td><td>módulo Python</td><td>throughput</td><td class="n">2,60×</td><td class="n">2</td><td class="n">10</td><td>não — 2 movimentos</td></tr>
+<tr class="dim"><td><code>sessionize</code></td><td>módulo Python</td><td>throughput</td><td class="n">1,83×</td><td class="n">3</td><td class="n">10</td><td>não — teto baixo</td></tr>
+</tbody></table></div>
+<div class="measure">
+<p>O <code>dedupe_match</code> merece nota: ele é o único cuja função objetiva <strong>não é
+velocidade</strong>. Maximiza F1 sob um orçamento de tempo vinculante, e o gate julga forma, determinismo e
+pureza em vez de igualdade de result set. Ele existe para testar se a bancada mede arquitetura ou mede
+«otimização de throughput em Python» — a tese de generalidade da §07.</p>
+<p>O <code>sql_workload</code> é o único construído <em>de trás para frente</em> a partir da propriedade
+§3g: nove artefatos em vez de um, e movimentos cujo valor muda de sinal conforme o que já foi feito. É o
+alvo dos dois experimentos mais informativos.</p>
+</div>
+</section>
+
+<section id="s05"><h3 class="sec"><span class="num">05</span>A bateria anti-trapaça</h3>
+<div class="measure">
+<p>Esta é a seção que justifica todas as outras. Um candidato que memoiza a saída devolve o resultado certo
+instantaneamente da segunda chamada em diante. Ele <strong>passa em qualquer gate de correção</strong>,
+porque o resultado <em>está</em> correto — e marca um score de ordem de grandeza absurda sem ter otimizado
+nada.</p>
+</div>
+<figure>
+<svg viewBox="0 0 720 300" role="img" aria-label="Escala logarítmica mostrando que o memoizador sem defesas marca 4,6 milhões contra 4,16 do seed, e com defesas marca 6,7">
+<line x1="108" y1="222" x2="700" y2="222" stroke="var(--rule)" stroke-width="1"/>
+<line x1="108.0" y1="52" x2="108.0" y2="222" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="108.0" y="240" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">1</text>
+<line x1="182.0" y1="52" x2="182.0" y2="222" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="182.0" y="240" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">10<tspan baseline-shift="super" font-size="8">1</tspan></text>
+<line x1="256.0" y1="52" x2="256.0" y2="222" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="256.0" y="240" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">10<tspan baseline-shift="super" font-size="8">2</tspan></text>
+<line x1="330.0" y1="52" x2="330.0" y2="222" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="330.0" y="240" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">10<tspan baseline-shift="super" font-size="8">3</tspan></text>
+<line x1="404.0" y1="52" x2="404.0" y2="222" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="404.0" y="240" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">10<tspan baseline-shift="super" font-size="8">4</tspan></text>
+<line x1="478.0" y1="52" x2="478.0" y2="222" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="478.0" y="240" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">10<tspan baseline-shift="super" font-size="8">5</tspan></text>
+<line x1="552.0" y1="52" x2="552.0" y2="222" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="552.0" y="240" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">10<tspan baseline-shift="super" font-size="8">6</tspan></text>
+<line x1="626.0" y1="52" x2="626.0" y2="222" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="626.0" y="240" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">10<tspan baseline-shift="super" font-size="8">7</tspan></text>
+<text x="404" y="262" text-anchor="middle" font-size="12" fill="var(--ink-2)">score do avaliador (escala logarítmica)</text>
+<text x="96" y="75" text-anchor="end" font-size="12" font-weight="600" fill="var(--ink)">memoizador, SEM as defesas</text>
+<rect x="108" y="64" width="493.5" height="17" rx="3" fill="var(--s2)"/>
+<text x="610.5" y="77" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">4.672.896</text>
+<text x="96" y="109" text-anchor="end" font-size="12" font-weight="400" fill="var(--ink)">o mesmo memoizador, COM as defesas</text>
+<rect x="108" y="98" width="61.1" height="17" rx="3" fill="var(--s1)"/>
+<text x="178.1" y="111" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">6,70</text>
+<text x="96" y="143" text-anchor="end" font-size="12" font-weight="400" fill="var(--ink)">t5 — assume ordem dos campos</text>
+<rect x="108" y="132" width="89.9" height="17" rx="3" fill="var(--s2)"/>
+<text x="206.9" y="145" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">16,38</text>
+<text x="96" y="177" text-anchor="end" font-size="12" font-weight="400" fill="var(--ink)">cache em disco / sqlite / precisão</text>
+<text x="112" y="177" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--null)">reprovado pelo gate — score 0</text>
+<text x="96" y="211" text-anchor="end" font-size="12" font-weight="400" fill="var(--ink)">o seed honesto</text>
+<rect x="108" y="200" width="45.8" height="17" rx="3" fill="var(--null)"/>
+<text x="162.8" y="213" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">4,16</text>
+<text x="108" y="286" font-size="11.5" fill="var(--ink-3)">Nove candidatos rodados pelo avaliador de verdade. Seis reprovaram, três passaram no gate e foram neutralizados pelas camadas anti-memoização.</text>
+</svg>
+<figcaption><b>Fig. 2</b> A bateria anti-trapaça. Sem as defesas, um candidato que memoiza a saída marca <strong>4.672.896</strong> contra 4,16 do seed — passa em qualquer gate de correção, porque o resultado está certo. Com as três camadas, o mesmo truque pontua como a versão honesta que ele embrulha. Um candidato (t5, que assume ordem fixa dos campos) pontuou 16,38 e é o motivo de a propriedade §3c existir.</figcaption>
+</figure>
+<div class="tw"><table>
+<thead><tr><th>#</th><th>candidato</th><th>passa no gate?</th><th class="n">score</th><th>veredito</th></tr></thead>
+<tbody>
+<tr><td class="n">t1</td><td>memoiza indexado pelo <strong>caminho</strong></td><td>sim</td><td class="n">6,70</td><td>neutralizado</td></tr>
+<tr><td class="n">t2</td><td>memoiza indexado pelo <strong>conteúdo</strong></td><td>sim</td><td class="n">6,21</td><td>neutralizado</td></tr>
+<tr><td class="n">t3</td><td>cache em disco (JSON)</td><td>não</td><td class="n">0</td><td>reprovado</td></tr>
+<tr><td class="n">t4</td><td>cache via <code>sqlite3</code> (abre pelo C)</td><td>não</td><td class="n">0</td><td>reprovado</td></tr>
+<tr class="hl"><td class="n">t5</td><td><strong>assume ordem dos campos</strong></td><td>sim</td><td class="n">16,38</td><td><strong>pontuou</strong></td></tr>
+<tr><td class="n">t6</td><td>reduz precisão (float32)</td><td>não</td><td class="n">0</td><td>reprovado</td></tr>
+<tr><td class="n">t7</td><td>lê uma linha a cada 4 e extrapola</td><td>não</td><td class="n">0</td><td>reprovado</td></tr>
+<tr><td class="n">t8</td><td>devolve mapeamento preguiçoso</td><td>não</td><td class="n">0</td><td>reprovado</td></tr>
+<tr><td class="n">t9</td><td>identifica o arquivo pelo tamanho</td><td>sim</td><td class="n">6,54</td><td>neutralizado</td></tr>
+</tbody></table></div>
+<div class="measure">
+<p><em>Neutralizado</em> significa: passa no gate, mas as três camadas anti-memoização fazem o cache errar
+sempre, então o candidato pontua como a versão honesta que ele embrulha (~6,4) e não como trapaça.</p>
+<div class="finding warn"><span class="tag">O que quase escapou</span>
+<p><strong>t5 pontuou 16,38 — quase 4× o seed — sem resolver o problema.</strong> Ele assume que os campos
+chegam sempre na mesma ordem, o que é verdade no dataset do benchmark e falso em geral. É a origem da
+propriedade §3c: <em>o gate e o benchmark compartilhavam uma propriedade por acidente</em>. O conserto foi
+fazer o gate rodar num dataset construído para não ter essa propriedade.</p></div>
+<p>Sem essa bateria, qualquer ablação deste laboratório mediria cache em vez de arquitetura — e os
+US$ 1.304 teriam produzido um número grande e sem significado. É por isso que
+<code>tests/test_anticheat.py</code> roda em CI e falha o build inteiro se qualquer alvo perder as
+defesas.</p>
+</div>
+</section>
+
+<section id="s06"><h3 class="sec"><span class="num">06</span>A métrica, e o que ela cancela</h3>
+<div class="measure">
+<p>A métrica primária é <code>primary_final / primary_seed</code>: quanto o artefato final melhorou sobre o
+ponto de partida <em>do próprio run</em>. <code>primary</code> é a média geométrica das métricas de tempo
+nos regimes, zerada quando o gate reprova a correção.</p>
+<p>A razão existe para cancelar deriva de máquina. Um run leva de 1,5 a 3 h; se a máquina acelera nesse
+intervalo, um score absoluto infla. Medir o seed e o final na mesma máquina e dividir remove a parte comum.</p>
+<div class="finding"><span class="tag">Verificado, não assumido</span>
+<p>Testamos a alternativa: fixar o denominador num valor de referência comum. <strong>Piorou o coeficiente
+de variação em três dos quatro braços</strong> — o denominador próprio está fazendo trabalho real. Mas esse
+cancelamento vale <em>dentro</em> de um experimento com braços intercalados; entre experimentos de dias
+diferentes ele falha, e é o defeito 18 da §17.</p></div>
+<p>A média geométrica, e não a aritmética, porque os regimes têm escalas diferentes por construção — um
+regime «frio» mede centenas de milissegundos e um regime «estreito» dezenas. A média aritmética deixaria o
+regime lento dominar o score e tornaria o alvo não-diagnóstico, que é a propriedade 4.</p>
+</div>
+</section>
+
+<div class="part"><span class="pn">Parte II</span><h2>O que o loop faz</h2>
+<p>Antes de perguntar se a arquitetura importa, é preciso estabelecer que o loop funciona — e caracterizar
+<em>como</em> ele funciona, porque a forma da curva restringe o que qualquer ablação pode achar.</p></div>
+
+<section id="s07"><h3 class="sec"><span class="num">07</span>Generalidade: o mesmo harness em três domínios</h3>
+<div class="measure">
+<p>A afirmação central da NVIDIA é que o AVO é <strong>independente de domínio</strong>: troca-se o
+avaliador e as ferramentas, e a mesma máquina otimiza outra coisa. Ela é testável, e testá-la é mais
+interessante que qualquer número de ARC.</p>
+</div>
+<div class="tw"><table>
+<thead><tr><th></th><th><code>etl_agg</code></th><th><code>sql_agg</code></th><th><code>dedupe_match</code></th></tr></thead>
+<tbody>
+<tr><td>o que evolui</td><td>módulo Python</td><td><code>query.sql</code> + <code>setup.sql</code></td><td>módulo Python</td></tr>
+<tr><td><code>f</code> maximiza</td><td>throughput</td><td>throughput</td><td><strong>F1</strong></td></tr>
+<tr><td>restrição vinculante</td><td>correção exata</td><td>result set exato</td><td><strong>orçamento de tempo</strong></td></tr>
+<tr><td>o que o gate julga</td><td>valor e apresentação</td><td>result set linha a linha</td><td>forma, determinismo, pureza</td></tr>
+<tr><td class="n">seed</td><td class="n">4,225</td><td class="n">1,563</td><td class="n">0,249</td></tr>
+<tr><td class="n">melhor</td><td class="n">15,305</td><td class="n">4,208</td><td class="n">0,757</td></tr>
+<tr class="hl"><td class="n">ganho</td><td class="n">+262 %</td><td class="n">+169 %</td><td class="n">+204 %</td></tr>
+</tbody></table></div>
+<div class="finding"><span class="tag">Achado · generalidade confirmada</span>
+<p>O mesmo harness, trocando apenas o avaliador e as ferramentas, otimizou <strong>throughput em Python,
+plano de consulta em SQL e qualidade de record linkage sob orçamento</strong>. O caso do
+<code>dedupe_match</code> é o mais forte: ali <code>f</code> não é velocidade, e o loop ainda assim subiu o
+F1 de 0,249 para 0,757. A tese de independência de domínio se sustenta nesta bancada.</p></div>
+</section>
+
+<section id="s08"><h3 class="sec"><span class="num">08</span>A dinâmica de uma busca</h3>
+<div class="measure">
+<p>Esta figura é o achado mais subestimado do trabalho, e restringe tudo que vem depois.</p>
+</div>
+<figure>
+<svg viewBox="0 0 720 312" role="img" aria-label="Curva de ganho por passo em escala logarítmica caindo de 439 por cento para 3,9 por cento, com barras da taxa de aceite abaixo">
+<line x1="80" y1="46" x2="80" y2="208" stroke="var(--rule)" stroke-width="1"/>
+<line x1="80" y1="208" x2="672" y2="208" stroke="var(--rule)" stroke-width="1"/>
+<line x1="80" y1="208.0" x2="672" y2="208.0" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="70" y="212.0" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">1 %</text>
+<line x1="80" y1="154.0" x2="672" y2="154.0" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="70" y="158.0" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">10 %</text>
+<line x1="80" y1="100.0" x2="672" y2="100.0" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="70" y="104.0" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">100 %</text>
+<polyline fill="none" stroke="var(--s1)" stroke-width="2.5" stroke-linejoin="round" points="96.0,65.3 172.0,142.5 248.0,150.5 324.0,158.4 400.0,161.7 476.0,167.2 552.0,172.2 628.0,176.1"/>
+<circle cx="96.0" cy="65.3" r="5" fill="var(--s1)" stroke="var(--panel)" stroke-width="2"/>
+<text x="96.0" y="51.3" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">439,6 %</text>
+<circle cx="172.0" cy="142.5" r="5" fill="var(--s1)" stroke="var(--panel)" stroke-width="2"/>
+<text x="172.0" y="128.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">16,3 %</text>
+<circle cx="248.0" cy="150.5" r="5" fill="var(--s1)" stroke="var(--panel)" stroke-width="2"/>
+<text x="248.0" y="136.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">11,6 %</text>
+<circle cx="324.0" cy="158.4" r="5" fill="var(--s1)" stroke="var(--panel)" stroke-width="2"/>
+<text x="324.0" y="144.4" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">8,3 %</text>
+<circle cx="400.0" cy="161.7" r="5" fill="var(--s1)" stroke="var(--panel)" stroke-width="2"/>
+<text x="400.0" y="147.7" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">7,2 %</text>
+<circle cx="476.0" cy="167.2" r="5" fill="var(--s1)" stroke="var(--panel)" stroke-width="2"/>
+<text x="476.0" y="153.2" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">5,7 %</text>
+<circle cx="552.0" cy="172.2" r="5" fill="var(--s1)" stroke="var(--panel)" stroke-width="2"/>
+<text x="552.0" y="158.2" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">4,6 %</text>
+<circle cx="628.0" cy="176.1" r="5" fill="var(--s1)" stroke="var(--panel)" stroke-width="2"/>
+<text x="628.0" y="162.1" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">3,9 %</text>
+<text x="96.0" y="228" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">1</text>
+<text x="172.0" y="228" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">2</text>
+<text x="248.0" y="228" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">3</text>
+<text x="324.0" y="228" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">4</text>
+<text x="400.0" y="228" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">5</text>
+<text x="476.0" y="228" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">6</text>
+<text x="552.0" y="228" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">7</text>
+<text x="628.0" y="228" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">8</text>
+<text x="376" y="250" text-anchor="middle" font-size="12" fill="var(--ink-2)">passo do loop</text>
+<text x="80" y="36" font-size="12" fill="var(--ink-2)">ganho médio do passo aceito (escala log)</text>
+<text x="70" y="286" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">aceite</text>
+<rect x="69.0" y="272.0" width="54" height="22.0" rx="2" fill="var(--null)" opacity="0.55"/>
+<text x="96.0" y="268.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)">100 %</text>
+<rect x="145.0" y="275.3" width="54" height="18.7" rx="2" fill="var(--null)" opacity="0.55"/>
+<text x="172.0" y="271.3" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)">85 %</text>
+<rect x="221.0" y="279.7" width="54" height="14.3" rx="2" fill="var(--null)" opacity="0.55"/>
+<text x="248.0" y="275.7" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)">65 %</text>
+<rect x="297.0" y="278.6" width="54" height="15.4" rx="2" fill="var(--null)" opacity="0.55"/>
+<text x="324.0" y="274.6" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)">70 %</text>
+<rect x="373.0" y="277.5" width="54" height="16.5" rx="2" fill="var(--null)" opacity="0.55"/>
+<text x="400.0" y="273.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)">75 %</text>
+<rect x="449.0" y="277.5" width="54" height="16.5" rx="2" fill="var(--null)" opacity="0.55"/>
+<text x="476.0" y="273.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)">75 %</text>
+<rect x="525.0" y="277.5" width="54" height="16.5" rx="2" fill="var(--null)" opacity="0.55"/>
+<text x="552.0" y="273.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)">75 %</text>
+<rect x="601.0" y="279.7" width="54" height="14.3" rx="2" fill="var(--null)" opacity="0.55"/>
+<text x="628.0" y="275.7" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)">65 %</text>
+<line x1="80" y1="294" x2="672" y2="294" stroke="var(--rule)" stroke-width="1"/>
+</svg>
+<figcaption><b>Fig. 4</b> Retornos decrescentes, medidos sobre os 160 passos da Ablação 2. <strong>O primeiro passo entrega 439,6 % e o oitavo entrega 3,9 %</strong> — uma queda de duas ordens de grandeza. A taxa de aceite (barras cinza) cai de 100 % para 65 % e estabiliza: o agente continua propondo, mas o gate passa a recusar dois de cada três.</figcaption>
+</figure>
+<div class="measure">
+<p>Três leituras, todas com consequência prática:</p>
+<ol class="body">
+<li><strong>O primeiro passo é quase tudo.</strong> 439,6 % de ganho médio, contra 3,9 % no oitavo. Um
+sistema que só rodasse um passo capturaria a maior parte do valor. Isso não é um defeito do método — é a
+estrutura do problema: o seed é obviamente subótimo e a primeira melhoria é a que colhe o óbvio.</li>
+<li><strong>A taxa de aceite cai e estabiliza em ~70 %.</strong> O agente continua propondo com a mesma
+frequência; o gate é que passa a recusar. Nos 160 passos, <strong>38 foram rejeitados e em nenhum deles um
+candidato pior substituiu o incumbente</strong> — o lineage fez seu trabalho 24 % do tempo.</li>
+<li><strong>O custo por passo não cai junto.</strong> Fica entre US$ 2,32 e US$ 3,40 do começo ao fim,
+enquanto o ganho cai duas ordens de grandeza. O custo marginal por unidade de ganho, portanto, cresce
+cerca de <strong>100× ao longo de oito passos</strong>.</li>
+</ol>
+<div class="finding warn"><span class="tag">Consequência para a ablação</span>
+<p>Se 90 % do ganho chega no primeiro passo, qualquer componente que atue sobre a <em>continuação</em> da
+busca — memória entre passos, supervisor de estagnação — só pode influenciar os 10 % restantes. <strong>A
+forma da curva impõe um teto ao efeito que a ablação poderia encontrar</strong>, e esse teto é da mesma
+ordem que o ruído da bancada. É a explicação mecânica mais provável para os nulos da Parte III.</p></div>
+</div>
+</section>
+
+<section id="s09"><h3 class="sec"><span class="num">09</span>A distribuição dos 51 runs</h3>
+<figure>
+<svg viewBox="0 0 720 292" role="img" aria-label="Histograma dos 51 runs, bimodal, com mínimo em 4,22 e máximo em 10,01">
+<line x1="100" y1="236" x2="688" y2="236" stroke="var(--rule)" stroke-width="1"/>
+<text x="100" y="254" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">4×</text>
+<text x="184" y="254" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">5×</text>
+<text x="268" y="254" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">6×</text>
+<text x="352" y="254" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">7×</text>
+<text x="436" y="254" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">8×</text>
+<text x="520" y="254" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">9×</text>
+<text x="604" y="254" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">10×</text>
+<text x="688" y="254" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">11×</text>
+<circle cx="74" cy="206.0" r="0" fill="none"/>
+<circle cx="84" cy="195.5" r="0" fill="none"/>
+<circle cx="94" cy="185.0" r="0" fill="none"/>
+<circle cx="104" cy="174.5" r="0" fill="none"/>
+<circle cx="114" cy="164.0" r="0" fill="none"/>
+<circle cx="124" cy="153.5" r="0" fill="none"/>
+<circle cx="134" cy="143.0" r="0" fill="none"/>
+<circle cx="74" cy="206" r="0" fill="none"/>
+<circle cx="84" cy="206" r="0" fill="none"/>
+<circle cx="94" cy="206" r="0" fill="none"/>
+<circle cx="104" cy="206" r="0" fill="none"/>
+<circle cx="114" cy="206" r="0" fill="none"/>
+<circle cx="124" cy="206" r="0" fill="none"/>
+<circle cx="134" cy="206" r="0" fill="none"/>
+<circle cx="74" cy="206" r="0" fill="none"/>
+<circle cx="84" cy="206" r="0" fill="none"/>
+<circle cx="94" cy="206" r="0" fill="none"/>
+<circle cx="104" cy="206" r="0" fill="none"/>
+<rect x="103" y="88.0" width="76" height="144.0" rx="3" fill="var(--null)" opacity="0.9"/>
+<text x="141.0" y="82.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">18</text>
+<circle cx="158" cy="206.0" r="0" fill="none"/>
+<circle cx="168" cy="195.5" r="0" fill="none"/>
+<circle cx="178" cy="185.0" r="0" fill="none"/>
+<circle cx="188" cy="174.5" r="0" fill="none"/>
+<circle cx="198" cy="164.0" r="0" fill="none"/>
+<circle cx="208" cy="153.5" r="0" fill="none"/>
+<circle cx="218" cy="143.0" r="0" fill="none"/>
+<circle cx="158" cy="206" r="0" fill="none"/>
+<circle cx="168" cy="206" r="0" fill="none"/>
+<circle cx="178" cy="206" r="0" fill="none"/>
+<circle cx="188" cy="206" r="0" fill="none"/>
+<circle cx="198" cy="206" r="0" fill="none"/>
+<circle cx="208" cy="206" r="0" fill="none"/>
+<rect x="187" y="128.0" width="76" height="104.0" rx="3" fill="var(--null)" opacity="0.9"/>
+<text x="225.0" y="122.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">13</text>
+<circle cx="242" cy="206.0" r="0" fill="none"/>
+<circle cx="252" cy="195.5" r="0" fill="none"/>
+<circle cx="262" cy="185.0" r="0" fill="none"/>
+<rect x="271" y="208.0" width="76" height="24.0" rx="3" fill="var(--null)" opacity="0.9"/>
+<text x="309.0" y="202.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">3</text>
+<circle cx="326" cy="206.0" r="0" fill="none"/>
+<circle cx="336" cy="195.5" r="0" fill="none"/>
+<circle cx="346" cy="185.0" r="0" fill="none"/>
+<circle cx="356" cy="174.5" r="0" fill="none"/>
+<circle cx="366" cy="164.0" r="0" fill="none"/>
+<circle cx="376" cy="153.5" r="0" fill="none"/>
+<circle cx="386" cy="143.0" r="0" fill="none"/>
+<circle cx="326" cy="206" r="0" fill="none"/>
+<circle cx="336" cy="206" r="0" fill="none"/>
+<circle cx="346" cy="206" r="0" fill="none"/>
+<circle cx="356" cy="206" r="0" fill="none"/>
+<circle cx="366" cy="206" r="0" fill="none"/>
+<circle cx="376" cy="206" r="0" fill="none"/>
+<circle cx="386" cy="206" r="0" fill="none"/>
+<circle cx="326" cy="206" r="0" fill="none"/>
+<rect x="355" y="112.0" width="76" height="120.0" rx="3" fill="var(--s1)" opacity="0.9"/>
+<text x="393.0" y="106.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">15</text>
+<circle cx="410" cy="206.0" r="0" fill="none"/>
+<rect x="439" y="224.0" width="76" height="8.0" rx="3" fill="var(--s1)" opacity="0.9"/>
+<text x="477.0" y="218.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">1</text>
+<circle cx="578" cy="206.0" r="0" fill="none"/>
+<rect x="607" y="224.0" width="76" height="8.0" rx="3" fill="var(--s1)" opacity="0.9"/>
+<text x="645.0" y="218.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">1</text>
+<text x="376" y="276" text-anchor="middle" font-size="12" fill="var(--ink-2)">melhoria sobre o seed</text>
+<text x="100" y="44" font-size="12.5" font-weight="600" fill="var(--ink)">51 runs de ablação · nenhum abaixo de 4,22×</text>
+<text x="100" y="64" font-size="11.5" fill="var(--ink-2)">A bimodalidade é o alvo, não o método: <tspan font-family="IBM Plex Mono, monospace" font-size="11">sql_agg</tspan> concentra em ~5× e <tspan font-family="IBM Plex Mono, monospace" font-size="11">sql_workload</tspan> em ~7,4×.</text>
+<line x1="118.22799999999997" y1="100" x2="118.22799999999997" y2="236" stroke="var(--s2)" stroke-width="1.5" stroke-dasharray="3 3"/>
+<text x="126.22799999999997" y="114" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--s2)">mín 4,22×</text>
+<line x1="604.7560000000001" y1="100" x2="604.7560000000001" y2="236" stroke="var(--s2)" stroke-width="1.5" stroke-dasharray="3 3"/>
+<text x="596.7560000000001" y="114" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--s2)">máx 10,01×</text>
+</svg>
+<figcaption><b>Fig. 5</b> Distribuição dos 51 runs de ablação. O piso é 4,22× — <strong>nenhum run falhou em melhorar substancialmente o seed</strong>. A forma bimodal separa os dois alvos usados, não dois comportamentos do método.</figcaption>
+</figure>
+<div class="measure">
+<p>Nenhum dos 51 runs de ablação falhou. O piso é 4,22× e a mediana 5,52×. A bimodalidade separa os dois
+alvos usados — <code>sql_agg</code> concentra perto de 5× e <code>sql_workload</code> perto de 7,4× — e não
+dois comportamentos do método.</p>
+<p>A cauda superior tem um único run em 10,01× (<code>no_memory</code>, semente 1). Ele é responsável
+sozinho pela única diferença de média aparente na Ablação 2, e a mediana daquele braço — 7,27× — é
+<em>menor</em> que a do braço completo. É o tipo de artefato que uma amostra de cinco produz, e o motivo de
+a análise pré-registrada reportar intervalo em vez de ponto.</p>
+</div>
+</section>
+
+<section id="s10"><h3 class="sec"><span class="num">10</span>A escada de headroom</h3>
+<div class="measure">
+<p>O headroom de um alvo não se estima: mede-se. Para o <code>sql_workload</code> isso significou escrever
+doze versões à mão, antes de qualquer agente tocar no alvo, e cronometrar cada uma.</p>
+</div>
+<figure>
+<svg viewBox="0 0 720 330" role="img" aria-label="Curva em degraus mostrando a melhoria acumulada de 1 a 4,54 vezes ao longo de doze versões">
+<line x1="76" y1="46" x2="76" y2="236" stroke="var(--rule)" stroke-width="1"/>
+<line x1="76" y1="236" x2="700" y2="236" stroke="var(--rule)" stroke-width="1"/>
+<line x1="76" y1="227.2" x2="700" y2="227.2" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="66" y="231.2" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">1×</text>
+<line x1="76" y1="183.2" x2="700" y2="183.2" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="66" y="187.2" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">2×</text>
+<line x1="76" y1="139.2" x2="700" y2="139.2" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="66" y="143.2" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">3×</text>
+<line x1="76" y1="95.2" x2="700" y2="95.2" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="66" y="99.2" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">4×</text>
+<line x1="76" y1="51.2" x2="700" y2="51.2" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="66" y="55.2" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">5×</text>
+<polyline fill="none" stroke="var(--s1)" stroke-width="2" points="92,227.2 143,210.4 194,197.2 245,189.4 296,180.9 347,179.2 398,179.0 449,176.2 500,179.2 551,142.4 602,71.6 653,83.5"/>
+<circle cx="92" cy="227.2" r="4.5" fill="var(--s1)" stroke="var(--panel)" stroke-width="1.5"/>
+<text x="92" y="214.2" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">1,0</text>
+<g transform="translate(92,250) rotate(38)"><text x="0" y="0" font-size="9.5" fill="var(--ink-3)">v0 seed</text></g>
+<circle cx="143" cy="210.4" r="4.5" fill="var(--s1)" stroke="var(--panel)" stroke-width="1.5"/>
+<text x="143" y="197.4" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">1,38</text>
+<g transform="translate(143,250) rotate(38)"><text x="0" y="0" font-size="9.5" fill="var(--ink-3)">v1 q6 junção pela PK</text></g>
+<circle cx="194" cy="197.2" r="4.5" fill="var(--s1)" stroke="var(--panel)" stroke-width="1.5"/>
+<text x="194" y="184.2" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">1,68</text>
+<g transform="translate(194,250) rotate(38)"><text x="0" y="0" font-size="9.5" fill="var(--ink-3)">v2 q2 filtro antes</text></g>
+<circle cx="245" cy="189.4" r="4.5" fill="var(--s1)" stroke="var(--panel)" stroke-width="1.5"/>
+<text x="245" y="176.4" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">1,86</text>
+<g transform="translate(245,250) rotate(38)"><text x="0" y="0" font-size="9.5" fill="var(--ink-3)">v3 q3 janela</text></g>
+<circle cx="296" cy="180.9" r="4.5" fill="var(--s1)" stroke="var(--panel)" stroke-width="1.5"/>
+<text x="296" y="167.9" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">2,05</text>
+<g transform="translate(296,250) rotate(38)"><text x="0" y="0" font-size="9.5" fill="var(--ink-3)">v4 q1 sargável</text></g>
+<circle cx="347" cy="179.2" r="4.5" fill="var(--s1)" stroke="var(--panel)" stroke-width="1.5"/>
+<text x="347" y="166.2" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">2,09</text>
+<g transform="translate(347,250) rotate(38)"><text x="0" y="0" font-size="9.5" fill="var(--ink-3)">v5 q8 passe único</text></g>
+<circle cx="398" cy="179.0" r="4.5" fill="var(--s1)" stroke="var(--panel)" stroke-width="1.5"/>
+<text x="398" y="166.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">2,1</text>
+<g transform="translate(398,250) rotate(38)"><text x="0" y="0" font-size="9.5" fill="var(--ink-3)">v6 q7 ROW_NUMBER</text></g>
+<circle cx="449" cy="176.2" r="4.5" fill="var(--s1)" stroke="var(--panel)" stroke-width="1.5"/>
+<text x="449" y="163.2" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">2,16</text>
+<g transform="translate(449,250) rotate(38)"><text x="0" y="0" font-size="9.5" fill="var(--ink-3)">v7 q4 anti-junção</text></g>
+<circle cx="500" cy="179.2" r="4.5" fill="var(--null)" stroke="var(--panel)" stroke-width="1.5"/>
+<text x="500" y="166.2" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">2,09</text>
+<g transform="translate(500,250) rotate(38)"><text x="0" y="0" font-size="9.5" fill="var(--ink-3)">v8 q5 UNION</text></g>
+<circle cx="551" cy="142.4" r="4.5" fill="var(--s2)" stroke="var(--panel)" stroke-width="1.5"/>
+<text x="551" y="129.4" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">2,93</text>
+<g transform="translate(551,250) rotate(38)"><text x="0" y="0" font-size="9.5" fill="var(--ink-3)">v9 ANALYZE</text></g>
+<circle cx="602" cy="71.6" r="4.5" fill="var(--s2)" stroke="var(--panel)" stroke-width="1.5"/>
+<text x="602" y="58.6" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">4,54</text>
+<g transform="translate(602,250) rotate(38)"><text x="0" y="0" font-size="9.5" fill="var(--ink-3)">v10 índice composto</text></g>
+<circle cx="653" cy="83.5" r="4.5" fill="var(--null)" stroke="var(--panel)" stroke-width="1.5"/>
+<text x="653" y="70.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">4,27</text>
+<g transform="translate(653,250) rotate(38)"><text x="0" y="0" font-size="9.5" fill="var(--ink-3)">v11 índices parciais</text></g>
+<rect x="529" y="46" width="95" height="190" fill="var(--s2)" opacity="0.07"/>
+<text x="576.5" y="62" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--s2)">o setup.sql: 51,3 % do teto</text>
+<text x="76" y="36" font-size="12" fill="var(--ink-2)">melhoria acumulada sobre o seed</text>
+</svg>
+<figcaption><b>Fig. 6</b> A escada de headroom do <code>sql_workload</code>, medida versão a versão antes de qualquer agente tocar no alvo. Oito reescritas de consulta levam o alvo a 2,16×; as duas mudanças de <code>setup.sql</code> — <code>ANALYZE</code> e um índice composto — levam a 4,54×. <strong>Nenhum movimento isolado vale mais de 29 % do teto</strong>, que é a exigência da propriedade §3d. O v11 é negativo e está no gráfico de propósito: índices demais custam mais do que rendem.</figcaption>
+</figure>
+<div class="measure">
+<p>O que a escada precisa demonstrar, e demonstra:</p>
+<ul>
+<li><strong>Teto suficiente.</strong> 4,54× medido à mão, 6,77× na melhor combinação — acima da barra de 3×.</li>
+<li><strong>Distribuição.</strong> O maior movimento isolado é o índice composto, com 29,0 % do teto. A
+exigência de §3d é que nenhum passe de 70 %; um alvo onde uma única mudança vale quase tudo não distingue
+um agente bom de um sortudo.</li>
+<li><strong>Um movimento negativo, de propósito.</strong> O v11 — índices parciais adicionais — <em>piora</em>
+o score (0,941×). Um alvo em que toda mudança plausível ajuda é um alvo que não testa julgamento.</li>
+</ul>
+</div>
+</section>
+
+<section id="s11"><h3 class="sec"><span class="num">11</span>A propriedade de destravamento</h3>
+<div class="measure">
+<p>A propriedade §3g — <em>o espaço não é esgotável numa sessão</em> — foi a mais cara de acertar e é a
+única que exigiu construir um alvo de trás para frente a partir dela. A ideia é ter movimentos cujo valor
+medido <strong>muda conforme o que já foi feito</strong>.</p>
+</div>
+<figure>
+<svg viewBox="0 0 720 282" role="img" aria-label="Barras mostrando que o mesmo setup vale 1,14 vezes no seed e 2,10 vezes nas consultas reescritas">
+<line x1="210" y1="52" x2="210" y2="216" stroke="var(--rule)" stroke-width="1"/>
+<line x1="240.0" y1="52" x2="240.0" y2="216" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="240.0" y="236" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">1,0×</text>
+<line x1="390.0" y1="52" x2="390.0" y2="216" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="390.0" y="236" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">1,5×</text>
+<line x1="540.0" y1="52" x2="540.0" y2="216" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="540.0" y="236" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">2,0×</text>
+<line x1="240.0" y1="52" x2="240.0" y2="216" stroke="var(--ink-3)" stroke-width="1.5"/>
+<text x="20" y="74" font-size="12.5" font-weight="600" fill="var(--ink)">o mesmo <tspan font-family="IBM Plex Mono, monospace">setup.sql</tspan></text>
+<text x="198" y="105" text-anchor="end" font-size="11.5" fill="var(--ink-2)">aplicado às consultas do seed</text>
+<rect x="240.0" y="96" width="42.0" height="18" rx="3" fill="var(--null)"/>
+<text x="291.0" y="109" text-anchor="start" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">1,14×</text>
+<text x="198" y="135" text-anchor="end" font-size="11.5" fill="var(--ink-2)">aplicado às consultas reescritas</text>
+<rect x="240.0" y="126" width="330.0" height="18" rx="3" fill="var(--s1)"/>
+<text x="579.0" y="139" text-anchor="start" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">2,1×</text>
+<text x="20" y="176" font-size="12.5" font-weight="600" fill="var(--ink)">só o <tspan font-family="IBM Plex Mono, monospace">ANALYZE</tspan></text>
+<text x="198" y="207" text-anchor="end" font-size="11.5" fill="var(--ink-2)">nas consultas do seed</text>
+<rect x="235.5" y="198" width="4.5" height="18" rx="3" fill="var(--s2)"/>
+<text x="226.5" y="211" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">0,985×</text>
+<text x="198" y="237" text-anchor="end" font-size="11.5" fill="var(--ink-2)">nas consultas reescritas</text>
+<rect x="240.0" y="228" width="112.5" height="18" rx="3" fill="var(--s1)"/>
+<text x="361.5" y="241" text-anchor="start" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">1,375×</text>
+<text x="20" y="266" font-size="11.5" fill="var(--ink-3)">Um movimento cujo valor medido muda de sinal conforme o que já foi feito. É a propriedade §3g, e é o que impede uma sessão de esgotar o alvo.</text>
+</svg>
+<figcaption><b>Fig. 7</b> A propriedade de destravamento. <strong>O mesmo <code>setup.sql</code> vale 1,14× aplicado às consultas do seed e 2,10× aplicado às reescritas.</strong> E o <code>ANALYZE</code> sozinho é uma <em>perda</em> antes das reescritas (0,985×) e um ganho de 1,375× depois delas — um movimento que muda de sinal conforme o estado do artefato. Alvos assim não se esgotam numa sessão, porque a ordem importa.</figcaption>
+</figure>
+<div class="measure">
+<p>Os dois números da esquerda e da direita são o mesmo <code>setup.sql</code>, medido duas vezes. O que
+muda entre as medições é o estado das oito consultas. Um índice que a consulta do seed não consegue usar —
+porque o predicado não é sargável — vira 2,10× depois que a consulta foi reescrita para usá-lo.</p>
+<p>E o <code>ANALYZE</code> isolado inverte de sinal: <strong>0,985× antes das reescritas, 1,375×
+depois</strong>. Antes, o planejador usa as estatísticas para escolher um plano que as consultas ruins não
+sabem aproveitar; depois, elas sabem.</p>
+<div class="finding"><span class="tag">Por que isso importa para a ablação</span>
+<p>Um alvo sem essa propriedade é esgotado em poucos passos, e a partir daí <strong>todos os braços empatam
+no teto</strong> — o experimento mede o alvo, não a arquitetura. Foi exatamente o que aconteceu na primeira
+ablação deste laboratório, e é a propriedade §3e. O <code>sql_workload</code> foi construído para não ter
+esse problema, e a §15 mostra que ele de fato não tem: um braço estaciona em 4,72× enquanto outro alcança
+6,62× no mesmo alvo.</p></div>
+</div>
+</section>
+
+<div class="part"><span class="pn">Parte III</span><h2>Os quatro contrastes</h2>
+<p>Quatro experimentos, 132 runs, US$ 1.304. Três mediram o andaime e não acharam nada; o quarto mediu o
+eixo que os três primeiros mantiveram fixo sem perceber.</p></div>
+
+<section id="s12"><h3 class="sec"><span class="num">12</span>Desenho e análise pré-registrada</h3>
+<div class="measure">
+<p>Cada experimento comparou braços que diferem em <strong>uma</strong> coisa. Mesmo modelo, mesmo
+<code>f</code>, mesmo número de passos, ordem intercalada e embaralhada por rodada.</p>
+<h4>A análise, fixada antes do primeiro dado</h4>
+<ul>
+<li><strong>Bootstrap</strong>, 10.000 reamostragens, para o intervalo de 95 % da diferença de médias.</li>
+<li><strong>Permutação</strong> para o p bilateral — sem suposição de distribuição, porque com n pequeno a
+normalidade não é verificável.</li>
+<li><strong>Holm-Bonferroni</strong> sobre as comparações múltiplas contra o braço de referência.</li>
+<li><strong>Efeito e intervalo sempre reportados</strong>; p-valor sozinho com n = 5 não informa nada.</li>
+<li>Portão de sessão cega rodado <strong>antes</strong> da análise: uma sessão que escreveu código sem
+nunca medir não testa o que o desenho diz testar.</li>
+</ul>
+<h4>Os desvios, declarados antes de rodar</h4>
+<p>O pré-registro nomeia cinco desvios do protocolo geral. O mais sério:</p>
+<div class="finding warn"><span class="tag">Desvio 4 · declarado antes do dado</span>
+<p><strong>O orçamento é igualado por PASSOS, não por tokens.</strong> Um passo com supervisor custa mais.
+Isso favorece sistematicamente o braço completo — ou seja, <em>inclina o desenho a favor da hipótese que
+está sendo testada</em>. O efeito não apareceu mesmo assim, o que torna o nulo mais forte, não mais fraco.</p></div>
+<p>Um componente não foi ablacionado: o <code>no_lineage</code> exigiria um invólucro que reescreve o
+prompt de variação para esconder o histórico de versões, e esse invólucro não existe no runner. Escrevê-lo
+dentro de um experimento de US$ 475 significaria estrear código não testado no meio da medição. Fica
+declarado como <strong>ausente, não como feito</strong>.</p>
+</div>
+</section>
+
+<section id="s13"><h3 class="sec"><span class="num">13</span>Resultado: oito de nove cruzam o zero</h3>
+<figure>
+    <svg viewBox="0 0 720 452" role="img" aria-label="Gráfico de floresta: efeito de cada manipulação, em porcentagem do braço de referência, com intervalo de 95 por cento. Oito de nove intervalos cruzam o zero; só a troca de modelo não cruza.">
+      <!-- eixo -->
+      <line x1="240" y1="56" x2="690" y2="56" stroke="var(--rule)" stroke-width="1"/>
+      <text x="277.5" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">−30%</text>
+      <text x="352.5" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">−20%</text>
+      <text x="427.5" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">−10%</text>
+      <text x="502.5" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-2)">0</text>
+      <text x="577.5" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">+10%</text>
+      <text x="652.5" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">+20%</text>
+      <line x1="502.5" y1="56" x2="502.5" y2="390" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="3 3"/>
+
+      <!-- grupo 1 -->
+      <text x="16" y="80" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.1" fill="var(--ink-3)">ABLAÇÃO 1 · SQL_AGG · N=4–7</text>
+      <line x1="240" y1="88" x2="700" y2="88" stroke="var(--rule-2)" stroke-width="1"/>
+      <text x="228" y="107" text-anchor="end" font-size="13" fill="var(--ink)">remover a KB</text>
+      <line x1="429.4" y1="103" x2="613.8" y2="103" stroke="var(--null)" stroke-width="2"/>
+      <circle cx="529.5" cy="103" r="5" fill="var(--null)" stroke="var(--panel)" stroke-width="2"/>
+      <text x="228" y="139" text-anchor="end" font-size="13" fill="var(--ink)">remover a memória</text>
+      <line x1="478.6" y1="135" x2="591.3" y2="135" stroke="var(--null)" stroke-width="2"/>
+      <circle cx="537.2" cy="135" r="5" fill="var(--null)" stroke="var(--panel)" stroke-width="2"/>
+      <text x="228" y="171" text-anchor="end" font-size="13" fill="var(--ink)">remover o supervisor</text>
+      <line x1="484.6" y1="167" x2="589.4" y2="167" stroke="var(--null)" stroke-width="2"/>
+      <circle cx="537.9" cy="167" r="5" fill="var(--null)" stroke="var(--panel)" stroke-width="2"/>
+
+      <!-- grupo 2 -->
+      <text x="16" y="203" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.1" fill="var(--ink-3)">FASE 2A · SQL_AGG · N=11</text>
+      <line x1="240" y1="211" x2="700" y2="211" stroke="var(--rule-2)" stroke-width="1"/>
+      <text x="228" y="230" text-anchor="end" font-size="13" fill="var(--ink)">trocar AVO por agente simples</text>
+      <line x1="404.4" y1="226" x2="511.4" y2="226" stroke="var(--null)" stroke-width="2"/>
+      <circle cx="466.9" cy="226" r="5" fill="var(--null)" stroke="var(--panel)" stroke-width="2"/>
+
+      <!-- grupo 3 -->
+      <text x="16" y="262" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.1" fill="var(--ink-3)">ABLAÇÃO 2 · SQL_WORKLOAD · N=5</text>
+      <line x1="240" y1="270" x2="700" y2="270" stroke="var(--rule-2)" stroke-width="1"/>
+      <text x="228" y="289" text-anchor="end" font-size="13" fill="var(--ink)">remover a KB</text>
+      <line x1="444.2" y1="285" x2="539.7" y2="285" stroke="var(--null)" stroke-width="2"/>
+      <circle cx="491.3" cy="285" r="5" fill="var(--null)" stroke="var(--panel)" stroke-width="2"/>
+      <text x="228" y="321" text-anchor="end" font-size="13" fill="var(--ink)">remover a memória</text>
+      <line x1="465.8" y1="317" x2="662.6" y2="317" stroke="var(--null)" stroke-width="2"/>
+      <circle cx="546.5" cy="317" r="5" fill="var(--null)" stroke="var(--panel)" stroke-width="2"/>
+      <text x="228" y="353" text-anchor="end" font-size="13" fill="var(--ink)">remover o supervisor</text>
+      <line x1="384.8" y1="349" x2="527.2" y2="349" stroke="var(--null)" stroke-width="2"/>
+      <circle cx="462.3" cy="349" r="5" fill="var(--null)" stroke="var(--panel)" stroke-width="2"/>
+
+      <!-- grupo 4 -->
+      <text x="16" y="385" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.1" fill="var(--s1)">EIXO DO MODELO · SQL_WORKLOAD · N=3–5</text>
+      <line x1="240" y1="393" x2="700" y2="393" stroke="var(--rule-2)" stroke-width="1"/>
+      <text x="228" y="412" text-anchor="end" font-size="13" font-weight="600" fill="var(--ink)">trocar Opus por Sonnet (mesmo US$)</text>
+      <line x1="252.0" y1="408" x2="330.8" y2="408" stroke="var(--s1)" stroke-width="3"/>
+      <circle cx="287.0" cy="408" r="6" fill="var(--s1)" stroke="var(--panel)" stroke-width="2"/>
+      <text x="342" y="412" font-family="IBM Plex Mono, monospace" font-size="11.5" font-weight="500" fill="var(--s1)">−28,7%  p=0,016</text>
+      <text x="228" y="440" text-anchor="end" font-size="13" fill="var(--ink)">dar 4,5× mais orçamento ao Sonnet</text>
+      <line x1="475.3" y1="436" x2="529.7" y2="436" stroke="var(--null)" stroke-width="2"/>
+      <circle cx="499.8" cy="436" r="5" fill="var(--null)" stroke="var(--panel)" stroke-width="2"/>
+    </svg>
+    <figcaption><b>Fig. 8</b> Efeito de cada manipulação, em porcentagem do braço de referência, com
+    intervalo de 95 % por bootstrap. <strong>Oito dos nove intervalos cruzam o zero.</strong> O único
+    que não cruza é a troca de modelo — e o contraste de orçamento, logo abaixo dele, cruza. Marcas em
+    cinza: não distinguível do ruído. Em azul: distinguível.</figcaption>
+  </figure>
+<div class="tw"><table>
+<thead><tr><th>experimento</th><th>contraste</th><th class="n">n</th><th class="n">Δ</th><th class="n">IC 95 %</th><th class="n">p</th><th>distingue?</th></tr></thead>
+<tbody>
+<tr><td rowspan="3">Ablação 1<br><code>sql_agg</code></td><td>remover a KB</td><td class="n">4</td><td class="n">+3,6 %</td><td class="n">[−9,4, +14,8]</td><td class="n">0,584</td><td>não</td></tr>
+<tr><td>remover a memória</td><td class="n">5</td><td class="n">+4,6 %</td><td class="n">[−3,2, +11,8]</td><td class="n">0,310</td><td>não</td></tr>
+<tr><td>remover o supervisor</td><td class="n">4</td><td class="n">+4,7 %</td><td class="n">[−2,4, +11,6]</td><td class="n">0,325</td><td>não</td></tr>
+<tr><td>Fase 2A<br><code>sql_agg</code></td><td>trocar AVO por agente simples</td><td class="n">11</td><td class="n">−4,7 %</td><td class="n">[−13,1, +1,2]</td><td class="n">0,245</td><td>não</td></tr>
+<tr><td rowspan="3">Ablação 2<br><code>sql_workload</code></td><td>remover a KB</td><td class="n">5</td><td class="n">−1,5 %</td><td class="n">[−7,8, +5,0]</td><td class="n">0,724</td><td>não</td></tr>
+<tr><td>remover a memória</td><td class="n">5</td><td class="n">+5,9 %</td><td class="n">[−4,9, +21,4]</td><td class="n">0,704</td><td>não</td></tr>
+<tr><td>remover o supervisor</td><td class="n">5</td><td class="n">−5,4 %</td><td class="n">[−15,7, +3,3]</td><td class="n">0,387</td><td>não</td></tr>
+<tr class="hl"><td rowspan="2">Eixo do modelo<br><code>sql_workload</code></td><td><strong>trocar Opus por Sonnet, mesmo US$</strong></td><td class="n">3–5</td><td class="n">−28,7 %</td><td class="n">[−33,4, −22,9]</td><td class="n">0,016</td><td><strong>sim</strong></td></tr>
+<tr><td>dar 4,5× mais orçamento ao Sonnet</td><td class="n">3</td><td class="n">−0,4 %</td><td class="n">[−3,6, +3,6]</td><td class="n">0,902</td><td>não</td></tr>
+</tbody></table></div>
+<div class="finding null"><span class="tag">Achado · nulo, e medido</span>
+<p>Nenhum componente do AVO — knowledge base, memória entre passos, supervisor — nem a arquitetura inteira
+contra um agente sem estrutura, produziu diferença distinguível do ruído. <strong>Três experimentos
+independentes, dois alvos diferentes, US$ 976.</strong> Na Ablação 1 os três braços mutilados pontuaram
+<em>acima</em> do completo.</p></div>
+<div class="measure">
+<h4>Uma hipótese que testamos e descartamos</h4>
+<p>O braço completo tem o menor coeficiente de variação da Ablação 2 — 4,4 % contra 6,9 %, 12,0 % e 15,9 %.
+Isso sugeriria uma história atraente: «a arquitetura completa não ganha mais, ganha mais consistentemente».
+Testamos por permutação sobre o desvio-padrão, 10.000 reamostragens: <strong>p entre 0,378 e 0,603</strong>.
+Não se sustenta. Fica registrada como testada e descartada, e não como achado.</p>
+</div>
+</section>
+
+<section id="s14"><h3 class="sec"><span class="num">14</span>O eixo que ficou invisível</h3>
+<div class="measure">
+<p>Ao auditar a bancada depois do terceiro nulo, descobrimos que <strong>todos os runs dos três primeiros
+experimentos rodaram um único modelo</strong>, <code>claude-opus-5</code>. O runner não repassava
+<code>--model</code> ao harness, e o harness usava o default dele — que é o mesmo valor que o braço de
+controle cravava explicitamente. Os braços batiam por coincidência documentada, não por construção.</p>
+<p>O eixo não estava ausente do desenho. Estava <em>invisível</em>: nenhum dos três experimentos podia
+dizer nada sobre capacidade de modelo, porque nenhum a variou.</p>
+<h4>O piloto, e por que ele não bastava</h4>
+<p>Um piloto de US$ 16,60 mediu 27,5 % entre Opus e Sonnet. Mas igualando por <em>passos</em>: pelos mesmos
+oito passos, o Opus gastou US$ 25,18 e o Sonnet US$ 5,53 — <strong>4,6× mais dinheiro</strong>. O efeito
+estava confundido com orçamento, exatamente como o desvio 3 do pré-registro previa antes de existir dado.</p>
+<p>O experimento decisivo igualou por <strong>dólar</strong>: 36 passos de Sonnet contra 8 de Opus, os
+mesmos US$ 25 por run.</p>
+</div>
+</section>
+
+<section id="s15"><h3 class="sec"><span class="num">15</span>Capacidade não se compra com orçamento</h3>
+<figure>
+    <svg viewBox="0 0 720 300" role="img" aria-label="Barras horizontais: Opus com 8 passos atinge 6,62; Sonnet com 8 passos 4,74; Sonnet com 36 passos 4,72. Quadruplicar o orçamento do Sonnet não move o resultado.">
+      <line x1="215" y1="46" x2="215" y2="232" stroke="var(--rule)" stroke-width="1"/>
+      <line x1="215" y1="232" x2="690" y2="232" stroke="var(--rule)" stroke-width="1"/>
+      <g font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)" text-anchor="middle">
+        <text x="215" y="252">0</text><text x="333.75" y="252">2</text>
+        <text x="452.5" y="252">4</text><text x="571.25" y="252">6</text><text x="690" y="252">8</text>
+      </g>
+      <text x="452" y="278" text-anchor="middle" font-size="12" fill="var(--ink-2)">melhoria sobre o seed (razão re-medida, máquina ociosa)</text>
+
+      <!-- Opus -->
+      <text x="203" y="76" text-anchor="end" font-size="13" fill="var(--ink)">Opus · 8 passos</text>
+      <text x="203" y="92" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">US$ 25,18</text>
+      <rect x="215" y="58" width="392.7" height="34" rx="4" fill="var(--s1)"/>
+      <line x1="581.8" y1="75" x2="633.6" y2="75" stroke="var(--ink-2)" stroke-width="1.5"/>
+      <line x1="581.8" y1="69" x2="581.8" y2="81" stroke="var(--ink-2)" stroke-width="1.5"/>
+      <line x1="633.6" y1="69" x2="633.6" y2="81" stroke="var(--ink-2)" stroke-width="1.5"/>
+      <text x="646" y="80" font-family="IBM Plex Mono, monospace" font-size="14" font-weight="500" fill="var(--ink)">6,62</text>
+
+      <!-- Sonnet 8p -->
+      <text x="203" y="134" text-anchor="end" font-size="13" fill="var(--ink)">Sonnet · 8 passos</text>
+      <text x="203" y="150" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">US$ 5,53</text>
+      <rect x="215" y="116" width="281.1" height="34" rx="4" fill="var(--s2)"/>
+      <line x1="484.7" y1="133" x2="507.5" y2="133" stroke="var(--ink-2)" stroke-width="1.5"/>
+      <line x1="484.7" y1="127" x2="484.7" y2="139" stroke="var(--ink-2)" stroke-width="1.5"/>
+      <line x1="507.5" y1="127" x2="507.5" y2="139" stroke="var(--ink-2)" stroke-width="1.5"/>
+      <text x="520" y="138" font-family="IBM Plex Mono, monospace" font-size="14" font-weight="500" fill="var(--ink)">4,74</text>
+
+      <!-- Sonnet 36p -->
+      <text x="203" y="192" text-anchor="end" font-size="13" font-weight="600" fill="var(--ink)">Sonnet · 36 passos</text>
+      <text x="203" y="208" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">US$ 24,90 · mesmo dólar</text>
+      <rect x="215" y="174" width="280.1" height="34" rx="4" fill="var(--s2)"/>
+      <line x1="491.6" y1="191" x2="499.0" y2="191" stroke="var(--ink-2)" stroke-width="1.5"/>
+      <line x1="491.6" y1="185" x2="491.6" y2="197" stroke="var(--ink-2)" stroke-width="1.5"/>
+      <line x1="499.0" y1="185" x2="499.0" y2="197" stroke="var(--ink-2)" stroke-width="1.5"/>
+      <text x="512" y="196" font-family="IBM Plex Mono, monospace" font-size="14" font-weight="500" fill="var(--ink)">4,72</text>
+
+      <!-- chave -->
+      <path d="M 512 116 L 528 116 L 528 208 L 512 208" fill="none" stroke="var(--ink-3)" stroke-width="1"/>
+      <text x="536" y="158" font-size="12" fill="var(--ink-2)">4,5× mais orçamento</text>
+      <text x="536" y="174" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">−0,4%  (p = 0,90)</text>
+    </svg>
+    <figcaption><b>Fig. 9</b> Com orçamento igualado por dólar, o Sonnet fica 28,7 % abaixo do Opus.
+    Quadruplicar seu orçamento em passos não move o resultado — 4,74 → 4,72. Barras de erro: ± 1 desvio.
+    Valores da re‑medição pareada (§ 07).</figcaption>
+  </figure>
+<div class="measure">
+<div class="finding"><span class="tag">Achado · o único positivo</span>
+<p>Com orçamento igualado por dólar, o Opus entrega <strong>+28,7 %</strong> (IC 95 % [22,9 %, 33,4 %],
+p = 0,016). Dar <strong>4,5× mais orçamento</strong> ao modelo menor entrega <strong>−0,4 %</strong>
+(IC 95 % [−3,6 %, +3,6 %], p = 0,902). Existe um teto que dinheiro não compra.</p></div>
+<h4>O alvo não esgotou — e a prova está no próprio experimento</h4>
+<p>O pré-registro declarou o risco: 36 passos num alvo de 8 movimentos poderiam exauri-lo, e aí o platô do
+Sonnet não separaria capacidade de falta de espaço. Duas evidências independentes descartam isso:</p>
+<ul>
+<li>Em duas das três sementes, o Sonnet parou de achar melhorias com <strong>um a dois terços do orçamento
+por gastar</strong> — último aceite nos passos 12, 19 e 30 de 36.</li>
+<li><strong>O Opus alcança 6,62× no mesmo alvo.</strong> Existe headroom bem acima dos 4,72× onde o Sonnet
+estaciona. O platô é do modelo.</li>
+</ul>
+<p>O Opus, ao contrário, ainda estava melhorando quando o orçamento acabou — último aceite no passo 7 ou 8
+de 8, nas cinco sementes.</p>
+</div>
+<figure>
+    <svg viewBox="0 0 720 320" role="img" aria-label="Curvas de trajetória: o Opus sobe até 7,4 em 8 passos e ainda está subindo; o Sonnet estabiliza perto de 5,0 a partir do passo 12 e não se move até o 36.">
+      <line x1="70" y1="40" x2="70" y2="250" stroke="var(--rule)" stroke-width="1"/>
+      <line x1="70" y1="250" x2="676" y2="250" stroke="var(--rule)" stroke-width="1"/>
+      <g stroke="var(--rule-2)" stroke-width="1">
+        <line x1="70" y1="197.5" x2="676" y2="197.5"/><line x1="70" y1="145" x2="676" y2="145"/><line x1="70" y1="92.5" x2="676" y2="92.5"/>
+      </g>
+      <g font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)" text-anchor="end">
+        <text x="60" y="254">0</text><text x="60" y="201.5">2</text><text x="60" y="149">4</text><text x="60" y="96.5">6</text><text x="60" y="44">8</text>
+      </g>
+      <g font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)" text-anchor="middle">
+        <text x="70" y="270">0</text><text x="238" y="270">8</text><text x="406" y="270">16</text><text x="574" y="270">24</text><text x="676" y="270">32</text>
+      </g>
+      <text x="373" y="296" text-anchor="middle" font-size="12" fill="var(--ink-2)">passos de agente</text>
+
+      <!-- Sonnet 36 passos -->
+      <polyline fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"
+        points="91,197.3 112,190.5 154,172.6 196,139.4 238,131.6 322,123.5 406,122.2 490,119.5 574,119.5 616,117.2 658,114.1 676,114.1"/>
+      <circle cx="676" cy="114.1" r="4.5" fill="var(--s2)" stroke="var(--panel)" stroke-width="2"/>
+      <text x="668" y="102" text-anchor="end" font-size="12.5" font-weight="600" fill="var(--ink)">Sonnet · 36 passos</text>
+
+      <!-- Opus 8 passos -->
+      <polyline fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"
+        points="91,96.6 112,89.2 133,86.6 154,76.5 175,72.7 196,69.8 217,59.3 238,55.8"/>
+      <circle cx="238" cy="55.8" r="4.5" fill="var(--s1)" stroke="var(--panel)" stroke-width="2"/>
+      <text x="250" y="52" font-size="12.5" font-weight="600" fill="var(--ink)">Opus · 8 passos</text>
+      <text x="250" y="68" font-size="11.5" fill="var(--ink-2)">ainda subindo quando o orçamento acabou</text>
+
+      <text x="70" y="30" font-size="11.5" fill="var(--ink-2)">melhoria dentro do run</text>
+    </svg>
+    <figcaption><b>Fig. 10</b> A forma da busca. O Sonnet estabiliza a partir do passo ~12 e os 24 passos
+    seguintes não movem nada; o Opus ainda subia no passo 8. <strong>Os níveis não são comparáveis entre
+    braços nesta figura</strong> — a razão medida dentro do run carrega a deriva descrita em § 07. Os
+    níveis corrigidos estão na Fig. 2; aqui o que importa é o formato.</figcaption>
+  </figure>
+</section>
+
+<section id="s16"><h3 class="sec"><span class="num">16</span>Eficiência por dólar</h3>
+<div class="measure">
+<p>O achado da §15 é sobre <em>teto</em>. Há uma segunda leitura, sobre <em>eficiência</em>, e ela vai na
+direção oposta — as duas coexistem sem contradição.</p>
+</div>
+<figure>
+<svg viewBox="0 0 720 300" role="img" aria-label="Barras de eficiência por dólar, com o Sonnet no topo com 0,969 e o full com 0,294">
+<line x1="220" y1="46" x2="220" y2="222" stroke="var(--rule)" stroke-width="1"/>
+<line x1="220.0" y1="46" x2="220.0" y2="222" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="220.0" y="242" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">0</text>
+<line x1="330.0" y1="46" x2="330.0" y2="222" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="330.0" y="242" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">0,25</text>
+<line x1="440.0" y1="46" x2="440.0" y2="222" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="440.0" y="242" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">0,5</text>
+<line x1="550.0" y1="46" x2="550.0" y2="222" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="550.0" y="242" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">0,75</text>
+<line x1="660.0" y1="46" x2="660.0" y2="222" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="660.0" y="242" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">1,0</text>
+<text x="208" y="73" text-anchor="end" font-size="12.5" font-weight="600" fill="var(--ink)">Sonnet · 8 passos</text>
+<rect x="220" y="58" width="426.4" height="21" rx="3" fill="var(--s2)"/>
+<text x="655.4" y="74" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">0,969</text>
+<text x="208" y="107" text-anchor="end" font-size="12.5" font-weight="400" fill="var(--ink)">no_kb</text>
+<rect x="220" y="92" width="160.6" height="21" rx="3" fill="var(--null)"/>
+<text x="389.6" y="108" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">0,365</text>
+<text x="208" y="141" text-anchor="end" font-size="12.5" font-weight="400" fill="var(--ink)">no_supervisor</text>
+<rect x="220" y="126" width="147.4" height="21" rx="3" fill="var(--null)"/>
+<text x="376.4" y="142" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">0,335</text>
+<text x="208" y="175" text-anchor="end" font-size="12.5" font-weight="600" fill="var(--ink)">full (AVO completo)</text>
+<rect x="220" y="160" width="129.4" height="21" rx="3" fill="var(--s1)"/>
+<text x="358.4" y="176" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">0,294</text>
+<text x="208" y="209" text-anchor="end" font-size="12.5" font-weight="400" fill="var(--ink)">no_memory</text>
+<rect x="220" y="194" width="118.8" height="21" rx="3" fill="var(--null)"/>
+<text x="347.8" y="210" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">0,270</text>
+<text x="440" y="264" text-anchor="middle" font-size="12" fill="var(--ink-2)">melhoria obtida por dólar gasto</text>
+<text x="220" y="288" font-size="11.5" fill="var(--ink-3)">O modelo barato entrega 3,3× mais por dólar — e ainda assim tem um teto que orçamento não compra (Fig. 9).</text>
+</svg>
+<figcaption><b>Fig. 13</b> Eficiência por dólar. O <code>full</code> não é o braço mais eficiente: <code>no_kb</code> e <code>no_supervisor</code> entregam mais por dólar porque gastam menos pelos mesmos oito passos. E o Sonnet entrega <strong>3,3× mais que o Opus</strong> — o que não contradiz o achado do eixo do modelo, porque eficiência e teto são coisas diferentes.</figcaption>
+</figure>
+<div class="measure">
+<p>Duas observações que só aparecem quando se divide por custo:</p>
+<ul>
+<li><strong>O braço completo não é o mais eficiente.</strong> <code>no_kb</code> e <code>no_supervisor</code>
+entregam mais por dólar, porque gastam menos pelos mesmos oito passos e chegam ao mesmo lugar. Se o
+componente não paga em score, ele custa em dinheiro.</li>
+<li><strong>O modelo barato entrega 3,3× mais por dólar</strong> — e ainda assim tem um teto 28,7 % abaixo.
+Para uma tarefa dentro do alcance do modelo menor, ele é a escolha economicamente correta; para uma tarefa
+acima do teto dele, nenhum orçamento resolve.</li>
+</ul>
+<div class="tw"><table>
+<thead><tr><th>braço</th><th class="n">ganho</th><th class="n">US$/run</th><th class="n">ganho por US$</th><th class="n">aceitos</th><th class="n">turnos/passo</th></tr></thead>
+<tbody>
+<tr class="hl"><td><code>full</code> — AVO completo</td><td class="n">7,396</td><td class="n">25,18</td><td class="n">0,294</td><td class="n">31/40</td><td class="n">35,6</td></tr>
+<tr><td><code>no_kb</code></td><td class="n">7,285</td><td class="n">19,97</td><td class="n">0,365</td><td class="n">34/40</td><td class="n">29,3</td></tr>
+<tr><td><code>no_memory</code></td><td class="n">7,829</td><td class="n">29,02</td><td class="n">0,270</td><td class="n">27/40</td><td class="n">39,3</td></tr>
+<tr><td><code>no_supervisor</code></td><td class="n">6,999</td><td class="n">20,90</td><td class="n">0,335</td><td class="n">30/40</td><td class="n">30,0</td></tr>
+</tbody></table></div>
+<div class="finding null"><span class="tag">Descritivo, não testado</span>
+<p>O braço <code>no_memory</code> é o mais caro (US$ 29,02) e o que menos commits aceita (27/40), com mais
+turnos por passo. A leitura natural é que, sem <code>NOTES.md</code>, o agente re-explora becos que já
+visitou — que é exatamente o que a regra de registro de becos sem saída prevê. <strong>Mas isto é leitura
+de tabela descritiva com n = 5 e sem teste estatístico</strong>, e as colunas secundárias não foram
+pré-registradas. É a hipótese mais promissora que este trabalho deixa aberta, não um resultado.</p></div>
+</div>
+</section>
+
+<div class="part"><span class="pn">Parte IV</span><h2>O instrumento</h2>
+<p>Um defeito de instrumento é um erro na bancada que faz o experimento medir outra coisa que não a que
+diz medir. Achar um vale mais que um resultado, porque o resultado passa e o defeito volta.</p></div>
+
+<section id="s17"><h3 class="sec"><span class="num">17</span>Dezoito defeitos, dois desta rodada</h3>
+<div class="measure">
+<p>O repositório cataloga 18. Cinco são verificáveis linha a linha; os primeiros doze estavam descritos num
+relatório que <strong>não foi commitado</strong>, de modo que sua numeração não é auditável — e essa
+lacuna está registrada em vez de reconstruída de memória.</p>
+</div>
+<div class="tw"><table>
+<thead><tr><th class="n">#</th><th>defeito</th><th>o que ele fazia o experimento medir</th></tr></thead>
+<tbody>
+<tr><td class="n">9</td><td>Comparar um número de agora com outro de meia hora atrás</td><td>deriva de máquina, inflando tudo entre 9 % e 13 %</td></tr>
+<tr><td class="n">13</td><td>O prompt do braço barato nomeava só o <code>entrypoint</code></td><td>viés <strong>assimétrico</strong> entre os dois braços comparados</td></tr>
+<tr><td class="n">14</td><td>Container recuperado após ~20 min ocioso</td><td>matou o piloto duas vezes; nada, mas custou relógio</td></tr>
+<tr><td class="n">15</td><td>138 diretórios temporários órfãos de processos mortos</td><td>disco a 97 %; <code>TemporaryDirectory</code> não sobrevive a <code>SIGKILL</code></td></tr>
+<tr><td class="n">16</td><td><code>pgrep -f "piloto.py"</code> casa com o próprio grep</td><td>reportar vivo um processo morto havia meia hora</td></tr>
+<tr class="hl"><td class="n">17</td><td><strong>O detector de sessão cega errava nos dois sentidos</strong></td><td>excluiria da análise justamente quem mediu melhor</td></tr>
+<tr class="hl"><td class="n">18</td><td><strong>O denominador da métrica deriva por bloco de execução</strong></td><td>o estado da máquina, e não o efeito do braço</td></tr>
+</tbody></table></div>
+<div class="measure">
+<h4>Defeito 17 — o detector marcava como cega a sessão que media melhor</h4>
+<p>Uma sessão que escreve código sem nunca medir não testa o que o desenho diz testar, e sua média
+contamina o braço inteiro. O portão que detectava isso decidia por substring, e errava em ambas as
+direções. Contado sobre 300 transcrições da Ablação 2:</p>
+<ul>
+<li><strong>Falso positivo na tentativa.</strong> 1.293 comandos casavam como «tentou medir», dos quais
+<strong>254 eram <code>cat</code>, 227 <code>sed</code>, 126 <code>grep</code> e 70 <code>ls</code></strong>.
+Ler o fonte do avaliador contava como medir.</li>
+<li><strong>Falso negativo na medição.</strong> As strings procuradas eram as do stdout <em>padrão</em>. Um
+agente que canaliza a saída para um parser, ou importa <code>medir()</code> para montar comparação pareada,
+não emite nenhuma delas: <strong>757 comandos com saída de medição não eram reconhecidos.</strong></li>
+</ul>
+<p>O conserto não foi alargar as strings. Foi separar duas perguntas — «o comando executa ou só lê?»,
+resolvida por posição de comando com o corpo dos heredocs removido, e «o que voltou tem forma de medição?»
+— e <strong>exigir as duas</strong>. A forma do resultado sozinha dá <strong>16,9 % de falso
+positivo</strong>, porque <code>cat NOTES.md</code> devolve <code>primary = 1.16</code> em prosa.</p>
+<div class="tw"><table>
+<thead><tr><th>conjunto de validação</th><th class="n">antes</th><th class="n">depois</th><th>esperado</th></tr></thead>
+<tbody>
+<tr><td>Ablação 2 — 160 sessões-passo</td><td class="n">7 cegas</td><td class="n">1 cega</td><td>6 tinham medido; a 7ª fez 0 tentativas</td></tr>
+<tr class="hl"><td><strong>Piloto cego — controle negativo</strong></td><td class="n">6/6 cegas</td><td class="n">6/6 cegas</td><td><strong>tem que continuar reprovando</strong></td></tr>
+<tr><td>Fase 2A — 100 sessões</td><td class="n">19 cegas</td><td class="n">13 cegas</td><td>o defeito de permissão era real</td></tr>
+</tbody></table></div>
+<p>O controle negativo é a parte que decide. Um detector que apenas ficasse mais permissivo aprovaria as
+sessões do piloto sabidamente cego — e ele continua reprovando as seis. O conserto está fixado em oito
+testes de regressão que cobrem as duas direções, inclusive o heredoc e a prosa com número.</p>
+
+<h4>Defeito 18 — o denominador deriva por bloco de execução</h4>
+<p>A métrica é <code>primary_final / primary_seed</code>, e o denominador é medido uma vez, no início do
+run, sobre um artefato de seed <strong>idêntico</strong> em todos eles.</p>
+</div>
+<figure>
+    <svg viewBox="0 0 720 300" role="img" aria-label="Gráfico de inclinação: à esquerda, o seed medido dentro de cada run espalha-se de 0,91 a 1,54; à direita, re-medido em bloco com a máquina ociosa, converge para a faixa 1,46 a 1,70.">
+      <line x1="200" y1="52" x2="200" y2="238" stroke="var(--rule)" stroke-width="1"/>
+      <line x1="520" y1="52" x2="520" y2="238" stroke="var(--rule)" stroke-width="1"/>
+      <g font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)" text-anchor="end">
+        <text x="188" y="242">0,9</text><text x="188" y="195.5">1,1</text><text x="188" y="149">1,3</text><text x="188" y="102.5">1,5</text><text x="188" y="56">1,7</text>
+      </g>
+      <text x="200" y="32" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">medido no run</text>
+      <text x="200" y="266" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--ink-2)">cv 19,6% · máx/mín 1,68×</text>
+      <text x="520" y="32" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">re-medido em bloco</text>
+      <text x="520" y="266" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--ink-2)">cv 4,4% · máx/mín 1,17×</text>
+
+      <g stroke="var(--ink-3)" stroke-width="1.25" opacity="0.55">
+        <line x1="200" y1="235.7" x2="520" y2="97.6"/>
+        <line x1="200" y1="143.1" x2="520" y2="108.5"/>
+        <line x1="200" y1="144.2" x2="520" y2="85.0"/>
+        <line x1="200" y1="152.8" x2="520" y2="95.5"/>
+        <line x1="200" y1="151.6" x2="520" y2="92.7"/>
+        <line x1="200" y1="226.7" x2="520" y2="101.1"/>
+        <line x1="200" y1="229.0" x2="520" y2="52.6"/>
+        <line x1="200" y1="229.3" x2="520" y2="95.0"/>
+        <line x1="200" y1="93.6" x2="520" y2="110.6"/>
+        <line x1="200" y1="111.5" x2="520" y2="100.2"/>
+        <line x1="200" y1="104.8" x2="520" y2="105.8"/>
+      </g>
+      <g fill="var(--s2)" stroke="var(--panel)" stroke-width="1.5">
+        <circle cx="200" cy="235.7" r="5"/><circle cx="200" cy="143.1" r="5"/><circle cx="200" cy="144.2" r="5"/>
+        <circle cx="200" cy="152.8" r="5"/><circle cx="200" cy="151.6" r="5"/><circle cx="200" cy="226.7" r="5"/>
+        <circle cx="200" cy="229.0" r="5"/><circle cx="200" cy="229.3" r="5"/><circle cx="200" cy="93.6" r="5"/>
+        <circle cx="200" cy="111.5" r="5"/><circle cx="200" cy="104.8" r="5"/>
+      </g>
+      <g fill="var(--s1)" stroke="var(--panel)" stroke-width="1.5">
+        <circle cx="520" cy="97.6" r="5"/><circle cx="520" cy="108.5" r="5"/><circle cx="520" cy="85.0" r="5"/>
+        <circle cx="520" cy="95.5" r="5"/><circle cx="520" cy="92.7" r="5"/><circle cx="520" cy="101.1" r="5"/>
+        <circle cx="520" cy="52.6" r="5"/><circle cx="520" cy="95.0" r="5"/><circle cx="520" cy="110.6" r="5"/>
+        <circle cx="520" cy="100.2" r="5"/><circle cx="520" cy="105.8" r="5"/>
+      </g>
+      <text x="556" y="150" font-size="12.5" fill="var(--ink-2)">11 runs · o mesmo</text>
+      <text x="556" y="167" font-size="12.5" fill="var(--ink-2)">artefato de seed,</text>
+      <text x="556" y="184" font-size="12.5" fill="var(--ink-2)">medido duas vezes</text>
+    </svg>
+    <figcaption><b>Fig. 11</b> O mesmo artefato de seed, medido dentro de cada run (esquerda) e re‑medido
+    em sequência imediata com a máquina ociosa (direita). A dispersão de 1,68 × colapsa para 1,17 ×.
+    Não é ruído branco: é deriva por <em>bloco</em> de execução.</figcaption>
+  </figure>
+<div class="measure">
+<p>Não é ruído branco — é deriva por <em>bloco</em>: os três runs de um piloto mediram seed 0,94–0,95;
+os do outro braço, 0,91–1,31; os de 36 passos, 1,46–1,54. A nuance é o que importa:</p>
+<ul>
+<li>Numa ablação de braços <strong>intercalados</strong>, o ruído do seed é comum a todos e a razão o
+cancela. Testamos: fixar o denominador <em>piorava</em> o cv em três dos quatro braços. Aquela conclusão
+continua válida para aquele desenho.</li>
+<li>Entre <strong>experimentos</strong> de dias e durações diferentes, não há nada em comum para cancelar,
+e a razão passa a medir o estado da máquina.</li>
+</ul>
+<div class="finding warn"><span class="tag">Regra que sai daqui</span>
+<p><strong>Comparação entre experimentos exige re-medição pareada dos artefatos finais, com a máquina
+ociosa.</strong> Custa quatro minutos e não roda agente nenhum. Sem ela, o resultado da §15 não seria
+legível: os números do harness estavam inflados por fatores diferentes em cada braço.</p></div>
+</div>
+</section>
+
+<section id="s18"><h3 class="sec"><span class="num">18</span>A disciplina que os expôs</h3>
+<div class="measure">
+<p>Os dois defeitos acima não foram achados por sorte. Foram achados porque o pré-registro obrigava a rodar
+o portão <em>antes</em> da análise, e porque a regra de não mexer no instrumento no meio do experimento
+forçou a olhar cada sessão reprovada uma a uma em vez de ajustar o detector até o número ficar bom.</p>
+<p>Três decisões foram tomadas contra o interesse de quem as tomou, e estão registradas com data:</p>
+<div class="guide">
+<div class="g yes"><h4>O adendo escrito no escuro</h4>
+<p>Escrito com 12 dos 20 runs prontos e <strong>nenhuma estatística rodada</strong>. Custou a exclusão de
+duas sementes do braço de referência.</p>
+<span class="ev">Registrado antes de se saber que não mudaria a conclusão. Não mudou.</span></div>
+<div class="g yes"><h4>O instrumento deixado quebrado</h4>
+<p>A evidência do conserto do defeito 17 já estava na mão durante o experimento. Alterar um detector logo
+depois de ele reprovar runs do <em>próprio braço de referência</em> é o movimento que a disciplina existe
+para impedir, mesmo estando certo.</p>
+<span class="ev">Consertado depois, com verificação de que a conclusão publicada não mudava.</span></div>
+<div class="g yes"><h4>A história bonita que não passou no teste</h4>
+<p>«O braço completo é mais consistente» — cv 4,4 % contra 6,9 / 12,0 / 15,9 %. Testada por permutação
+<strong>antes de virar frase</strong>.</p>
+<span class="ev">p entre 0,378 e 0,603. Registrada como testada e descartada.</span></div>
+</div>
+<p>US$ 74,97 dos US$ 1.304 foram descartados por defeito de instrumento, e as pastas continuam no
+repositório com o nome do defeito que as invalidou — <code>CONTAMINADO/</code>,
+<code>CONFUNDIDO_EFFORT/</code>, <code>INVALIDAS/</code>, <code>CEGO/</code>. Um laboratório que apaga os
+próprios erros não pode ser auditado.</p>
+</div>
+</section>
+
+<div class="part"><span class="pn">Parte V</span><h2>O que usar e quando</h2>
+<p>Esta parte é o produto do trabalho. As três anteriores existem para que ela possa ser escrita com
+números em vez de opinião.</p></div>
+
+<section id="s19"><h3 class="sec"><span class="num">19</span>A matriz de decisão</h3>
+<div class="measure">
+<p>Cada linha abaixo tem um número medido atrás dela e a seção onde ele aparece. Onde não há medida, está
+dito que não há.</p>
+</div>
+<div class="tw"><table>
+<thead><tr><th>situação</th><th>o que fazer</th><th class="n">evidência</th><th>§</th></tr></thead>
+<tbody>
+<tr class="hl"><td>Você consegue escrever uma função objetiva verificável</td><td><strong>Rode o loop.</strong> Incumbente + <code>f</code> + gate</td><td class="n">4–7×, 51 runs</td><td>09</td></tr>
+<tr><td>Você não consegue escrever essa função</td><td><strong>Não use este método.</strong> Sem <code>f</code>, o laço não fecha e nada aqui se aplica</td><td class="n">fora de escopo</td><td>21</td></tr>
+<tr class="hl"><td>Orçamento apertado, um único passo possível</td><td><strong>Rode esse passo.</strong> Ele entrega a maior parte</td><td class="n">439,6 % no passo 1</td><td>08</td></tr>
+<tr><td>Decidir entre mais passos ou modelo melhor</td><td><strong>Modelo.</strong> 4,5× mais passos no modelo menor rendeu −0,4 %</td><td class="n">p = 0,902</td><td>15</td></tr>
+<tr class="hl"><td>Escolher o modelo</td><td><strong>Teste primeiro.</strong> Foi o contraste mais barato e o único positivo</td><td class="n">+28,7 %, US$ 82</td><td>15</td></tr>
+<tr><td>Tarefa dentro do alcance do modelo barato</td><td><strong>Use o barato.</strong> 3,3× mais entrega por dólar</td><td class="n">0,969 vs 0,294</td><td>16</td></tr>
+<tr><td>Considerar construir knowledge base</td><td><strong>Meça antes.</strong> Aqui não pagou, e custou US$ 5,21/run</td><td class="n">−1,5 %, IC cruza 0</td><td>13</td></tr>
+<tr><td>Considerar memória entre passos</td><td><strong>Talvez pague em custo, não em score.</strong> Sem ela: +15 % de custo, −13 % de aceites</td><td class="n">descritivo, n = 5</td><td>16</td></tr>
+<tr><td>Considerar supervisor de estagnação</td><td><strong>Meça antes.</strong> Nenhum sinal em dois alvos</td><td class="n">−5,4 % e +4,7 %</td><td>13</td></tr>
+<tr class="hl"><td>Construir o gate de correção</td><td><strong>Não é opcional.</strong> Sem defesas, um memoizador marca 4.672.896</td><td class="n">contra 4,16 do seed</td><td>05</td></tr>
+<tr><td>Comparar resultados de dias diferentes</td><td><strong>Re-meça pareado</strong>, com a máquina ociosa. 4 minutos</td><td class="n">deriva de 1,68×</td><td>17</td></tr>
+<tr><td>Planejar um experimento de ablação</td><td><strong>Rode o piloto de potência primeiro.</strong> US$ 35</td><td class="n">evita US$ 300 cegos</td><td>20</td></tr>
+</tbody></table></div>
+<div class="measure">
+<div class="finding"><span class="tag">A regra de bolso</span>
+<p>O que se paga é a <strong>malha de feedback</strong>: um incumbente, um número objetivo e um gate que
+você tentou quebrar de propósito. O que não se pagou, nesta bancada, foi o andaime cognitivo em volta dela.
+E o maior multiplicador disponível não estava na arquitetura — estava na escolha do modelo.</p></div>
+</div>
+</section>
+
+<section id="s20"><h3 class="sec"><span class="num">20</span>O preço de cada pergunta</h3>
+<div class="measure">
+<p><strong>«Não distinguível» não é «não existe».</strong> A resolução desta bancada é de ~5,5 % no melhor
+experimento. Andaime que valha menos que isso é invisível aqui, e nada no que medimos exclui essa
+possibilidade. O que se pode fazer é dizer quanto custaria enxergar.</p>
+</div>
+<figure>
+<svg viewBox="0 0 720 288" role="img" aria-label="Curva do número de sementes necessárias contra o tamanho do efeito, em escala logarítmica">
+<line x1="96" y1="44" x2="96" y2="232" stroke="var(--rule)" stroke-width="1"/>
+<line x1="96" y1="232" x2="690" y2="232" stroke="var(--rule)" stroke-width="1"/>
+<line x1="96" y1="232.0" x2="690" y2="232.0" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="86" y="236.0" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">1</text>
+<line x1="96" y1="160.0" x2="690" y2="160.0" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="86" y="164.0" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">10</text>
+<line x1="96" y1="88.0" x2="690" y2="88.0" stroke="var(--rule-2)" stroke-width="1"/>
+<text x="86" y="92.0" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">100</text>
+<text x="157.5" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">5 %</text>
+<text x="260.0" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">10 %</text>
+<text x="362.5" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">15 %</text>
+<text x="465.0" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">20 %</text>
+<text x="567.5" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">25 %</text>
+<text x="670.0" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-3)">30 %</text>
+<polyline fill="none" stroke="var(--s1)" stroke-width="2.5" points="116.5,80.1 126.8,89.7 137.0,98.1 147.2,105.4 157.5,112.0 167.8,118.0 178.0,123.4 188.2,128.4 198.5,133.1 208.8,137.4 219.0,141.4 229.2,145.2 239.5,148.8 249.8,152.2 260.0,155.4 270.2,158.4 280.5,161.3 290.8,164.1 301.0,166.8 311.2,169.3 321.5,171.8 331.8,174.1 342.0,176.4 352.2,178.6 362.5,180.7 372.8,182.8 383.0,184.8 393.2,186.7 403.5,188.6 413.8,190.4 424.0,192.1 434.2,193.8 444.5,195.5 454.8,197.1 465.0,198.7 475.2,200.3 485.5,201.8 495.8,203.2 506.0,204.7 516.2,206.1 526.5,207.5 536.8,208.8 547.0,210.1 557.2,211.4 567.5,212.7 577.8,213.9 588.0,215.1 598.2,216.3 608.5,217.5 618.8,218.6 629.0,219.8 639.2,220.9 649.5,222.0 659.8,223.0 670.0,224.1 680.2,225.1 690.5,226.1"/>
+<line x1="164.9" y1="116.4" x2="164.9" y2="232" stroke="var(--s2)" stroke-width="1.5" stroke-dasharray="3 3"/>
+<circle cx="164.9" cy="116.4" r="5.5" fill="var(--s2)" stroke="var(--panel)" stroke-width="2"/>
+<text x="175.9" y="108.4" text-anchor="start" font-size="11.5" font-weight="600" fill="var(--ink)">o contraste do supervisor</text>
+<text x="175.9" y="123.4" text-anchor="start" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-2)">n ≈ 40 por braço</text>
+<line x1="643.4" y1="221.3" x2="643.4" y2="232" stroke="var(--s1)" stroke-width="1.5" stroke-dasharray="3 3"/>
+<circle cx="643.4" cy="221.3" r="5.5" fill="var(--s1)" stroke="var(--panel)" stroke-width="2"/>
+<text x="632.4" y="213.3" text-anchor="end" font-size="11.5" font-weight="600" fill="var(--ink)">o efeito do modelo</text>
+<text x="632.4" y="228.3" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-2)">n ≈ 1 por braço</text>
+<text x="393" y="274" text-anchor="middle" font-size="12" fill="var(--ink-2)">tamanho do efeito a detectar</text>
+<text x="96" y="34" font-size="12" fill="var(--ink-2)">sementes necessárias por braço (escala log)</text>
+<text x="330" y="96" font-size="11.5" fill="var(--ink-3)">n cresce com 1/Δ²: detectar metade do efeito custa quatro vezes mais.</text>
+</svg>
+<figcaption><b>Fig. 12</b> O preço de cada pergunta. Como <code>n ≈ 2·(2,8·s/Δ)²</code>, o número de sementes cresce com o inverso do quadrado do efeito. O contraste do modelo (28,7 %) sai com n ≈ 2; o contraste do supervisor (5,4 %) custa n ≈ 41 por braço — <strong>US$ 1.889 e 119 h para um único par</strong>.</figcaption>
+</figure>
+<div class="measure">
+<p>E não há poder barato. Com os dados na mão, testamos duas formas de reduzir a variância sem comprar
+sementes, e <strong>as duas falharam</strong>:</p>
+<ul>
+<li><strong>Parear por índice de semente.</strong> Correlação média entre braços <strong>r = +0,14</strong>
+— o índice não carrega sinal comum. Parear chega a <em>piorar</em> a variância da diferença em 39 % num
+braço.</li>
+<li><strong>Fixar o denominador da razão.</strong> Piora em três dos quatro braços. A razão com denominador
+próprio já cancela a deriva dentro do run; substituí-la remove um cancelamento que estava funcionando.</li>
+</ul>
+<p>A variância é estocasticidade do agente, e comprá-la é linear em n. Por isso a recomendação operacional
+é <strong>rodar o piloto de potência antes de qualquer experimento</strong>: ele custa ~US$ 35 e diz se a
+pergunta é pagável, antes de US$ 300 serem gastos numa que não é.</p>
+<div class="tw"><table>
+<thead><tr><th>experimento</th><th>mediu</th><th class="n">US$</th><th class="n">relógio</th><th class="n">runs</th><th>achou</th></tr></thead>
+<tbody>
+<tr><td>Ablação 1</td><td>componentes</td><td class="n">210</td><td class="n">15,0 h</td><td class="n">20</td><td>nada</td></tr>
+<tr><td>Fase 2A</td><td>AVO × agente simples</td><td class="n">291</td><td class="n">31,9 h</td><td class="n">22</td><td>nada</td></tr>
+<tr><td>Ablação 2</td><td>componentes</td><td class="n">475</td><td class="n">29,0 h</td><td class="n">20</td><td>nada</td></tr>
+<tr class="hl"><td><strong>Eixo do modelo</strong></td><td>Opus × Sonnet, mesmo US$</td><td class="n">82</td><td class="n">10,3 h</td><td class="n">6</td><td><strong>+28,7 %</strong></td></tr>
+<tr><td>Pilotos de potência</td><td>dimensionamento</td><td class="n">67</td><td class="n">4,3 h</td><td class="n">13</td><td>o desenho dos acima</td></tr>
+<tr class="dim"><td>Descartados por defeito</td><td>—</td><td class="n">75</td><td class="n">—</td><td class="n">30</td><td>os defeitos 13 e 17</td></tr>
+</tbody></table></div>
+</div>
+</section>
+
+<section id="s21"><h3 class="sec"><span class="num">21</span>Limitações</h3>
+<div class="measure">
+<p>Esta é a seção mais importante do artigo, porque o resultado principal é negativo.</p>
+<ul>
+<li><strong>Potência.</strong> n = 3–11 por braço; a diferença mínima detectável fica entre 5,5 % e 30 %
+conforme o experimento. Efeitos menores existem e seriam invisíveis aqui.</li>
+<li><strong>Orçamento igualado por passos, não por tokens</strong>, nos três experimentos de andaime. Isso
+inclina o desenho <em>a favor</em> do braço completo — e mesmo assim o efeito não apareceu, o que torna o
+nulo mais forte.</li>
+<li><strong>Um componente não foi ablacionado</strong> — o <code>no_lineage</code>. Declarado ausente.</li>
+<li><strong>Domínio estreito.</strong> Otimização com <code>f</code> objetiva e verificável. Onde não se
+consegue escrever essa função — que é justamente onde a pergunta sobre generalidade fica interessante —
+nada disto foi testado.</li>
+<li><strong>Dois modelos.</strong> A escala não está fechada; um terceiro ponto custaria ~US$ 20.</li>
+<li><strong>O seed já funciona.</strong> Nossos alvos partem de código correto e lento, e a §08 mostra que
+90 % do ganho chega no primeiro passo. Onde o modelo sozinho vai mal — como no ARC-AGI-3, com 0,51 % de
+baseline — o andaime plausivelmente tem muito mais espaço para aparecer. <strong>Isto é hipótese, não algo
+que medimos</strong>, e é a explicação mais provável para a distância entre o nosso nulo e o resultado da
+NVIDIA.</li>
+<li><strong>As colunas secundárias não foram pré-registradas.</strong> Custo por run, taxa de aceite e
+turnos por passo são descritivas; a leitura sobre a memória na §16 é a mais interessante delas e continua
+sendo hipótese.</li>
+</ul>
+</div>
+</section>
+
+<section id="s22"><h3 class="sec"><span class="num">22</span>Conclusão</h3>
+<div class="measure">
+<p>O loop evolutivo com função objetiva entrega <strong>4–7× de forma repetível</strong> em 51 runs, em
+três domínios diferentes, sem que uma única trapaça tenha sido aceita. Isso é real, e é o que vale adotar:
+um incumbente, um número para maximizar, e um gate que você tentou quebrar de propósito.</p>
+<p>A arquitetura em volta dele — knowledge base, memória entre passos, supervisor de estagnação, e o
+conjunto contra um agente sem estrutura — <strong>não se distinguiu do ruído em três experimentos
+independentes, dois alvos e US$ 976</strong>. Não provamos que essas peças são inúteis; provamos que, ao
+preço que esta bancada consegue pagar, elas não aparecem. E dissemos quanto custaria enxergar: n ≈ 41 por
+braço, US$ 1.889 e 119 h para um único par.</p>
+<p>O eixo que os três primeiros experimentos mantiveram fixo sem perceber — o modelo — foi o que moveu o
+resultado: <strong>+28,7 % com o mesmo dólar</strong>, e 4,5× mais orçamento no modelo menor não compra a
+diferença.</p>
+<p>Há uma leitura mecânica que amarra as duas coisas, e ela está na §08: se 90 % do ganho chega no primeiro
+passo, então componentes que atuam sobre a <em>continuação</em> da busca só podem disputar os 10 %
+restantes — e 10 % de 7× é da mesma ordem que o ruído desta bancada. <strong>Andaime cognitivo precisa de
+um problema que o modelo não resolva de primeira para ter onde aparecer.</strong> Os nossos alvos, por
+serem bem-comportados, podem ser justamente os que menos favorecem a hipótese que testamos.</p>
+<p>Para quem decide onde investir esforço de engenharia, a frase operacional é: <strong>meça se o andaime
+paga antes de construí-lo, e considere que trocar o modelo pode ser o experimento mais barato que você
+tem.</strong></p>
+</div>
+</section>
+
+<section id="s23"><h3 class="sec"><span class="num">23</span>Reprodutibilidade</h3>
+<div class="measure">
+<p>Todos os números deste artigo saem de <code>results.jsonl</code> e <code>remedido_modelo.jsonl</code> e
+reproduzem com os comandos documentados em cada relatório. O harness da busca é o upstream
+<code>gatordevin/avo</code>, fixado por commit em <code>vendor/avo.lock</code> — o que roda é o que foi
+auditado.</p>
+<div class="tw"><table>
+<thead><tr><th>quero...</th><th>arquivo</th></tr></thead>
+<tbody>
+<tr><td>o resultado da ablação, com a análise pré-registrada</td><td><code>experiments/ABLACAO_RESULTADO.md</code></td></tr>
+<tr><td>o eixo do modelo e a re-medição pareada</td><td><code>experiments/EIXO_MODELO_RESULTADO.md</code></td></tr>
+<tr><td>os pré-registros, com os desvios declarados</td><td><code>experiments/ABLACAO_SQL_WORKLOAD.md</code>, <code>FASE_MODELO.md</code></td></tr>
+<tr><td>os 18 defeitos de instrumento</td><td><code>experiments/DEFEITOS.md</code></td></tr>
+<tr><td>as nove propriedades, e as falhas que as geraram</td><td><code>docs/TARGET_DESIGN.md</code></td></tr>
+<tr><td>a bateria anti-trapaça</td><td><code>experiments/REWARD_HACKING.md</code>, <code>tests/test_anticheat.py</code></td></tr>
+<tr><td>o que é da NVIDIA e o que é desta reprodução</td><td><code>docs/AVO_REPLICATION_REPORT.md</code></td></tr>
+<tr><td>a escada de headroom medida à mão</td><td><code>experiments/HEADROOM_SQL_WORKLOAD.md</code></td></tr>
+</tbody></table></div>
+<p>O relatório de replicação separa <strong>linha a linha</strong> o que é confirmado da NVIDIA do que é
+escolha desta reprodução aberta, com a fonte de cada afirmação. Nenhum design do upstream
+<code>gatordevin</code> é atribuído à NVIDIA, e nenhuma escolha nossa é apresentada como sendo do paper.</p>
+</div>
+</section>
+
+
+<footer>
+<p><strong>Sobre este documento.</strong> É a reprodução aberta de uma arquitetura publicada, feita com
+recursos de ordens de grandeza menores que os do trabalho original, e o resultado principal é negativo. Ele
+é apresentado assim de propósito: os dados brutos estão no mesmo repositório, e um artigo que afirmasse mais
+do que eles sustentam seria desmentido pelo primeiro leitor que abrisse um <code>jsonl</code>.</p>
+<p>O que este trabalho contribui não é um número maior — é a comparação controlada que faltava, o preço
+dela calculado, e um catálogo de dezoito maneiras pelas quais uma bancada de medição pode mentir para quem
+a construiu.</p>
+</footer>
+
+</div>

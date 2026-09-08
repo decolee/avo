@@ -1,51 +1,63 @@
-# O andaime não paga — o paper
+# O andaime não paga — os artefatos
 
-`index.html` é o artigo completo: quatro experimentos controlados sobre a
-contribuição dos componentes do AVO em engenharia de dados, com as figuras
-desenhadas na escala dos dados.
+## As quatro peças
 
-## As três peças
+| arquivo | o que é | páginas | para quem |
+|---|---|---|---|
+| `completo.html` | **o relatório completo** — 23 seções, 13 figuras, 11 tabelas | — | quem vai auditar o trabalho |
+| `AVO-o-andaime-nao-paga-COMPLETO.pdf` | o mesmo, com capa, sumário e numeração | **26** | apresentação, anexo, impressão |
+| `index.html` + `AVO-o-andaime-nao-paga.pdf` | a versão curta, 11 seções, 4 figuras | 9 | leitura rápida |
+| `promo.html` | resumo executivo de uma página | — | quem decide onde investir esforço |
 
-| arquivo | o que é | para quem |
-|---|---|---|
-| `index.html` | o artigo completo, 11 seções, 4 figuras | quem vai checar o trabalho |
-| `AVO-o-andaime-nao-paga.pdf` | o mesmo artigo, 9 páginas A4 com capa e numeração | apresentação, anexo de e-mail, impressão |
-| `promo.html` | resumo executivo de uma página | quem decide onde investir esforço |
-
-- Artigo: https://claude.ai/code/artifact/b698a839-c782-40c3-9542-7fb7f3795e01
+- Relatório completo: https://claude.ai/code/artifact/4d4db8de-647c-4bad-9ae7-ff1cb78a8087
+- Versão curta: https://claude.ai/code/artifact/b698a839-c782-40c3-9542-7fb7f3795e01
 - Resumo executivo: https://claude.ai/code/artifact/79f547c1-77d6-4e3b-be92-04971998e874
 
-O PDF é gerado de `print.html` (mesma substância, CSS de impressão) com
-`python3 /tmp/topdf.py` — Chromium via Playwright, A4, rodapé com numeração.
+## As treze figuras, e de onde cada uma sai
 
-## De onde sai cada número
+| # | figura | fonte |
+|---|---|---|
+| 1 | O loop e as quatro peças ablacionadas | `ablacao_sql_workload/results.jsonl` |
+| 2 | A bateria anti-trapaça (log) | `REWARD_HACKING.md`, `tests/test_anticheat.py` |
+| 3 | Inventário dos seis alvos | `targets/*/target.yaml`, bloco `lab` |
+| 4 | **Retornos decrescentes por passo** | 160 passos da Ablação 2 |
+| 5 | Distribuição dos 51 runs | as três `results.jsonl` |
+| 6 | A escada de headroom | `HEADROOM_SQL_WORKLOAD.md` §1 |
+| 7 | A propriedade de destravamento | `HEADROOM_SQL_WORKLOAD.md` §3 |
+| 8 | Gráfico de floresta dos nove contrastes | todas as `results.jsonl` + `greedy.jsonl` |
+| 9 | O eixo do modelo pareado por dólar | `remedido_modelo.jsonl` |
+| 10 | Trajetórias de busca | `dolar_sonnet_36p/piloto.jsonl` |
+| 11 | A deriva do denominador (defeito 18) | `remedido_modelo.jsonl` |
+| 12 | O preço de cada pergunta | derivada: `n ≈ 2·(2,8·s/Δ)²` |
+| 13 | Eficiência por dólar | `ablacao_sql_workload/results.jsonl` |
 
-| seção | fonte |
-|---|---|
-| §03 melhoria do loop | `experiments/ablacao/resultados/*/results.jsonl` |
-| §04 Fig. 1 (floresta) | as três `results.jsonl` + `fase2_sql_agg/greedy.jsonl` |
-| §05 Fig. 2 e 3 | `resultados/remedido_modelo.jsonl` e `dolar_sonnet_36p/piloto.jsonl` |
-| §06 custos | soma de `custo_usd` sobre os passos de cada arquivo |
-| §07 Fig. 4 | `remedido_modelo.jsonl`, colunas `seed_original` e `seed_remedido` |
+## O que só existe na versão completa
 
-Os relatórios longos de cada experimento, com o pré-registro e os desvios
-declarados, ficam em `experiments/`:
+- **§05 A bateria anti-trapaça** — os nove candidatos, e o que quase escapou (t5, 16,38)
+- **§07 Generalidade** — o mesmo harness em três domínios, incluindo um onde `f` é F1 e não velocidade
+- **§08 A dinâmica da busca** — o passo 1 entrega 439,6 % e o passo 8 entrega 3,9 %; é a explicação
+  mecânica mais provável para os nulos, e não aparecia em nenhum relatório anterior
+- **§10–11 A escada de headroom e o destravamento** — como o `sql_workload` foi construído de trás
+  para frente a partir da §3g
+- **§16 Eficiência por dólar** — o braço completo não é o mais eficiente
+- **§19 A matriz de decisão** — doze linhas de «o que fazer quando», cada uma com o número e a seção
+  que a sustentam
 
-- `ABLACAO_RESULTADO.md` — a ablação de componentes
-- `EIXO_MODELO_RESULTADO.md` — o eixo do modelo
-- `DEFEITOS.md` — os 18 defeitos de instrumento
-- `FASE_MODELO.md`, `ABLACAO_SQL_WORKLOAD.md` — os pré-registros
+## Como o PDF é gerado
 
-## O enquadramento, e por que ele é este
+```
+python3 /tmp/print_full.py     # monta print-completo.html a partir de completo.html
+python3 /tmp/topdf.py          # Chromium via Playwright, A4, rodapé numerado
+```
 
-O resultado principal é **negativo**: três experimentos e US$ 976 não
-distinguiram nenhum componente do AVO do ruído. O artigo diz isso na primeira
-linha do resumo, declara a potência da bancada, e calcula o preço da resposta
-que não foi comprada (n≈41, US$ 1.889 por par de braços).
+As figuras são SVG inline, então entram vetoriais no PDF.
 
-Um artigo que tentasse provar que o AVO funciona desmontaria no primeiro leitor
-que abrisse o `results.jsonl`. O que sustenta este é outra coisa: **ninguém
-publicou uma comparação controlada do AVO** — nem a NVIDIA, cujo próprio post diz
-que seus números "não devem ser interpretados como medida direta da contribuição
-de performance do AVO". Um nulo bem medido, com o poder declarado, é a
-contribuição.
+## O enquadramento
+
+O resultado principal é **negativo** e o relatório abre com isso. Três experimentos e US$ 976 não
+distinguiram nenhum componente do AVO do ruído; o quarto, de US$ 82, achou +28,7 % no eixo do modelo.
+A §21 (Limitações) é a mais longa do documento por decisão, e a §20 calcula o preço da resposta que
+não foi comprada.
+
+Um relatório que afirmasse mais do que os dados sustentam seria desmentido pelo primeiro leitor que
+abrisse um `jsonl` — e os `jsonl` estão no mesmo repositório.
