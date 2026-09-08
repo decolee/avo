@@ -72,11 +72,20 @@ O eixo foi aberto em 2026-09-07 (`runner.py --modelo`), pré-registrado em
 andaime já medido aqui, e o intervalo não chega perto do zero.** O eixo do modelo
 é o que move esta bancada; o andaime não é.
 
-Com uma ressalva que estava declarada antes do dado (desvio 3): pelos mesmos 8
-passos o Opus gastou 4,6× mais dinheiro. **Parte dos 27,5% é orçamento, não
-capacidade, e estes dados não separam as duas.** Por dólar, o Sonnet é 3,3× mais
-eficiente. O experimento que decide — igualar por dólar e ver se o Sonnet alcança
-os 7,4× — custa ~US$ 75 e está pré-registrado e não rodado.
+O experimento que separa orçamento de capacidade **foi executado**
+(`EIXO_MODELO_RESULTADO.md`, US$ 65,34): o Sonnet recebeu 36 passos contra os 8 do
+Opus — o mesmo dólar por run. Números sobre a razão **re-medida em bloco**:
+
+| braço | passos | n | razão |
+|---|---|---|---|
+| `claude-opus-5` | 8 | 5 | **6,618** |
+| `claude-sonnet-5` | 8 | 3 | 4,738 |
+| `claude-sonnet-5` | **36** | 3 | **4,720** |
+
+**4,5× mais orçamento comprou −0,4%** (IC95 [−0,172, +0,172], p=0,90), enquanto a
+distância para o Opus com o mesmo dólar fica em **+28,7%** (p=0,016). **É
+capacidade, não orçamento.** O alvo não esgotou: o Opus alcança 6,618× nele, e o
+Sonnet parou com um a dois terços do orçamento por gastar.
 
 ## 4. O produto reutilizável: o método
 
@@ -123,6 +132,19 @@ Três decisões desta rodada foram tomadas contra o próprio interesse:
 | rodar a próxima fase | `experiments/FASE_MODELO.md` |
 | operar a bancada | `docs/RUNBOOK.md`, `CLAUDE.md` |
 
+## 6b. O quadro completo dos quatro experimentos
+
+| eixo | contraste | efeito | distinguível? | custo |
+|---|---|---|---|---|
+| andaime | componentes (`sql_agg`) | −3,5% a −4,5% | não | US$ 210 |
+| andaime | `full` × `greedy` (n=11) | +4,9% | não | US$ 291 |
+| andaime | componentes (`sql_workload`, n=5) | −5,5% a +5,7% | não | US$ 475 |
+| **modelo** | **Opus × Sonnet, mesmo dólar** | **+28,7%** | **sim (p=0,016)** | US$ 65 |
+| orçamento | Sonnet 36 passos × 8 passos | −0,4% | não (p=0,90) | (incluso) |
+
+**US$ 976 medindo andaime não acharam nada. US$ 65 medindo modelo acharam 28,7%.**
+Esta é a frase que resume o laboratório.
+
 ## 7. A recomendação de quem fecha
 
 **Não comprar mais ablação de componentes.** Três experimentos, US$ 883 nos
@@ -132,5 +154,10 @@ principais, placar zero, e a matemática diz que a resposta custa mais que vale.
 parece.** As duas medidas que existem discordam por 6× (+4,9% com n=11 contra
 +32% com n=1 no `full`), e a maior tem o n menor.
 
-**O eixo do modelo é a pergunta aberta**, e agora é executável. O piloto decide se
-ela é pagável, e o critério de parada está declarado antes do dado.
+**O eixo do modelo foi medido e é onde está o sinal.** Se houver orçamento para
+mais um experimento, é aqui — um terceiro modelo (Haiku) fecharia a escala por
+~US$ 20, e a mesma re-medição pareada torna o número comparável.
+
+E a lição de método que este eixo entregou: **comparação entre experimentos exige
+re-medição pareada** (defeito 18). Sem ela, os números do harness medem em parte
+o estado da máquina.

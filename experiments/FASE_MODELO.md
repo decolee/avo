@@ -117,3 +117,22 @@ Mudar o desenho depois do piloto é o que o piloto existe para permitir (desvio 
 e ela segue fixada: bootstrap 10.000, Holm-Bonferroni, `destilar_logs` antes.
 
 **Não rodado nesta sessão.** A decisão de gastar é de quem paga.
+
+
+---
+
+## ADENDO 2 (2026-09-08) — o experimento rodou
+
+`EIXO_MODELO_RESULTADO.md`. Resposta: **é capacidade, não orçamento.** Com o mesmo
+dólar (36 passos contra 8), o Sonnet fica em 4,720× contra 6,618× do Opus — 28,7%,
+p=0,016. E 4,5× mais orçamento moveu o Sonnet em −0,4% (p=0,90).
+
+O risco declarado (36 passos esgotarem o alvo) **não se materializou**: o Sonnet
+parou de achar melhorias com um a dois terços do orçamento por gastar em 2 das 3
+sementes, e o Opus alcança 6,618× no mesmo alvo — há headroom bem acima de 4,72×.
+
+Um defeito novo saiu daqui, o 18: o `primary_seed` deriva por bloco de execução
+(1,68× no mesmo artefato), e toda comparação entre experimentos exige re-medição
+pareada. O resultado acima já está corrigido por ela.
+
+Fase encerrada.

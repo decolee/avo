@@ -21,6 +21,7 @@ a numeração 1–12 não é auditável e não vou reconstruí-la de memória.
 | 15 | Disco a 97%: 138 diretórios temporários órfãos de processos de medição mortos por `SIGKILL`. `TemporaryDirectory` não sobrevive a sinal. | `RELATORIO_SQL_WORKLOAD.md` §7 |
 | 16 | `pgrep -f "piloto.py"` casa com a própria linha de comando do grep. Use `ps \| grep "[p]iloto.py"`. | `RELATORIO_SQL_WORKLOAD.md` §7 |
 | 17 | **O detector de sessão cega errava nos dois sentidos.** Ver abaixo. | este arquivo; `ABLACAO_SQL_WORKLOAD.md` ADENDO |
+| 18 | **O `primary_seed` deriva por bloco de execução:** 1,68× no mesmo artefato entre runs. Contamina toda comparação ENTRE experimentos. | `EIXO_MODELO_RESULTADO.md` |
 
 Sem número verificável, mas documentados: o **defeito de permissão** que fez
 agentes escreverem código sem conseguir medir (`CONTROLE.md` §1, `ABLATION.md`
@@ -95,3 +96,29 @@ depois de ele reprovar dois runs do próprio braço de referência é o moviment
 que a disciplina daqui existe para impedir, mesmo estando certo. O experimento
 fechou, o resultado foi publicado, e só então o instrumento foi mexido — com a
 verificação explícita de que a conclusão publicada não mudava.
+
+
+## 18. O `primary_seed` deriva por bloco de execução
+
+`melhoria_relativa = primary_final / primary_seed`, e o denominador é medido uma
+vez, no início do run, sobre um artefato de seed **idêntico** em todos eles.
+Medido nos 11 runs do eixo do modelo:
+
+```
+medido no run (original):  media 1,217  cv 19,6%  min 0,913  max 1,536  -> 1,68x
+re-medido em bloco, ocioso: media 1,519  cv  4,4%  min 1,455  max 1,700  -> 1,17x
+```
+
+Não é ruído branco — é deriva por bloco: os três runs do piloto de 8 passos do
+Sonnet mediram seed 0,94–0,95; os do Opus, 0,91–1,31; os de 36 passos, 1,46–1,54.
+
+**É o defeito 9 numa forma nova, e a nuance é o que importa:**
+
+- Numa ablação de braços **intercalados**, o ruído do seed é comum aos braços e a
+  razão o cancela. Testado na Fase 3: fixar o denominador **piorava** o cv em 3
+  dos 4 braços. Aquela conclusão continua válida para aquele desenho.
+- Entre **experimentos** de dias e durações diferentes, não há nada em comum para
+  cancelar, e a razão passa a medir o estado da máquina.
+
+**Regra:** comparação entre experimentos exige re-medição pareada dos artefatos
+finais com a máquina ociosa. `experiments/ablacao/remedir_modelo.py`, 4 minutos.
